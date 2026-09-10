@@ -3,15 +3,20 @@ import { formatLongDate, formatTime } from '../../lib/date'
 import { formatMoneyExact } from '../../lib/format'
 import type { ExpenseDraft } from '../../types/records'
 import { Button } from '../ui/button'
+import { InlineError } from '../ui/InlineError'
 
 export function ReviewExpense({
   draft,
   onEdit,
   onConfirm,
+  isConfirming,
+  error,
 }: {
   draft: ExpenseDraft
   onEdit: () => void
-  onConfirm: () => void
+  onConfirm: () => Promise<void>
+  isConfirming: boolean
+  error: string | null
 }) {
   return (
     <div>
@@ -59,9 +64,13 @@ export function ReviewExpense({
         Confirmed expenses become trusted records and update Today.
       </p>
 
+      {error && <InlineError message={error} />}
+
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Button type="button" variant="secondary" onClick={onEdit}>Edit</Button>
-        <Button type="button" onClick={onConfirm}>Confirm expense</Button>
+        <Button type="button" variant="secondary" onClick={onEdit} disabled={isConfirming}>Edit</Button>
+        <Button type="button" onClick={() => void onConfirm()} disabled={isConfirming}>
+          {isConfirming ? 'Confirming…' : 'Confirm expense'}
+        </Button>
       </div>
     </div>
   )

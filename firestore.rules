@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasAll([
+          'amountSen',
+          'category',
+          'title',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'source'
+        ])
+        && data.keys().hasOnly([
+          'amountSen',
+          'category',
+          'title',
+          'note',
+          'occurredAt',
+          'createdAt',
+          'updatedAt',
+          'source'
+        ])
+        && data.amountSen is int
+        && data.amountSen > 0
+        && data.amountSen <= 9007199254740991
+        && data.category in [
+          'food',
+          'transport',
+          'shopping',
+          'entertainment',
+          'housing',
+          'health',
+          'education',
+          'other'
+        ]
+        && data.title is string
+        && data.title.size() > 0
+        && (!('note' in data) || data.note is string)
+        && data.occurredAt is timestamp
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && data.source in ['manual', 'text', 'photo'];
+    }
+
+    match /users/{userId}/expenses/{expenseId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidExpense(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidExpense(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

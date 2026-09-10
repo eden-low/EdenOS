@@ -1,5 +1,5 @@
 import { CalendarClock, Pencil, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { expenseCategoryLabels } from '../../domain/expense'
 import { formatLongDate, formatTime } from '../../lib/date'
 import { formatMoneyExact } from '../../lib/format'
@@ -8,6 +8,7 @@ import type { ExpenseData, ExpenseRecord } from '../../types/records'
 import { ExpenseForm } from '../capture/ExpenseForm'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
+import { InlineError } from '../ui/InlineError'
 
 type RecordStep = 'view' | 'edit' | 'delete'
 
@@ -20,17 +21,43 @@ export function ExpenseRecordDialog({
 }) {
   const { updateExpense, deleteExpense } = useRecords()
   const [step, setStep] = useState<RecordStep>('view')
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [operationError, setOperationError] = useState<string | null>(null)
+  const operationInFlight = useRef(false)
 
-  function handleSave(data: ExpenseData) {
-    if (!record) return
-    updateExpense(record.id, data)
-    setStep('view')
+  async function handleSave(data: ExpenseData) {
+    if (!record || operationInFlight.current) return
+
+    operationInFlight.current = true
+    setIsSaving(true)
+    setOperationError(null)
+    try {
+      await updateExpense(record.id, data)
+      setStep('view')
+    } catch {
+      setOperationError('Couldn’t update this expense in Firestore. Check your connection and try again.')
+    } finally {
+      operationInFlight.current = false
+      setIsSaving(false)
+    }
   }
 
-  function handleDelete() {
-    if (!record) return
-    deleteExpense(record.id)
-    onClose()
+  async function handleDelete() {
+    if (!record || operationInFlight.current) return
+
+    operationInFlight.current = true
+    setIsDeleting(true)
+    setOperationError(null)
+    try {
+      await deleteExpense(record.id)
+      onClose()
+    } catch {
+      setOperationError('Couldn’t delete this expense from Firestore. Check your connection and try again.')
+    } finally {
+      operationInFlight.current = false
+      setIsDeleting(false)
+    }
   }
 
   return (
@@ -76,11 +103,17 @@ export function ExpenseRecordDialog({
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-              <Button type="button" variant="danger" onClick={() => setStep('delete')}>
+              <Button type="button" variant="danger" onClick={() => {
+                setOperationError(null)
+                setStep('delete')
+              }}>
                 <Trash2 aria-hidden="true" size={17} />
                 Delete
               </Button>
-              <Button type="button" variant="secondary" onClick={() => setStep('edit')}>
+              <Button type="button" variant="secondary" onClick={() => {
+                setOperationError(null)
+                setStep('edit')
+              }}>
                 <Pencil aria-hidden="true" size={17} />
                 Edit expense
               </Button>
@@ -100,7 +133,12 @@ export function ExpenseRecordDialog({
               initialData={record}
               submitLabel="Save changes"
               onSubmit={handleSave}
-              onCancel={() => setStep('view')}
+              onCancel={() => {
+                setOperationError(null)
+                setStep('view')
+              }}
+              isSubmitting={isSaving}
+              submitError={operationError}
             />
           </>
         )}
@@ -124,9 +162,13 @@ export function ExpenseRecordDialog({
               </div>
             </div>
 
+            {operationError && <InlineError message={operationError} />}
+
             <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Button type="button" variant="secondary" onClick={() => setStep('view')}>Cancel</Button>
-              <Button type="button" variant="danger" onClick={handleDelete}>Delete expense</Button>
+              <Button type="button" variant="secondary" onClick={() => setStep('view')} disabled={isDeleting}>Cancel</Button>
+              <Button type="button" variant="danger" onClick={() => void handleDelete()} disabled={isDeleting}>
+                {isDeleting ? 'Deleting…' : 'Delete expense'}
+              </Button>
             </div>
           </>
         )}

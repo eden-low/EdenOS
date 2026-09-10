@@ -1,5 +1,5 @@
 import { Camera, Keyboard, MessageSquareText } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useRecords } from '../../state/useRecords'
 import type { ExpenseData } from '../../types/records'
 import {
@@ -24,6 +24,9 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<CaptureStep>('menu')
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null)
+  const [isConfirming, setIsConfirming] = useState(false)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
+  const confirmInFlight = useRef(false)
   const activeDraft = drafts.find((draft) => draft.id === activeDraftId)
 
   function handleOpenChange(nextOpen: boolean) {
@@ -31,6 +34,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     if (!nextOpen) {
       setStep('menu')
       setActiveDraftId(null)
+      setConfirmError(null)
     }
   }
 
@@ -40,13 +44,25 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     } else {
       setActiveDraftId(createExpenseDraft(data))
     }
+    setConfirmError(null)
     setStep('review')
   }
 
-  function handleConfirm() {
-    if (!activeDraftId) return
-    confirmExpenseDraft(activeDraftId)
-    handleOpenChange(false)
+  async function handleConfirm() {
+    if (!activeDraftId || confirmInFlight.current) return
+
+    confirmInFlight.current = true
+    setIsConfirming(true)
+    setConfirmError(null)
+    try {
+      await confirmExpenseDraft(activeDraftId)
+      handleOpenChange(false)
+    } catch {
+      setConfirmError('Couldn’t save this expense to Firestore. Check your connection and try again.')
+    } finally {
+      confirmInFlight.current = false
+      setIsConfirming(false)
+    }
   }
 
   return (
@@ -107,8 +123,13 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
             </DialogDescription>
             <ReviewExpense
               draft={activeDraft}
-              onEdit={() => setStep('expense')}
+              onEdit={() => {
+                setConfirmError(null)
+                setStep('expense')
+              }}
               onConfirm={handleConfirm}
+              isConfirming={isConfirming}
+              error={confirmError}
             />
           </>
         )}

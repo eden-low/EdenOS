@@ -1,0 +1,74 @@
+import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from 'firebase/app'
+import { getAuth, type Auth } from 'firebase/auth'
+import { getFirestore, type Firestore } from 'firebase/firestore'
+
+const firebaseEnvironmentKeys = [
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_STORAGE_BUCKET',
+  'VITE_FIREBASE_MESSAGING_SENDER_ID',
+  'VITE_FIREBASE_APP_ID',
+] as const
+
+type FirebaseEnvironmentKey = (typeof firebaseEnvironmentKeys)[number]
+
+export interface FirebaseServices {
+  app: FirebaseApp
+  auth: Auth
+  firestore: Firestore
+}
+
+export type FirebaseInitialization =
+  | { status: 'ready'; services: FirebaseServices }
+  | { status: 'error'; message: string }
+
+function readEnvironmentValue(key: FirebaseEnvironmentKey): string | undefined {
+  const value = import.meta.env[key]
+  if (typeof value !== 'string') return undefined
+
+  const trimmed = value.trim()
+  return trimmed && trimmed !== '...' ? trimmed : undefined
+}
+
+function initializeFirebase(): FirebaseInitialization {
+  const values = Object.fromEntries(
+    firebaseEnvironmentKeys.map((key) => [key, readEnvironmentValue(key)]),
+  ) as Record<FirebaseEnvironmentKey, string | undefined>
+  const missingKeys = firebaseEnvironmentKeys.filter((key) => !values[key])
+
+  if (missingKeys.length > 0) {
+    return {
+      status: 'error',
+      message: `Add values for ${missingKeys.join(', ')} to frontend/.env.local, then restart EdenOS.`,
+    }
+  }
+
+  const options: FirebaseOptions = {
+    apiKey: values.VITE_FIREBASE_API_KEY,
+    authDomain: values.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: values.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: values.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: values.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: values.VITE_FIREBASE_APP_ID,
+  }
+
+  try {
+    const app = getApps().length > 0 ? getApp() : initializeApp(options)
+    return {
+      status: 'ready',
+      services: {
+        app,
+        auth: getAuth(app),
+        firestore: getFirestore(app),
+      },
+    }
+  } catch {
+    return {
+      status: 'error',
+      message: 'Firebase could not initialize. Check the EdenOS Firebase environment configuration.',
+    }
+  }
+}
+
+export const firebaseInitialization = initializeFirebase()

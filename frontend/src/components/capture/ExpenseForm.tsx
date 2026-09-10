@@ -4,12 +4,15 @@ import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../
 import { parseRinggitToSen } from '../../lib/format'
 import type { ExpenseCategory, ExpenseData } from '../../types/records'
 import { Button } from '../ui/button'
+import { InlineError } from '../ui/InlineError'
 
 interface ExpenseFormProps {
   initialData?: ExpenseData
   submitLabel: string
-  onSubmit: (data: ExpenseData) => void
+  onSubmit: (data: ExpenseData) => void | Promise<void>
   onCancel: () => void
+  isSubmitting?: boolean
+  submitError?: string | null
 }
 
 interface FormErrors {
@@ -24,6 +27,8 @@ export function ExpenseForm({
   submitLabel,
   onSubmit,
   onCancel,
+  isSubmitting = false,
+  submitError = null,
 }: ExpenseFormProps) {
   const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
   const [amount, setAmount] = useState(
@@ -164,9 +169,13 @@ export function ExpenseForm({
         />
       </div>
 
+      {submitError && <InlineError message={submitError} />}
+
       <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>Back</Button>
-        <Button type="submit">{submitLabel}</Button>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>Back</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving…' : submitLabel}
+        </Button>
       </div>
     </form>
   )

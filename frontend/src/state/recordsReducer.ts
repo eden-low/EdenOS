@@ -4,17 +4,34 @@ export interface RecordsState {
   expenses: ExpenseRecord[]
   exerciseRecords: ExerciseRecord[]
   drafts: ExpenseDraft[]
+  expenseStatus: 'loading' | 'loaded' | 'error'
+  expenseError: string | null
 }
 
 export type RecordsAction =
+  | { type: 'expenses/loading' }
+  | { type: 'expenses/loaded'; expenses: ExpenseRecord[] }
+  | { type: 'expenses/failed'; message: string }
   | { type: 'expenseDraft/created'; draft: ExpenseDraft }
   | { type: 'expenseDraft/updated'; id: string; data: ExpenseData; updatedAt: string }
-  | { type: 'expenseDraft/confirmed'; draftId: string; recordId: string; confirmedAt: string }
-  | { type: 'expense/updated'; id: string; data: ExpenseData; updatedAt: string }
-  | { type: 'expense/deleted'; id: string }
+  | { type: 'expenseDraft/confirmed'; draftId: string }
 
 export function recordsReducer(state: RecordsState, action: RecordsAction): RecordsState {
   switch (action.type) {
+    case 'expenses/loading':
+      return { ...state, expenseStatus: 'loading', expenseError: null }
+
+    case 'expenses/loaded':
+      return {
+        ...state,
+        expenses: action.expenses,
+        expenseStatus: 'loaded',
+        expenseError: null,
+      }
+
+    case 'expenses/failed':
+      return { ...state, expenseStatus: 'error', expenseError: action.message }
+
     case 'expenseDraft/created':
       return { ...state, drafts: [...state.drafts, action.draft] }
 
@@ -28,38 +45,10 @@ export function recordsReducer(state: RecordsState, action: RecordsAction): Reco
         ),
       }
 
-    case 'expenseDraft/confirmed': {
-      const draft = state.drafts.find((item) => item.id === action.draftId)
-      if (!draft) return state
-
-      const record: ExpenseRecord = {
-        ...draft.data,
-        id: action.recordId,
-        createdAt: draft.createdAt,
-        updatedAt: action.confirmedAt,
-      }
-
+    case 'expenseDraft/confirmed':
       return {
         ...state,
-        expenses: [record, ...state.expenses],
         drafts: state.drafts.filter((item) => item.id !== action.draftId),
-      }
-    }
-
-    case 'expense/updated':
-      return {
-        ...state,
-        expenses: state.expenses.map((expense) =>
-          expense.id === action.id
-            ? { ...expense, ...action.data, updatedAt: action.updatedAt }
-            : expense,
-        ),
-      }
-
-    case 'expense/deleted':
-      return {
-        ...state,
-        expenses: state.expenses.filter((expense) => expense.id !== action.id),
       }
   }
 }
