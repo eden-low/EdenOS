@@ -1,0 +1,114 @@
+import { expenseCategoryLabels } from '../domain/expense'
+import {
+  formatDashboardDate,
+  isSameLocalDay,
+  isSameLocalMonth,
+  relativeDayLabel,
+} from '../lib/date'
+import type { DashboardConfig, DashboardSummary, RecentActivityItem } from '../types/dashboard'
+import type { ExpenseDraft, ExpenseRecord, ExerciseRecord } from '../types/records'
+
+const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' })
+
+function startOfWeek(date: Date): Date {
+  const start = new Date(date)
+  const daysSinceMonday = (start.getDay() + 6) % 7
+  start.setDate(start.getDate() - daysSinceMonday)
+  start.setHours(0, 0, 0, 0)
+  return start
+}
+
+function selectRecentActivity(
+  expenses: ExpenseRecord[],
+  exerciseRecords: ExerciseRecord[],
+  referenceDate: Date,
+): RecentActivityItem[] {
+  return [
+    ...expenses.map((expense) => ({
+      sortAt: expense.occurredAt,
+      item: {
+        id: expense.id,
+        type: 'finance' as const,
+        title: expense.title,
+        category: expenseCategoryLabels[expense.category],
+        amountSen: expense.amountSen,
+        occurredAt: relativeDayLabel(expense.occurredAt, referenceDate),
+      },
+    })),
+    ...exerciseRecords.map((exercise) => ({
+      sortAt: exercise.occurredAt,
+      item: {
+        id: exercise.id,
+        type: 'exercise' as const,
+        title: exercise.activity,
+        distanceMetres: exercise.distanceMetres,
+        durationMinutes: exercise.durationMinutes,
+        occurredAt: relativeDayLabel(exercise.occurredAt, referenceDate),
+      },
+    })),
+  ]
+    .sort((left, right) => new Date(right.sortAt).getTime() - new Date(left.sortAt).getTime())
+    .slice(0, 2)
+    .map(({ item }) => item)
+}
+
+export function selectDashboardSummary(
+  config: DashboardConfig,
+  expenses: ExpenseRecord[],
+  exerciseRecords: ExerciseRecord[],
+  drafts: ExpenseDraft[],
+  referenceDate = new Date(),
+): DashboardSummary {
+  const monthlyExpenses = expenses.filter((expense) =>
+    isSameLocalMonth(new Date(expense.occurredAt), referenceDate),
+  )
+  const spentSen = monthlyExpenses.reduce((total, expense) => total + expense.amountSen, 0)
+  const spentTodaySen = monthlyExpenses
+    .filter((expense) => isSameLocalDay(new Date(expense.occurredAt), referenceDate))
+    .reduce((total, expense) => total + expense.amountSen, 0)
+
+  const daysRemaining =
+    new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate() -
+    referenceDate.getDate() +
+    1
+  const spentBeforeTodaySen = spentSen - spentTodaySen
+  const availableBeforeTodaySen = config.monthlyBudgetSen - spentBeforeTodaySen
+  const suggestedDailySen = Math.floor(availableBeforeTodaySen / daysRemaining)
+
+  const weekStart = startOfWeek(referenceDate)
+  const nextWeek = new Date(weekStart)
+  nextWeek.setDate(nextWeek.getDate() + 7)
+  const weeklyExercise = exerciseRecords
+    .filter((record) => {
+      const occurredAt = new Date(record.occurredAt)
+      return occurredAt >= weekStart && occurredAt < nextWeek
+    })
+    .sort((left, right) =>
+      right.occurredAt.localeCompare(left.occurredAt),
+    )
+  const latestExercise = weeklyExercise[0] ?? exerciseRecords[0]
+
+  return {
+    greeting: config.greeting,
+    displayDate: formatDashboardDate(referenceDate),
+    savingsGoal: config.savingsGoal,
+    monthlyBudget: {
+      month: monthFormatter.format(referenceDate),
+      budgetSen: config.monthlyBudgetSen,
+      spentSen,
+      spentTodaySen,
+      suggestedRemainingTodaySen: suggestedDailySen - spentTodaySen,
+    },
+    exercise: {
+      completedSessions: weeklyExercise.length,
+      targetSessions: config.weeklyExerciseTarget,
+      latestActivity: {
+        name: latestExercise.activity,
+        distanceMetres: latestExercise.distanceMetres,
+        durationMinutes: latestExercise.durationMinutes,
+      },
+    },
+    recentActivity: selectRecentActivity(expenses, exerciseRecords, referenceDate),
+    pendingDraftCount: drafts.filter((draft) => draft.status === 'draft').length,
+  }
+}

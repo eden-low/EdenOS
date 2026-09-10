@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+:root {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: #f5f7fb;
+  background: #090c13;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --background: #090c13;
+  --background-soft: #0c111b;
+  --surface-primary: #111722;
+  --surface-secondary: #151c29;
+  --surface-elevated: #1a2231;
+  --surface-hover: #20293a;
+
+  --accent-primary: #7b6ff8;
+  --accent-soft: #a99eff;
+  --accent-wash: rgba(123, 111, 248, 0.14);
+  --accent-wash-strong: rgba(123, 111, 248, 0.2);
+  --accent-blue: #5274ba;
+  --accent-blue-wash: rgba(71, 103, 171, 0.17);
+  --accent-teal: #58aab0;
+  --accent-teal-wash: rgba(79, 157, 166, 0.13);
+  --accent-amber: #c5a36b;
+  --accent-amber-wash: rgba(197, 163, 107, 0.12);
+  --danger: #e4878e;
+  --danger-wash: rgba(228, 135, 142, 0.12);
+  --danger-wash-strong: rgba(228, 135, 142, 0.18);
+  --danger-border: rgba(228, 135, 142, 0.2);
+
+  --text-primary: #f5f7fb;
+  --text-secondary: #a9b3c3;
+  --text-muted: #7d889c;
+  --text-on-accent-soft: #141126;
+  --border-subtle: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --focus: rgba(169, 158, 255, 0.48);
+  --shadow-soft: 0 18px 55px rgba(0, 0, 0, 0.2);
+  --accent-shadow: 0 10px 30px rgba(80, 67, 210, 0.28);
+  --accent-glow: 0 0 18px rgba(123, 111, 248, 0.32);
+  --dialog-shadow: 0 -20px 65px rgba(0, 0, 0, 0.38);
+  --overlay: rgba(3, 5, 10, 0.76);
+  --mobile-nav: rgba(17, 23, 34, 0.94);
+  --surface-ghost: rgba(255, 255, 255, 0.035);
+  --hero-ring: rgba(169, 158, 255, 0.13);
+  --hero-ring-soft: rgba(169, 158, 255, 0.1);
+  --hero-blue-wash: rgba(82, 116, 186, 0.09);
+  --hero-orb-shadow: 0 0 22px rgba(169, 158, 255, 0.75);
+  --hero-gradient: linear-gradient(118deg, #171b35 0%, #12192b 54%, #111722 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 74% -12%, rgba(92, 75, 184, 0.16), transparent 34rem),
+    var(--background);
+}
+
+button {
+  font: inherit;
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+::selection {
+  color: var(--text-primary);
+  background: rgba(123, 111, 248, 0.38);
+}
+
+.dashboard-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.5rem;
+  background: var(--surface-primary);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.018) inset;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  line-height: 1.25rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.metric-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.045em;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.form-control {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.875rem;
+  outline: none;
+  background: var(--surface-primary);
+  padding: 0.75rem 0.875rem;
+  color: var(--text-primary);
+  font: inherit;
+  color-scheme: dark;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.form-control::placeholder {
+  color: var(--text-muted);
+}
+
+.form-control:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.form-control[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.expense-amount-control {
+  padding-left: 3.5rem;
+}
+
+.form-error {
+  margin-top: 0.375rem;
+  color: var(--danger);
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes sheet-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes dialog-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,173 @@
+import { useState, type FormEvent } from 'react'
+import { expenseCategoryOptions, isExpenseCategory } from '../../domain/expense'
+import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../lib/date'
+import { parseRinggitToSen } from '../../lib/format'
+import type { ExpenseCategory, ExpenseData } from '../../types/records'
+import { Button } from '../ui/button'
+
+interface ExpenseFormProps {
+  initialData?: ExpenseData
+  submitLabel: string
+  onSubmit: (data: ExpenseData) => void
+  onCancel: () => void
+}
+
+interface FormErrors {
+  amount?: string
+  category?: string
+  title?: string
+  occurredAt?: string
+}
+
+export function ExpenseForm({
+  initialData,
+  submitLabel,
+  onSubmit,
+  onCancel,
+}: ExpenseFormProps) {
+  const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
+  const [amount, setAmount] = useState(
+    initialData ? (initialData.amountSen / 100).toFixed(2) : '',
+  )
+  const [category, setCategory] = useState<ExpenseCategory>(initialData?.category ?? 'food')
+  const [title, setTitle] = useState(initialData?.title ?? '')
+  const [date, setDate] = useState(toLocalDateInput(initialDate))
+  const [time, setTime] = useState(toLocalTimeInput(initialDate))
+  const [note, setNote] = useState(initialData?.note ?? '')
+  const [errors, setErrors] = useState<FormErrors>({})
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const nextErrors: FormErrors = {}
+    const amountSen = parseRinggitToSen(amount)
+    const occurredAt = combineLocalDateTime(date, time)
+
+    if (!amountSen) {
+      nextErrors.amount = 'Enter an amount greater than RM 0 with no more than 2 decimal places.'
+    }
+    if (!isExpenseCategory(category)) nextErrors.category = 'Choose a category.'
+    if (!title.trim()) nextErrors.title = 'Add a useful merchant or title.'
+    if (!occurredAt) nextErrors.occurredAt = 'Choose a valid date and time.'
+
+    setErrors(nextErrors)
+    if (!amountSen || !occurredAt || Object.keys(nextErrors).length > 0) return
+
+    onSubmit({
+      amountSen,
+      category,
+      title: title.trim(),
+      note: note.trim() || undefined,
+      occurredAt,
+      source: initialData?.source ?? 'manual',
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate>
+      <div>
+        <label htmlFor="expense-amount" className="form-label">Amount</label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-[var(--accent-soft)]">
+            RM
+          </span>
+          <input
+            id="expense-amount"
+            name="amount"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            autoFocus
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            placeholder="0.00"
+            aria-invalid={Boolean(errors.amount)}
+            aria-describedby={errors.amount ? 'expense-amount-error' : undefined}
+            className="form-control expense-amount-control min-h-16 text-3xl font-semibold tracking-[-0.04em]"
+          />
+        </div>
+        {errors.amount && <p id="expense-amount-error" className="form-error">{errors.amount}</p>}
+      </div>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="expense-category" className="form-label">Category</label>
+          <select
+            id="expense-category"
+            name="category"
+            value={category}
+            onChange={(event) => setCategory(event.target.value as ExpenseCategory)}
+            aria-invalid={Boolean(errors.category)}
+            className="form-control"
+          >
+            {expenseCategoryOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          {errors.category && <p className="form-error">{errors.category}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="expense-title" className="form-label">Merchant / title</label>
+          <input
+            id="expense-title"
+            name="title"
+            type="text"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Lunch"
+            aria-invalid={Boolean(errors.title)}
+            aria-describedby={errors.title ? 'expense-title-error' : undefined}
+            className="form-control"
+          />
+          {errors.title && <p id="expense-title-error" className="form-error">{errors.title}</p>}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="expense-date" className="form-label">Date</label>
+          <input
+            id="expense-date"
+            name="date"
+            type="date"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+            aria-invalid={Boolean(errors.occurredAt)}
+            className="form-control"
+          />
+        </div>
+        <div>
+          <label htmlFor="expense-time" className="form-label">Time</label>
+          <input
+            id="expense-time"
+            name="time"
+            type="time"
+            value={time}
+            onChange={(event) => setTime(event.target.value)}
+            aria-invalid={Boolean(errors.occurredAt)}
+            className="form-control"
+          />
+        </div>
+      </div>
+      {errors.occurredAt && <p className="form-error">{errors.occurredAt}</p>}
+
+      <div className="mt-4">
+        <label htmlFor="expense-note" className="form-label">Note <span className="font-normal text-[var(--text-muted)]">(optional)</span></label>
+        <textarea
+          id="expense-note"
+          name="note"
+          rows={3}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder="Add a detail"
+          className="form-control resize-none"
+        />
+      </div>
+
+      <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <Button type="button" variant="ghost" onClick={onCancel}>Back</Button>
+        <Button type="submit">{submitLabel}</Button>
+      </div>
+    </form>
+  )
+}
