@@ -1,4 +1,5 @@
-import { ReceiptText, Waves } from 'lucide-react'
+import { ReceiptText } from 'lucide-react'
+import { getExerciseActivityIcon } from '../../lib/exerciseIcon'
 import { formatExerciseMetrics, formatMoney } from '../../lib/format'
 import type { RecentActivityItem } from '../../types/dashboard'
 
@@ -12,7 +13,7 @@ export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
       <ul className="mt-4 divide-y divide-[var(--border-subtle)]">
         {items.map((item) => {
           const financeItem = item.type === 'finance'
-          const Icon = financeItem ? ReceiptText : Waves
+          const Icon = financeItem ? ReceiptText : getExerciseActivityIcon(item.title)
 
           return (
             <li key={item.id} className="flex items-center gap-3 py-4 first:pt-2 last:pb-0">

@@ -1,10 +1,11 @@
-import { Dumbbell, Plus, ReceiptText } from 'lucide-react'
+import { Plus, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CaptureSheet } from '../components/capture/CaptureSheet'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
 import { Button } from '../components/ui/button'
 import { expenseCategoryLabels } from '../domain/expense'
 import { formatTime, relativeDayLabel } from '../lib/date'
+import { getExerciseActivityIcon } from '../lib/exerciseIcon'
 import { formatExerciseMetrics, formatMoney } from '../lib/format'
 import { selectTimelineGroups } from '../selectors/recordSelectors'
 import { useRecords } from '../state/useRecords'
@@ -113,10 +114,11 @@ export function RecordsPage() {
                   }
 
                   const exercise = item.record
+                  const ExerciseIcon = getExerciseActivityIcon(exercise.activity)
                   return (
                     <article key={exercise.id} className="flex min-h-20 items-center gap-3 py-4 sm:gap-4">
                       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--accent-teal)]">
-                        <Dumbbell aria-hidden="true" size={19} strokeWidth={1.8} />
+                        <ExerciseIcon aria-hidden="true" size={19} strokeWidth={1.8} />
                       </span>
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-[var(--text-primary)]">{exercise.activity}</p>
