@@ -48,6 +48,40 @@ service cloud.firestore {
         && data.source in ['manual', 'text', 'photo'];
     }
 
+    function isValidExercise(data) {
+      return data.keys().hasAll([
+          'activity',
+          'durationSeconds',
+          'source',
+          'occurredAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'activity',
+          'distanceMetres',
+          'durationSeconds',
+          'source',
+          'occurredAt',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.activity is string
+        && data.activity.size() > 0
+        && data.activity.size() <= 80
+        && data.durationSeconds is int
+        && data.durationSeconds > 0
+        && data.durationSeconds <= 9007199254740991
+        && (!('distanceMetres' in data)
+          || (data.distanceMetres is int
+            && data.distanceMetres > 0
+            && data.distanceMetres <= 9007199254740991))
+        && data.source == 'manual'
+        && data.occurredAt is timestamp
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     match /users/{userId}/expenses/{expenseId} {
       allow get, list: if isOwner(userId);
       allow create: if isOwner(userId)
@@ -59,6 +93,15 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time;
       allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/exercises/{exerciseId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidExercise(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update, delete: if false;
     }
 
     match /{document=**} {

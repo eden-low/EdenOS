@@ -2,22 +2,23 @@
 
 Eden OS is a private Personal OS for seeing the most important parts of the day and capturing trusted personal records without unnecessary complexity.
 
-## Current scope: Phase 3
+## Current scope: Exercise V1
 
 The frontend runs locally against the configured Firebase project and includes:
 
 - The approved EdenOS Design System v1
 - A responsive Today dashboard
 - A Records timeline with All, Expenses, and Exercise filters
-- Quick Expense capture with validation
+- Quick Expense and manual Exercise capture with validation
 - Draft review and editing before confirmation
 - Editing and confirmed deletion of expense records
 - Dashboard totals derived from confirmed expense records
 - Separate expense and exercise domain models
 - Silent Firebase Anonymous Authentication with browser-local session persistence
-- Cloud Firestore as the authoritative source for confirmed expenses
-- Realtime expense synchronization across Today and Records on the same Firebase user
+- Cloud Firestore as the authoritative source for confirmed expenses and exercises
+- Realtime expense and exercise synchronization across Today and Records on the same Firebase user
 - Firestore-backed expense creation, editing, and deletion
+- Firestore-backed Exercise creation and reading, with distance stored in metres and duration stored in seconds
 - Installable PWA manifest and EdenOS application icons
 - Offline-capable application shell after one successful online load
 - Shared online/offline status with guarded cloud mutations
@@ -31,7 +32,7 @@ Text and Photo capture remain clearly marked as coming soon. Review, Settings, a
 /
 |-- frontend/       React, TypeScript, Vite, and Tailwind application
 |-- backend/        Reserved for a later backend phase
-|-- firestore.rules  Firestore ownership and expense validation rules
+|-- firestore.rules  Firestore ownership and domain validation rules
 |-- README.md
 |-- .gitignore
 `-- netlify.toml
@@ -146,7 +147,7 @@ authenticated UID
         |
 React state/actions
         |
-ExpenseRepository
+Separate Expense and Exercise repositories
         |
 Cloud Firestore realtime subscription
 ```
@@ -159,13 +160,21 @@ Confirmed expenses are stored at:
 users/{uid}/expenses/{expenseId}
 ```
 
-The Firestore repository owns all SDK calls and maps Firestore timestamps into ISO strings used by the existing domain model. UI components do not depend on Firestore document types. Drafts remain local and in memory; Firestore receives an expense only after confirmation.
+Confirmed exercises are stored at:
+
+```text
+users/{uid}/exercises/{exerciseId}
+```
+
+Exercise V1 supports realtime reading and idempotent manual creation. Distance is stored as optional integer metres and duration as integer seconds. Exercise editing and deletion are not implemented yet.
+
+The domain-specific Firestore repositories own all SDK calls and map Firestore timestamps into ISO strings used by the existing domain models. UI components do not depend on Firestore document types. Drafts remain local and in memory; Firestore receives an expense or exercise only after confirmation.
 
 Anonymous identity is specific to a browser profile and origin. Different browsers, cleared browser storage, and different devices will generally receive different anonymous users, so EdenOS does not yet provide cross-device account identity. A future phase may link an anonymous user to Google, but Phase 2B does not implement that.
 
 ## Firestore Security Rules
 
-The prepared rules are in `firestore.rules`. They allow an authenticated user to access only `users/{theirUid}/expenses/*`, validate the current expense fields, preserve `createdAt` during updates, and deny every unrelated path by default.
+The prepared rules are in `firestore.rules`. They allow an authenticated user to access only their own expense and exercise collections, validate each domain separately, keep Exercise V1 update/delete access disabled, and deny every unrelated path by default.
 
 Apply them manually in Firebase Console:
 
@@ -179,7 +188,7 @@ The Firebase Web configuration is not a security boundary; UID ownership is enfo
 
 Phase 2A used `localStorage` key `edenos.expenses.v1`. Phase 2B leaves that data untouched, does not read it as the active expense source, and never uploads or deletes it automatically. Manual migration may be considered later.
 
-New anonymous users begin with an empty Firestore expense collection. Mock exercise and savings modules remain local, but demo expenses are never seeded into Firestore or mixed into Firebase-backed calculations.
+New anonymous users begin with empty Firestore expense and exercise collections. The weekly Exercise target and savings module remain local configuration, but demo records are never seeded into Firestore or mixed into Firebase-backed calculations.
 
 ## Intentionally deferred
 

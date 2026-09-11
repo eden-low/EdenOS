@@ -30,15 +30,18 @@ export interface ExpenseRecord extends ExpenseData {
   updatedAt: string
 }
 
-export interface ExerciseRecord {
-  id: string
+export interface ExerciseData {
   activity: string
-  distanceMetres: number
-  durationMinutes: number
+  distanceMetres?: number
+  durationSeconds: number
   occurredAt: string
+  source: 'manual'
+}
+
+export interface ExerciseRecord extends ExerciseData {
+  id: string
   createdAt: string
   updatedAt: string
-  source: 'manual'
 }
 
 export interface CaptureDraft<TKind extends string, TData> {
@@ -51,6 +54,8 @@ export interface CaptureDraft<TKind extends string, TData> {
 }
 
 export type ExpenseDraft = CaptureDraft<'expense', ExpenseData>
+export type ExerciseDraft = CaptureDraft<'exercise', ExerciseData>
+export type RecordDraft = ExpenseDraft | ExerciseDraft
 export type RecordFilter = 'all' | 'expenses' | 'exercise'
 
 export type TimelineRecord =

@@ -1,5 +1,5 @@
 import { ReceiptText, Waves } from 'lucide-react'
-import { formatDistance, formatMoney } from '../../lib/format'
+import { formatExerciseMetrics, formatMoney } from '../../lib/format'
 import type { RecentActivityItem } from '../../types/dashboard'
 
 export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
@@ -30,7 +30,7 @@ export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
                 <p className="mt-0.5 truncate text-sm text-[var(--text-secondary)]">
                   {financeItem
                     ? item.category
-                    : `${formatDistance(item.distanceMetres)} · ${item.durationMinutes} min`}
+                    : formatExerciseMetrics(item.durationSeconds, item.distanceMetres)}
                 </p>
               </div>
               <div className="ml-auto shrink-0 text-right">
