@@ -11,6 +11,9 @@ dist/
 *.log
 npm-debug.log*
 
+# GitHub Actions credentials
+gha-creds-*.json
+
 # Editors and operating systems
 .DS_Store
 Thumbs.db

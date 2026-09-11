@@ -1,0 +1,10 @@
+{
+  "name": "edenos-firebase-tooling",
+  "private": true,
+  "scripts": {
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules"
+  },
+  "devDependencies": {
+    "firebase-tools": "15.30.0"
+  }
+}
