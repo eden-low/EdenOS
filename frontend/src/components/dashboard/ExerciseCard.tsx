@@ -1,9 +1,11 @@
-import { Waves } from 'lucide-react'
+import { createElement } from 'react'
+import { getExerciseActivityIcon } from '../../lib/exerciseIcon'
 import { formatExerciseMetrics } from '../../lib/format'
 import type { ExerciseSummary } from '../../types/dashboard'
 
 export function ExerciseCard({ exercise }: { exercise: ExerciseSummary }) {
   const { latestActivity } = exercise
+  const ExerciseIcon = getExerciseActivityIcon(latestActivity?.name ?? '')
 
   return (
     <section aria-label="Weekly exercise" className="dashboard-card order-4 col-span-2 p-6 md:col-span-3 xl:col-span-5 xl:p-7">
@@ -33,7 +35,7 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseSummary }) {
 
       <div className="mt-7 flex items-center gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-4 sm:p-5">
         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--accent-teal)]">
-          <Waves aria-hidden="true" size={20} strokeWidth={1.8} />
+          {createElement(ExerciseIcon, { 'aria-hidden': true, size: 20, strokeWidth: 1.8 })}
         </span>
         {latestActivity ? (
           <>
