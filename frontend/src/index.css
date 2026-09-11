@@ -67,9 +67,15 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 74% -12%, rgba(92, 75, 184, 0.16), transparent 34rem),
     var(--background);
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 button {

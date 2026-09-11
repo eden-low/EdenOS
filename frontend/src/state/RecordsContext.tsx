@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { mockExerciseRecords } from '../data/mockRecords'
+import { OfflineExpenseWriteError } from '../lib/expenseWriteError'
+import { useConnectivity } from '../providers/useConnectivity'
 import { createFirestoreExpenseRepository } from '../repositories/firestoreExpenseRepository'
 import type { ExpenseDraft } from '../types/records'
 import { RecordsContext, type RecordsContextValue } from './recordsContextDefinition'
@@ -24,6 +26,7 @@ function createInitialState(): RecordsState {
 
 export function RecordsProvider({ children }: { children: ReactNode }) {
   const { firestore, uid } = useFirebaseAuth()
+  const connectivity = useConnectivity()
   const [subscriptionVersion, setSubscriptionVersion] = useState(0)
   const [state, dispatch] = useReducer(recordsReducer, undefined, createInitialState)
   const expenseRepository = useMemo(
@@ -52,7 +55,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       createExpenseDraft(data) {
         const now = new Date().toISOString()
         const draft: ExpenseDraft = {
-          id: createId('draft'),
+          id: createId('expense'),
           kind: 'expense',
           status: 'draft',
           data,
@@ -68,21 +71,34 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       async confirmExpenseDraft(id) {
         const draft = state.drafts.find((item) => item.id === id)
         if (!draft) throw new Error('Expense draft no longer exists.')
+        if (connectivity === 'offline') throw new OfflineExpenseWriteError()
 
-        await expenseRepository.createExpense(draft.data)
+        await expenseRepository.createExpense(draft.id, draft.data)
         dispatch({ type: 'expenseDraft/confirmed', draftId: id })
       },
       async updateExpense(id, data) {
+        if (connectivity === 'offline') throw new OfflineExpenseWriteError()
         await expenseRepository.updateExpense(id, data)
       },
       async deleteExpense(id) {
+        if (connectivity === 'offline') throw new OfflineExpenseWriteError()
         await expenseRepository.deleteExpense(id)
       },
     }),
-    [expenseRepository, state],
+    [connectivity, expenseRepository, state],
   )
 
   if (state.expenseStatus === 'loading') {
+    if (connectivity === 'offline') {
+      return (
+        <AppStatusScreen
+          status="offline"
+          title="Cloud records are unavailable offline"
+          message="The EdenOS app shell is ready, but this browser has no loaded Firestore expense snapshot. Reconnect to load your records."
+        />
+      )
+    }
+
     return (
       <AppStatusScreen
         status="loading"
@@ -93,6 +109,16 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
   }
 
   if (state.expenseStatus === 'error') {
+    if (connectivity === 'offline') {
+      return (
+        <AppStatusScreen
+          status="offline"
+          title="Cloud records are unavailable offline"
+          message="Reconnect to Firebase, then retry loading your confirmed expense records."
+        />
+      )
+    }
+
     return (
       <AppStatusScreen
         status="error"

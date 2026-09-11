@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import { expenseCategoryLabels } from '../../domain/expense'
 import { formatLongDate, formatTime } from '../../lib/date'
 import { formatMoneyExact } from '../../lib/format'
+import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
 import { useRecords } from '../../state/useRecords'
 import type { ExpenseData, ExpenseRecord } from '../../types/records'
 import { ExpenseForm } from '../capture/ExpenseForm'
@@ -35,8 +36,8 @@ export function ExpenseRecordDialog({
     try {
       await updateExpense(record.id, data)
       setStep('view')
-    } catch {
-      setOperationError('Couldn’t update this expense in Firestore. Check your connection and try again.')
+    } catch (error) {
+      setOperationError(expenseWriteErrorMessage(error, 'update'))
     } finally {
       operationInFlight.current = false
       setIsSaving(false)
@@ -52,8 +53,8 @@ export function ExpenseRecordDialog({
     try {
       await deleteExpense(record.id)
       onClose()
-    } catch {
-      setOperationError('Couldn’t delete this expense from Firestore. Check your connection and try again.')
+    } catch (error) {
+      setOperationError(expenseWriteErrorMessage(error, 'delete'))
     } finally {
       operationInFlight.current = false
       setIsDeleting(false)

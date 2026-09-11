@@ -1,8 +1,8 @@
-import { Cloud, RotateCw, TriangleAlert } from 'lucide-react'
+import { Cloud, RotateCw, TriangleAlert, WifiOff } from 'lucide-react'
 import { Button } from '../ui/button'
 
 interface AppStatusScreenProps {
-  status: 'loading' | 'error'
+  status: 'loading' | 'error' | 'offline'
   title: string
   message: string
   onRetry?: () => void
@@ -14,10 +14,10 @@ export function AppStatusScreen({
   message,
   onRetry,
 }: AppStatusScreenProps) {
-  const Icon = status === 'loading' ? Cloud : TriangleAlert
+  const Icon = status === 'loading' ? Cloud : status === 'offline' ? WifiOff : TriangleAlert
 
   return (
-    <main className="grid min-h-screen place-items-center px-4 py-10 text-[var(--text-primary)]">
+    <main className="grid min-h-[100dvh] place-items-center px-4 py-10 text-[var(--text-primary)]">
       <section
         className="dashboard-card w-full max-w-md p-7 text-center sm:p-9"
         aria-live="polite"
@@ -27,7 +27,9 @@ export function AppStatusScreen({
           className={`mx-auto grid size-12 place-items-center rounded-2xl ${
             status === 'loading'
               ? 'bg-[var(--accent-wash)] text-[var(--accent-soft)]'
-              : 'bg-[var(--danger-wash)] text-[var(--danger)]'
+              : status === 'offline'
+                ? 'bg-[var(--accent-amber-wash)] text-[var(--accent-amber)]'
+                : 'bg-[var(--danger-wash)] text-[var(--danger)]'
           }`}
         >
           <Icon aria-hidden="true" size={21} strokeWidth={1.8} />

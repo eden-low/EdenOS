@@ -1,5 +1,6 @@
 import { Camera, Keyboard, MessageSquareText } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
+import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
 import { useRecords } from '../../state/useRecords'
 import type { ExpenseData } from '../../types/records'
 import {
@@ -57,8 +58,8 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     try {
       await confirmExpenseDraft(activeDraftId)
       handleOpenChange(false)
-    } catch {
-      setConfirmError('Couldn’t save this expense to Firestore. Check your connection and try again.')
+    } catch (error) {
+      setConfirmError(expenseWriteErrorMessage(error, 'create'))
     } finally {
       confirmInFlight.current = false
       setIsConfirming(false)

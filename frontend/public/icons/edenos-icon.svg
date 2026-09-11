@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">EdenOS E</title>
+  <defs>
+    <linearGradient id="surface" x1="82" y1="54" x2="430" y2="458" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1B2140"/>
+      <stop offset="0.58" stop-color="#121A2C"/>
+      <stop offset="1" stop-color="#111722"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#090C13"/>
+  <rect x="48" y="48" width="416" height="416" rx="112" fill="url(#surface)" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="4"/>
+  <circle cx="384" cy="130" r="34" fill="#7B6FF8"/>
+  <path d="M154 142H352V210H226V240H334V304H226V340H360V408H154V142Z" fill="#F5F7FB"/>
+</svg>

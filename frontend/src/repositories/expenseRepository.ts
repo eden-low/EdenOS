@@ -7,7 +7,7 @@ export interface ExpenseSubscriptionObserver {
 
 export interface ExpenseRepository {
   subscribeExpenses: (observer: ExpenseSubscriptionObserver) => () => void
-  createExpense: (data: ExpenseData) => Promise<void>
+  createExpense: (id: string, data: ExpenseData) => Promise<void>
   updateExpense: (id: string, data: ExpenseData) => Promise<void>
   deleteExpense: (id: string) => Promise<void>
 }

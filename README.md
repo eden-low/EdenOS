@@ -2,9 +2,9 @@
 
 Eden OS is a private Personal OS for seeing the most important parts of the day and capturing trusted personal records without unnecessary complexity.
 
-## Current scope: Phase 2B
+## Current scope: Phase 3
 
-The app runs completely locally and includes:
+The frontend runs locally against the configured Firebase project and includes:
 
 - The approved EdenOS Design System v1
 - A responsive Today dashboard
@@ -18,6 +18,10 @@ The app runs completely locally and includes:
 - Cloud Firestore as the authoritative source for confirmed expenses
 - Realtime expense synchronization across Today and Records on the same Firebase user
 - Firestore-backed expense creation, editing, and deletion
+- Installable PWA manifest and EdenOS application icons
+- Offline-capable application shell after one successful online load
+- Shared online/offline status with guarded cloud mutations
+- User-controlled service-worker update prompts
 
 Text and Photo capture remain clearly marked as coming soon. Review, Settings, and all future Personal OS modules remain placeholders or backlog items.
 
@@ -43,6 +47,8 @@ frontend/src/
 |-- pages/          Today and Records pages
 |-- selectors/      Dashboard and timeline derivation
 |-- repositories/   Data contract and Firestore expense implementation
+|-- providers/      Shared browser connectivity state
+|-- pwa/            Service-worker registration and update lifecycle
 |-- services/       Preserved legacy local-storage abstraction
 |-- state/          React Context and reducer state layer
 `-- types/          Dashboard and record domain types
@@ -89,6 +95,45 @@ npm run build
 ```
 
 The production output is generated in `frontend/dist/`.
+
+## PWA status
+
+EdenOS is installable with a standalone manifest, dark EdenOS theme colors, and original 192px, 512px, maskable, and Apple touch icons. The icon source is `frontend/public/icons/edenos-icon.svg`; regenerate its raster assets with:
+
+```bash
+cd frontend
+npm run generate:pwa-assets
+```
+
+`vite-plugin-pwa` generates the service worker during production builds. It precaches the HTML shell, fingerprinted JavaScript and CSS, and local static assets. Navigation falls back to the cached application shell after a successful online load. No runtime caching rule intercepts Firebase Authentication or Firestore traffic, and Firestore offline persistence is not enabled.
+
+Connectivity is observed once by the shared `ConnectivityProvider`. While EdenOS remains open, the last server-confirmed in-memory expense snapshot may remain visible offline alongside an offline indicator; it is not represented as current cloud data. A fully offline reopen can render the cached app shell, but cloud records remain unavailable if there is no in-memory snapshot.
+
+Expense drafts may be prepared offline, but create, edit, and delete operations require connectivity and use Firestore transactions. Failed confirmations preserve the draft while the app remains active. There is no offline mutation queue, and drafts are not guaranteed to survive a full application termination yet.
+
+Service-worker updates use a prompt. EdenOS never force-refreshes automatically. If an unconfirmed draft exists, the user must explicitly acknowledge that updating will discard it before the new version is activated and the page reloads. Dismissing the prompt suppresses it for the current session.
+
+PWA installation does not change Firebase identity semantics. Anonymous identity remains tied to a browser profile and origin; installing EdenOS on another device does not share the desktop browser's UID.
+
+### Production PWA testing
+
+Service workers are disabled during normal Vite development. Test the generated production behavior on localhost, which browsers treat as a secure context:
+
+```bash
+cd frontend
+npm run build
+npm run preview -- --host 127.0.0.1
+```
+
+In browser developer tools:
+
+1. Open **Application > Manifest** and verify the standalone manifest and icons.
+2. Open **Application > Service Workers** and verify `sw.js` is activated and controls the page.
+3. Load EdenOS online once, switch the browser network to Offline, then reload and verify the EdenOS shell appears.
+4. Confirm that offline expense create, edit, and delete attempts show a retryable explanation without changing trusted records.
+5. Restore the network and retry, verifying one Firestore record and one dashboard update.
+
+Netlify serves `sw.js` and `manifest.webmanifest` with revalidation headers. Fingerprinted Vite assets can remain content-addressed and long-lived, while the service worker and manifest are checked for updates. Firebase requests are not added to Workbox runtime caches.
 
 ## Firebase architecture
 
@@ -142,11 +187,11 @@ New anonymous users begin with an empty Firestore expense collection. Mock exerc
 - Firebase Storage, Cloud Functions, and custom backend services
 - AI, OCR, Text capture, and Photo capture
 - Review page implementation
-- PWA, IndexedDB, and offline financial storage
+- IndexedDB, Firestore offline persistence, and offline mutation synchronization
 - Calendar and Today's Schedule
 - Tasks, Playlist, Focus Timer, Habits, Deadlines, Notes, and Weather
 - Income workflow and broader financial reporting
 
 Calendar and Schedule, Tasks, and Playlist are approved backlog modules, but they come after the core finance workflow.
 
-PWA and Firestore offline synchronization remain future work. The current client-side repository boundary is compatible with a later Vite PWA phase without enabling offline persistence now.
+Firestore offline synchronization remains future work. Phase 3 caches only the application shell and static assets.

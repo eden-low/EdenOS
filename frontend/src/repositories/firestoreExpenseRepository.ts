@@ -1,15 +1,13 @@
 import {
   Timestamp,
   collection,
-  deleteDoc,
   deleteField,
   doc,
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
-  setDoc,
-  updateDoc,
   type DocumentData,
   type Firestore,
   type QueryDocumentSnapshot,
@@ -101,25 +99,41 @@ export function createFirestoreExpenseRepository(
       )
     },
 
-    async createExpense(data) {
-      const expenseReference = doc(expenseCollection)
-      await setDoc(expenseReference, {
-        ...expenseDocumentData(data),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+    async createExpense(id, data) {
+      const expenseReference = doc(expenseCollection, id)
+      await runTransaction(firestore, async (transaction) => {
+        const existingExpense = await transaction.get(expenseReference)
+        if (existingExpense.exists()) return
+
+        transaction.set(expenseReference, {
+          ...expenseDocumentData(data),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        })
       })
     },
 
     async updateExpense(id, data) {
-      await updateDoc(doc(expenseCollection, id), {
-        ...expenseDocumentData(data),
-        note: data.note ?? deleteField(),
-        updatedAt: serverTimestamp(),
+      const expenseReference = doc(expenseCollection, id)
+      await runTransaction(firestore, async (transaction) => {
+        const existingExpense = await transaction.get(expenseReference)
+        if (!existingExpense.exists()) throw new Error('Expense record does not exist.')
+
+        transaction.update(expenseReference, {
+          ...expenseDocumentData(data),
+          note: data.note ?? deleteField(),
+          updatedAt: serverTimestamp(),
+        })
       })
     },
 
     async deleteExpense(id) {
-      await deleteDoc(doc(expenseCollection, id))
+      const expenseReference = doc(expenseCollection, id)
+      await runTransaction(firestore, async (transaction) => {
+        const existingExpense = await transaction.get(expenseReference)
+        if (!existingExpense.exists()) return
+        transaction.delete(expenseReference)
+      })
     },
   }
 }

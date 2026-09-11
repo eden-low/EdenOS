@@ -84,7 +84,7 @@ export function MobileNavigation({
   return (
     <nav
       aria-label="Primary navigation"
-      className="fixed inset-x-3 bottom-3 z-40 rounded-[1.4rem] border border-[var(--border-subtle)] bg-[var(--mobile-nav)] px-2 pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-soft)] backdrop-blur-xl lg:hidden"
+      className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 rounded-[1.4rem] border border-[var(--border-subtle)] bg-[var(--mobile-nav)] px-2 shadow-[var(--shadow-soft)] backdrop-blur-xl lg:hidden"
     >
       <div className="mx-auto grid h-17 max-w-md grid-cols-4 items-center">
         <MobileNavItem
