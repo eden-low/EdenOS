@@ -6,7 +6,7 @@ import {
   relativeDayLabel,
 } from '../lib/date'
 import type { DashboardConfig, DashboardSummary, RecentActivityItem } from '../types/dashboard'
-import type { ExpenseDraft, ExpenseRecord, ExerciseRecord } from '../types/records'
+import type { ExpenseRecord, ExerciseRecord, RecordDraft } from '../types/records'
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' })
 
@@ -42,7 +42,7 @@ function selectRecentActivity(
         type: 'exercise' as const,
         title: exercise.activity,
         distanceMetres: exercise.distanceMetres,
-        durationMinutes: exercise.durationMinutes,
+        durationSeconds: exercise.durationSeconds,
         occurredAt: relativeDayLabel(exercise.occurredAt, referenceDate),
       },
     })),
@@ -56,7 +56,7 @@ export function selectDashboardSummary(
   config: DashboardConfig,
   expenses: ExpenseRecord[],
   exerciseRecords: ExerciseRecord[],
-  drafts: ExpenseDraft[],
+  drafts: RecordDraft[],
   referenceDate = new Date(),
 ): DashboardSummary {
   const monthlyExpenses = expenses.filter((expense) =>
@@ -102,11 +102,13 @@ export function selectDashboardSummary(
     exercise: {
       completedSessions: weeklyExercise.length,
       targetSessions: config.weeklyExerciseTarget,
-      latestActivity: {
-        name: latestExercise.activity,
-        distanceMetres: latestExercise.distanceMetres,
-        durationMinutes: latestExercise.durationMinutes,
-      },
+      latestActivity: latestExercise
+        ? {
+            name: latestExercise.activity,
+            distanceMetres: latestExercise.distanceMetres,
+            durationSeconds: latestExercise.durationSeconds,
+          }
+        : null,
     },
     recentActivity: selectRecentActivity(expenses, exerciseRecords, referenceDate),
     pendingDraftCount: drafts.filter((draft) => draft.status === 'draft').length,

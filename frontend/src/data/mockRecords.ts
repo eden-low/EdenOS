@@ -1,4 +1,4 @@
-import type { ExpenseRecord, ExerciseRecord } from '../types/records'
+import type { ExpenseRecord } from '../types/records'
 
 export const mockExpenseRecords: ExpenseRecord[] = [
   {
@@ -40,29 +40,6 @@ export const mockExpenseRecords: ExpenseRecord[] = [
     occurredAt: '2026-09-03T08:10:00+08:00',
     createdAt: '2026-09-03T08:12:00+08:00',
     updatedAt: '2026-09-03T08:12:00+08:00',
-    source: 'manual',
-  },
-]
-
-export const mockExerciseRecords: ExerciseRecord[] = [
-  {
-    id: 'exercise-swimming-sep-09',
-    activity: 'Swimming',
-    distanceMetres: 1_000,
-    durationMinutes: 58,
-    occurredAt: '2026-09-09T18:15:00+08:00',
-    createdAt: '2026-09-09T19:20:00+08:00',
-    updatedAt: '2026-09-09T19:20:00+08:00',
-    source: 'manual',
-  },
-  {
-    id: 'exercise-evening-walk-sep-07',
-    activity: 'Evening walk',
-    distanceMetres: 2_400,
-    durationMinutes: 35,
-    occurredAt: '2026-09-07T19:30:00+08:00',
-    createdAt: '2026-09-07T20:12:00+08:00',
-    updatedAt: '2026-09-07T20:12:00+08:00',
     source: 'manual',
   },
 ]

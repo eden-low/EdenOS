@@ -1,5 +1,5 @@
 import { Waves } from 'lucide-react'
-import { formatDistance } from '../../lib/format'
+import { formatExerciseMetrics } from '../../lib/format'
 import type { ExerciseSummary } from '../../types/dashboard'
 
 export function ExerciseCard({ exercise }: { exercise: ExerciseSummary }) {
@@ -35,20 +35,24 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseSummary }) {
         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--accent-teal)]">
           <Waves aria-hidden="true" size={20} strokeWidth={1.8} />
         </span>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-[0.1em] text-[var(--text-muted)] uppercase">
-            Latest activity
-          </p>
-          <p className="mt-1 font-semibold text-[var(--text-primary)]">{latestActivity.name}</p>
-        </div>
-        <div className="ml-auto shrink-0 text-right">
-          <p className="font-semibold text-[var(--text-primary)]">
-            {formatDistance(latestActivity.distanceMetres)}
-          </p>
-          <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
-            {latestActivity.durationMinutes} min
-          </p>
-        </div>
+        {latestActivity ? (
+          <>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold tracking-[0.1em] text-[var(--text-muted)] uppercase">
+                Latest activity
+              </p>
+              <p className="mt-1 font-semibold text-[var(--text-primary)]">{latestActivity.name}</p>
+            </div>
+            <p className="ml-auto shrink-0 text-right text-sm font-semibold text-[var(--text-primary)]">
+              {formatExerciseMetrics(latestActivity.durationSeconds, latestActivity.distanceMetres)}
+            </p>
+          </>
+        ) : (
+          <div className="min-w-0">
+            <p className="font-semibold text-[var(--text-primary)]">No exercise recorded yet</p>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">Capture a session when you’re ready.</p>
+          </div>
+        )}
       </div>
     </section>
   )
