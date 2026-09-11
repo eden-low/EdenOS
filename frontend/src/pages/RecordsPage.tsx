@@ -5,7 +5,7 @@ import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
 import { Button } from '../components/ui/button'
 import { expenseCategoryLabels } from '../domain/expense'
 import { formatTime, relativeDayLabel } from '../lib/date'
-import { formatDistance, formatMoney } from '../lib/format'
+import { formatExerciseMetrics, formatMoney } from '../lib/format'
 import { selectTimelineGroups } from '../selectors/recordSelectors'
 import { useRecords } from '../state/useRecords'
 import type { RecordFilter } from '../types/records'
@@ -121,7 +121,7 @@ export function RecordsPage() {
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-[var(--text-primary)]">{exercise.activity}</p>
                         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                          {formatDistance(exercise.distanceMetres)} · {exercise.durationMinutes} min
+                          {formatExerciseMetrics(exercise.durationSeconds, exercise.distanceMetres)}
                         </p>
                       </div>
                       <p className="ml-auto shrink-0 text-right text-xs text-[var(--text-muted)]">

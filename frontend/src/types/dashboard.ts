@@ -16,14 +16,14 @@ export interface MonthlyBudgetSummary {
 
 export interface ExerciseActivity {
   name: string
-  distanceMetres: number
-  durationMinutes: number
+  distanceMetres?: number
+  durationSeconds: number
 }
 
 export interface ExerciseSummary {
   completedSessions: number
   targetSessions: number
-  latestActivity: ExerciseActivity
+  latestActivity: ExerciseActivity | null
 }
 
 interface RecentActivityBase {
@@ -40,8 +40,8 @@ export interface FinanceActivity extends RecentActivityBase {
 
 export interface RecentExerciseActivity extends RecentActivityBase {
   type: 'exercise'
-  distanceMetres: number
-  durationMinutes: number
+  distanceMetres?: number
+  durationSeconds: number
 }
 
 export type RecentActivityItem = FinanceActivity | RecentExerciseActivity

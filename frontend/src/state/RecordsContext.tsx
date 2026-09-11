@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
-import { mockExerciseRecords } from '../data/mockRecords'
+import { OfflineExerciseWriteError } from '../lib/exerciseWriteError'
 import { OfflineExpenseWriteError } from '../lib/expenseWriteError'
 import { useConnectivity } from '../providers/useConnectivity'
+import { createFirestoreExerciseRepository } from '../repositories/firestoreExerciseRepository'
 import { createFirestoreExpenseRepository } from '../repositories/firestoreExpenseRepository'
-import type { ExpenseDraft } from '../types/records'
+import type { ExpenseDraft, ExerciseDraft } from '../types/records'
 import { RecordsContext, type RecordsContextValue } from './recordsContextDefinition'
 import { recordsReducer, type RecordsState } from './recordsReducer'
 import { useFirebaseAuth } from './useFirebaseAuth'
@@ -17,10 +18,12 @@ function createId(prefix: string): string {
 function createInitialState(): RecordsState {
   return {
     expenses: [],
-    exerciseRecords: mockExerciseRecords.map((record) => ({ ...record })),
+    exerciseRecords: [],
     drafts: [],
     expenseStatus: 'loading',
     expenseError: null,
+    exerciseStatus: 'loading',
+    exerciseError: null,
   }
 }
 
@@ -31,6 +34,10 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(recordsReducer, undefined, createInitialState)
   const expenseRepository = useMemo(
     () => createFirestoreExpenseRepository(firestore, uid),
+    [firestore, uid],
+  )
+  const exerciseRepository = useMemo(
+    () => createFirestoreExerciseRepository(firestore, uid),
     [firestore, uid],
   )
 
@@ -48,6 +55,21 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       },
     })
   }, [expenseRepository, subscriptionVersion])
+
+  useEffect(() => {
+    dispatch({ type: 'exercises/loading' })
+    return exerciseRepository.subscribeExercises({
+      next(exercises) {
+        dispatch({ type: 'exercises/loaded', exercises })
+      },
+      error() {
+        dispatch({
+          type: 'exercises/failed',
+          message: 'EdenOS could not load your Firebase exercise records. Check Firestore and its Security Rules, then try again.',
+        })
+      },
+    })
+  }, [exerciseRepository, subscriptionVersion])
 
   const value = useMemo<RecordsContextValue>(
     () => ({
@@ -69,7 +91,9 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'expenseDraft/updated', id, data, updatedAt: new Date().toISOString() })
       },
       async confirmExpenseDraft(id) {
-        const draft = state.drafts.find((item) => item.id === id)
+        const draft = state.drafts.find(
+          (item): item is ExpenseDraft => item.kind === 'expense' && item.id === id,
+        )
         if (!draft) throw new Error('Expense draft no longer exists.')
         if (connectivity === 'offline') throw new OfflineExpenseWriteError()
 
@@ -84,8 +108,34 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         if (connectivity === 'offline') throw new OfflineExpenseWriteError()
         await expenseRepository.deleteExpense(id)
       },
+      createExerciseDraft(data) {
+        const now = new Date().toISOString()
+        const draft: ExerciseDraft = {
+          id: createId('exercise'),
+          kind: 'exercise',
+          status: 'draft',
+          data,
+          createdAt: now,
+          updatedAt: now,
+        }
+        dispatch({ type: 'exerciseDraft/created', draft })
+        return draft.id
+      },
+      updateExerciseDraft(id, data) {
+        dispatch({ type: 'exerciseDraft/updated', id, data, updatedAt: new Date().toISOString() })
+      },
+      async confirmExerciseDraft(id) {
+        const draft = state.drafts.find(
+          (item): item is ExerciseDraft => item.kind === 'exercise' && item.id === id,
+        )
+        if (!draft) throw new Error('Exercise draft no longer exists.')
+        if (connectivity === 'offline') throw new OfflineExerciseWriteError()
+
+        await exerciseRepository.createExercise(draft.id, draft.data)
+        dispatch({ type: 'exerciseDraft/confirmed', draftId: id })
+      },
     }),
-    [connectivity, expenseRepository, state],
+    [connectivity, exerciseRepository, expenseRepository, state],
   )
 
   if (state.expenseStatus === 'loading') {
@@ -124,6 +174,47 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         status="error"
         title="Records are unavailable"
         message={state.expenseError ?? 'EdenOS could not load your expense records.'}
+        onRetry={() => setSubscriptionVersion((version) => version + 1)}
+      />
+    )
+  }
+
+  if (state.exerciseStatus === 'loading') {
+    if (connectivity === 'offline') {
+      return (
+        <AppStatusScreen
+          status="offline"
+          title="Cloud records are unavailable offline"
+          message="The EdenOS app shell is ready, but this browser has no loaded Firestore exercise snapshot. Reconnect to load your records."
+        />
+      )
+    }
+
+    return (
+      <AppStatusScreen
+        status="loading"
+        title="Syncing your records"
+        message="Loading your confirmed exercises from Firestore…"
+      />
+    )
+  }
+
+  if (state.exerciseStatus === 'error') {
+    if (connectivity === 'offline') {
+      return (
+        <AppStatusScreen
+          status="offline"
+          title="Cloud records are unavailable offline"
+          message="Reconnect to Firebase, then retry loading your confirmed exercise records."
+        />
+      )
+    }
+
+    return (
+      <AppStatusScreen
+        status="error"
+        title="Records are unavailable"
+        message={state.exerciseError ?? 'EdenOS could not load your exercise records.'}
         onRetry={() => setSubscriptionVersion((version) => version + 1)}
       />
     )
