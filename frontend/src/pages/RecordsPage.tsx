@@ -5,6 +5,7 @@ import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
 import { ExerciseRecordDialog } from '../components/records/ExerciseRecordDialog'
 import { Button } from '../components/ui/button'
 import { expenseCategoryLabels } from '../domain/expense'
+import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { formatTime, relativeDayLabel } from '../lib/date'
 import { getExerciseActivityIcon } from '../lib/exerciseIcon'
 import { formatExerciseMetrics, formatMoney } from '../lib/format'
@@ -23,13 +24,13 @@ export function RecordsPage() {
   const [filter, setFilter] = useState<RecordFilter>('all')
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null)
+  const referenceDate = useLocalReferenceDate()
   const groups = useMemo(
     () => selectTimelineGroups(expenses, exerciseRecords, filter),
     [exerciseRecords, expenses, filter],
   )
   const selectedExpense = expenses.find((expense) => expense.id === selectedExpenseId)
   const selectedExercise = exerciseRecords.find((exercise) => exercise.id === selectedExerciseId)
-  const now = new Date()
 
   return (
     <div className="mx-auto w-full max-w-[72rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
@@ -109,7 +110,7 @@ export function RecordsPage() {
                         <div className="ml-auto shrink-0 text-right">
                           <p className="font-semibold text-[var(--text-primary)]">{formatMoney(expense.amountSen)}</p>
                           <p className="mt-1 text-xs text-[var(--text-muted)]">
-                            {relativeDayLabel(expense.occurredAt, now)} · {formatTime(expense.occurredAt)}
+                            {relativeDayLabel(expense.occurredAt, referenceDate)} · {formatTime(expense.occurredAt)}
                           </p>
                         </div>
                       </button>
@@ -136,7 +137,7 @@ export function RecordsPage() {
                         </p>
                       </div>
                       <p className="ml-auto shrink-0 text-right text-xs text-[var(--text-muted)]">
-                        {relativeDayLabel(exercise.occurredAt, now)} · {formatTime(exercise.occurredAt)}
+                        {relativeDayLabel(exercise.occurredAt, referenceDate)} · {formatTime(exercise.occurredAt)}
                       </p>
                     </button>
                   )

@@ -1,4 +1,4 @@
-import { ChevronRight, FileClock } from 'lucide-react'
+import { FileClock } from 'lucide-react'
 
 export function PendingDrafts({ count }: { count: number }) {
   return (
@@ -10,10 +10,11 @@ export function PendingDrafts({ count }: { count: number }) {
         <div className="min-w-0">
           <p className="section-label text-[var(--accent-amber)]">Pending</p>
           <p className="mt-1 text-sm font-semibold leading-5 text-[var(--text-primary)] sm:text-base">
-            {count} {count === 1 ? 'record needs' : 'records need'} confirmation
+            {count === 0
+              ? 'No records need confirmation'
+              : `${count} ${count === 1 ? 'record needs' : 'records need'} confirmation`}
           </p>
         </div>
-        <ChevronRight aria-hidden="true" size={19} className="ml-auto shrink-0 text-[var(--text-muted)]" />
       </div>
     </section>
   )

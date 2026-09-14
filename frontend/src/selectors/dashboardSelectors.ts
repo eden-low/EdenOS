@@ -5,7 +5,7 @@ import {
   isSameLocalMonth,
   relativeDayLabel,
 } from '../lib/date'
-import type { DashboardConfig, DashboardSummary, RecentActivityItem } from '../types/dashboard'
+import type { DashboardSummary, RecentActivityItem } from '../types/dashboard'
 import type { ExpenseRecord, ExerciseRecord, RecordDraft } from '../types/records'
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' })
@@ -53,11 +53,10 @@ function selectRecentActivity(
 }
 
 export function selectDashboardSummary(
-  config: DashboardConfig,
   expenses: ExpenseRecord[],
   exerciseRecords: ExerciseRecord[],
   drafts: RecordDraft[],
-  referenceDate = new Date(),
+  referenceDate: Date,
 ): DashboardSummary {
   const monthlyExpenses = expenses.filter((expense) =>
     isSameLocalMonth(new Date(expense.occurredAt), referenceDate),
@@ -66,14 +65,6 @@ export function selectDashboardSummary(
   const spentTodaySen = monthlyExpenses
     .filter((expense) => isSameLocalDay(new Date(expense.occurredAt), referenceDate))
     .reduce((total, expense) => total + expense.amountSen, 0)
-
-  const daysRemaining =
-    new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate() -
-    referenceDate.getDate() +
-    1
-  const spentBeforeTodaySen = spentSen - spentTodaySen
-  const availableBeforeTodaySen = config.monthlyBudgetSen - spentBeforeTodaySen
-  const suggestedDailySen = Math.floor(availableBeforeTodaySen / daysRemaining)
 
   const weekStart = startOfWeek(referenceDate)
   const nextWeek = new Date(weekStart)
@@ -87,21 +78,19 @@ export function selectDashboardSummary(
       right.occurredAt.localeCompare(left.occurredAt),
     )
   const latestExercise = weeklyExercise[0] ?? exerciseRecords[0]
+  const hour = referenceDate.getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 
   return {
-    greeting: config.greeting,
+    greeting,
     displayDate: formatDashboardDate(referenceDate),
-    savingsGoal: config.savingsGoal,
-    monthlyBudget: {
+    monthlySpending: {
       month: monthFormatter.format(referenceDate),
-      budgetSen: config.monthlyBudgetSen,
       spentSen,
       spentTodaySen,
-      suggestedRemainingTodaySen: suggestedDailySen - spentTodaySen,
     },
     exercise: {
       completedSessions: weeklyExercise.length,
-      targetSessions: config.weeklyExerciseTarget,
       latestActivity: latestExercise
         ? {
             name: latestExercise.activity,

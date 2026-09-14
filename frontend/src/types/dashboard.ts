@@ -1,17 +1,9 @@
 export type MoneyInSen = number
 
-export interface SavingsGoal {
-  name: string
-  allocatedSen: MoneyInSen
-  targetSen: MoneyInSen
-}
-
-export interface MonthlyBudgetSummary {
+export interface MonthlySpendingSummary {
   month: string
-  budgetSen: MoneyInSen
   spentSen: MoneyInSen
   spentTodaySen: MoneyInSen
-  suggestedRemainingTodaySen: MoneyInSen
 }
 
 export interface ExerciseActivity {
@@ -22,7 +14,6 @@ export interface ExerciseActivity {
 
 export interface ExerciseSummary {
   completedSessions: number
-  targetSessions: number
   latestActivity: ExerciseActivity | null
 }
 
@@ -49,16 +40,8 @@ export type RecentActivityItem = FinanceActivity | RecentExerciseActivity
 export interface DashboardSummary {
   greeting: string
   displayDate: string
-  savingsGoal: SavingsGoal
-  monthlyBudget: MonthlyBudgetSummary
+  monthlySpending: MonthlySpendingSummary
   exercise: ExerciseSummary
   recentActivity: RecentActivityItem[]
   pendingDraftCount: number
-}
-
-export interface DashboardConfig {
-  greeting: string
-  monthlyBudgetSen: MoneyInSen
-  weeklyExerciseTarget: number
-  savingsGoal: SavingsGoal
 }

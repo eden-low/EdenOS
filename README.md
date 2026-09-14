@@ -110,7 +110,7 @@ npm run generate:pwa-assets
 
 Connectivity is observed once by the shared `ConnectivityProvider`. While EdenOS remains open, the last server-confirmed in-memory expense snapshot may remain visible offline alongside an offline indicator; it is not represented as current cloud data. A fully offline reopen can render the cached app shell, but cloud records remain unavailable if there is no in-memory snapshot.
 
-Expense drafts may be prepared offline, but create, edit, and delete operations require connectivity and use Firestore transactions. Failed confirmations preserve the draft while the app remains active. There is no offline mutation queue, and drafts are not guaranteed to survive a full application termination yet.
+Expense and exercise drafts may be prepared offline, but create, edit, and delete operations require connectivity and use Firestore transactions. Failed confirmations preserve the active draft for retry; closing Capture requires explicitly discarding unconfirmed work. There is no offline mutation queue or persistent draft storage.
 
 Service-worker updates use a prompt. EdenOS never force-refreshes automatically. If an unconfirmed draft exists, the user must explicitly acknowledge that updating will discard it before the new version is activated and the page reloads. Dismissing the prompt suppresses it for the current session.
 
@@ -131,7 +131,7 @@ In browser developer tools:
 1. Open **Application > Manifest** and verify the standalone manifest and icons.
 2. Open **Application > Service Workers** and verify `sw.js` is activated and controls the page.
 3. Load EdenOS online once, switch the browser network to Offline, then reload and verify the EdenOS shell appears.
-4. Confirm that offline expense create, edit, and delete attempts show a retryable explanation without changing trusted records.
+4. Confirm that offline expense and exercise create, edit, and delete attempts show a retryable explanation without changing trusted records.
 5. Restore the network and retry, verifying one Firestore record and one dashboard update.
 
 Netlify serves `sw.js` and `manifest.webmanifest` with revalidation headers. Fingerprinted Vite assets can remain content-addressed and long-lived, while the service worker and manifest are checked for updates. Firebase requests are not added to Workbox runtime caches.
@@ -188,7 +188,7 @@ The Firebase Web configuration is not a security boundary; UID ownership is enfo
 
 Phase 2A used `localStorage` key `edenos.expenses.v1`. Phase 2B leaves that data untouched, does not read it as the active expense source, and never uploads or deletes it automatically. Manual migration may be considered later.
 
-New anonymous users begin with empty Firestore expense and exercise collections. The weekly Exercise target and savings module remain local configuration, but demo records are never seeded into Firestore or mixed into Firebase-backed calculations.
+New anonymous users begin with empty Firestore expense and exercise collections. Today shows real Firestore-derived spending and exercise activity, while unconfigured budget, savings-goal, and exercise-target values remain neutral rather than displaying demo data. Demo records are never seeded into Firestore or mixed into Firebase-backed calculations.
 
 ## Intentionally deferred
 
