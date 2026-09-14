@@ -57,6 +57,7 @@ export type ExpenseDraft = CaptureDraft<'expense', ExpenseData>
 export type ExerciseDraft = CaptureDraft<'exercise', ExerciseData>
 export type RecordDraft = ExpenseDraft | ExerciseDraft
 export type RecordFilter = 'all' | 'expenses' | 'exercise'
+export type RecordDomainStatus = 'loading' | 'loaded' | 'error'
 
 export type TimelineRecord =
   | { kind: 'expense'; occurredAt: string; record: ExpenseRecord }

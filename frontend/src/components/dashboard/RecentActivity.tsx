@@ -3,12 +3,18 @@ import { getExerciseActivityIcon } from '../../lib/exerciseIcon'
 import { formatExerciseMetrics, formatMoney } from '../../lib/format'
 import type { RecentActivityItem } from '../../types/dashboard'
 
-export function RecentActivity({ items }: { items: RecentActivityItem[] }) {
+export function RecentActivity({
+  items,
+  sourceLabel = 'Finance + exercise',
+}: {
+  items: RecentActivityItem[]
+  sourceLabel?: string
+}) {
   return (
     <section aria-label="Recent activity" className="dashboard-card order-5 col-span-2 p-6 md:col-span-6 xl:order-3 xl:col-span-7 xl:p-7">
       <div className="flex items-center justify-between gap-4">
         <p className="section-label">Recent Activity</p>
-        <span className="text-xs text-[var(--text-muted)]">Finance + exercise</span>
+        <span className="text-xs text-[var(--text-muted)]">{sourceLabel}</span>
       </div>
       <ul className="mt-4 divide-y divide-[var(--border-subtle)]">
         {items.map((item) => {

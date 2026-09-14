@@ -5,6 +5,7 @@ import type {
   ExerciseData,
   ExerciseDraft,
   ExerciseRecord,
+  RecordDomainStatus,
   RecordDraft,
 } from '../types/records'
 
@@ -12,9 +13,9 @@ export interface RecordsState {
   expenses: ExpenseRecord[]
   exerciseRecords: ExerciseRecord[]
   drafts: RecordDraft[]
-  expenseStatus: 'loading' | 'loaded' | 'error'
+  expenseStatus: RecordDomainStatus
   expenseError: string | null
-  exerciseStatus: 'loading' | 'loaded' | 'error'
+  exerciseStatus: RecordDomainStatus
   exerciseError: string | null
 }
 

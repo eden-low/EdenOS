@@ -3,6 +3,8 @@ import type { ExpenseData, ExerciseData } from '../types/records'
 import type { RecordsState } from './recordsReducer'
 
 export interface RecordsContextValue extends RecordsState {
+  retryExpenseSubscription: () => void
+  retryExerciseSubscription: () => void
   discardDraft: (id: string) => void
   createExpenseDraft: (data: ExpenseData) => string
   updateExpenseDraft: (id: string, data: ExpenseData) => void

@@ -9,12 +9,34 @@ import { selectDashboardSummary } from '../selectors/dashboardSelectors'
 import { useRecords } from '../state/useRecords'
 
 export function TodayPage() {
-  const { expenses, exerciseRecords } = useRecords()
+  const {
+    expenses,
+    exerciseRecords,
+    expenseStatus,
+    expenseError,
+    exerciseStatus,
+    exerciseError,
+    retryExpenseSubscription,
+    retryExerciseSubscription,
+  } = useRecords()
   const referenceDate = useLocalReferenceDate()
   const dashboard = useMemo(
-    () => selectDashboardSummary(expenses, exerciseRecords, referenceDate),
-    [exerciseRecords, expenses, referenceDate],
+    () =>
+      selectDashboardSummary(
+        expenseStatus === 'loaded' ? expenses : [],
+        exerciseStatus === 'loaded' ? exerciseRecords : [],
+        referenceDate,
+      ),
+    [exerciseRecords, exerciseStatus, expenseStatus, expenses, referenceDate],
   )
+  const recentActivitySource =
+    expenseStatus === 'loaded' && exerciseStatus === 'loaded'
+      ? 'Finance + exercise'
+      : expenseStatus === 'loaded'
+        ? 'Finance available'
+        : exerciseStatus === 'loaded'
+          ? 'Exercise available'
+          : 'Activity unavailable'
 
   return (
     <div className="mx-auto w-full max-w-[80rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
@@ -22,10 +44,20 @@ export function TodayPage() {
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-5 sm:gap-4 md:grid-cols-6 xl:grid-cols-12">
         <SavingsGoalCard />
-        <SpendingCard spending={dashboard.monthlySpending} />
-        <DailySpendingCards spending={dashboard.monthlySpending} />
-        <ExerciseCard exercise={dashboard.exercise} />
-        <RecentActivity items={dashboard.recentActivity} />
+        <SpendingCard
+          spending={dashboard.monthlySpending}
+          status={expenseStatus}
+          error={expenseError}
+          onRetry={retryExpenseSubscription}
+        />
+        <DailySpendingCards spending={dashboard.monthlySpending} status={expenseStatus} />
+        <ExerciseCard
+          exercise={dashboard.exercise}
+          status={exerciseStatus}
+          error={exerciseError}
+          onRetry={retryExerciseSubscription}
+        />
+        <RecentActivity items={dashboard.recentActivity} sourceLabel={recentActivitySource} />
       </div>
     </div>
   )
