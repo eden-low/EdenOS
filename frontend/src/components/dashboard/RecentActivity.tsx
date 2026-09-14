@@ -6,9 +6,11 @@ import type { RecentActivityItem } from '../../types/dashboard'
 export function RecentActivity({
   items,
   sourceLabel = 'Finance + exercise',
+  emptyMessage = 'No recent activity yet',
 }: {
   items: RecentActivityItem[]
   sourceLabel?: string
+  emptyMessage?: string
 }) {
   return (
     <section aria-label="Recent activity" className="dashboard-card order-5 col-span-2 p-6 md:col-span-6 xl:order-3 xl:col-span-7 xl:p-7">
@@ -17,6 +19,11 @@ export function RecentActivity({
         <span className="text-xs text-[var(--text-muted)]">{sourceLabel}</span>
       </div>
       <ul className="mt-4 divide-y divide-[var(--border-subtle)]">
+        {items.length === 0 && (
+          <li className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
+            {emptyMessage}
+          </li>
+        )}
         {items.map((item) => {
           const financeItem = item.type === 'finance'
           const Icon = financeItem ? ReceiptText : getExerciseActivityIcon(item.title)

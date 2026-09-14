@@ -66,7 +66,7 @@ export function ExerciseCard({ exercise, status, error, onRetry }: ExerciseCardP
           </>
         ) : (
           <div className="min-w-0">
-            <p className="font-semibold text-[var(--text-primary)]">No exercise recorded yet</p>
+            <p className="font-semibold text-[var(--text-primary)]">No exercise this week</p>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">Capture a session when you’re ready.</p>
           </div>
         )}

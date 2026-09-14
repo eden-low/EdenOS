@@ -2,7 +2,7 @@
 
 Eden OS is a private Personal OS for seeing the most important parts of the day and capturing trusted personal records without unnecessary complexity.
 
-## Current scope: Exercise V1.1
+## Current staging scope
 
 The frontend runs locally against the configured Firebase project and includes:
 
@@ -11,8 +11,8 @@ The frontend runs locally against the configured Firebase project and includes:
 - A Records timeline with All, Expenses, and Exercise filters
 - Quick Expense and manual Exercise capture with validation
 - Draft review and editing before confirmation
-- Editing and confirmed deletion of expense records
-- Dashboard totals derived from confirmed expense records
+- Editing and confirmed deletion of expense and exercise records
+- Dashboard totals derived from confirmed Firestore records
 - Separate expense and exercise domain models
 - Silent Firebase Anonymous Authentication with browser-local session persistence
 - Cloud Firestore as the authoritative source for confirmed expenses and exercises
@@ -43,11 +43,11 @@ Important frontend areas:
 ```text
 frontend/src/
 |-- components/     Shared EdenOS UI, capture, dashboard, layout, and record components
-|-- data/           Local seed data
+|-- data/           Preserved legacy local seed data (not an active data source)
 |-- domain/         Expense labels and domain helpers
 |-- pages/          Today and Records pages
 |-- selectors/      Dashboard and timeline derivation
-|-- repositories/   Data contract and Firestore expense implementation
+|-- repositories/   Domain repository contracts and Firestore implementations
 |-- providers/      Shared browser connectivity state
 |-- pwa/            Service-worker registration and update lifecycle
 |-- services/       Preserved legacy local-storage abstraction
@@ -108,7 +108,7 @@ npm run generate:pwa-assets
 
 `vite-plugin-pwa` generates the service worker during production builds. It precaches the HTML shell, fingerprinted JavaScript and CSS, and local static assets. Navigation falls back to the cached application shell after a successful online load. No runtime caching rule intercepts Firebase Authentication or Firestore traffic, and Firestore offline persistence is not enabled.
 
-Connectivity is observed once by the shared `ConnectivityProvider`. While EdenOS remains open, the last server-confirmed in-memory expense snapshot may remain visible offline alongside an offline indicator; it is not represented as current cloud data. A fully offline reopen can render the cached app shell, but cloud records remain unavailable if there is no in-memory snapshot.
+Connectivity is observed once by the shared `ConnectivityProvider`. While EdenOS remains open, the last server-confirmed in-memory expense and exercise snapshots may remain visible offline alongside an offline indicator; they are not represented as current cloud data. A fully offline reopen can render the cached app shell, but cloud records remain unavailable if there is no in-memory snapshot.
 
 Expense and exercise drafts may be prepared offline, but create, edit, and delete operations require connectivity and use Firestore transactions. Failed confirmations preserve the active draft for retry; closing Capture requires explicitly discarding unconfirmed work. There is no offline mutation queue or persistent draft storage.
 
@@ -203,4 +203,4 @@ New anonymous users begin with empty Firestore expense and exercise collections.
 
 Calendar and Schedule, Tasks, and Playlist are approved backlog modules, but they come after the core finance workflow.
 
-Firestore offline synchronization remains future work. Phase 3 caches only the application shell and static assets.
+Firestore offline synchronization remains future work. The current PWA caches only the application shell and static assets.

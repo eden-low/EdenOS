@@ -171,7 +171,7 @@ export function ExerciseForm({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="exercise-date" className="form-label">Date</label>
           <input
