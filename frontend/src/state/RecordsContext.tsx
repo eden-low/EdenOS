@@ -30,7 +30,8 @@ function createInitialState(): RecordsState {
 export function RecordsProvider({ children }: { children: ReactNode }) {
   const { firestore, uid } = useFirebaseAuth()
   const connectivity = useConnectivity()
-  const [subscriptionVersion, setSubscriptionVersion] = useState(0)
+  const [expenseSubscriptionVersion, setExpenseSubscriptionVersion] = useState(0)
+  const [exerciseSubscriptionVersion, setExerciseSubscriptionVersion] = useState(0)
   const [state, dispatch] = useReducer(recordsReducer, undefined, createInitialState)
   const expenseRepository = useMemo(
     () => createFirestoreExpenseRepository(firestore, uid),
@@ -50,11 +51,11 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       error() {
         dispatch({
           type: 'expenses/failed',
-          message: 'EdenOS could not load your Firebase expense records. Check Firestore and its Security Rules, then try again.',
+          message: 'Expense records are temporarily unavailable.',
         })
       },
     })
-  }, [expenseRepository, subscriptionVersion])
+  }, [expenseRepository, expenseSubscriptionVersion])
 
   useEffect(() => {
     dispatch({ type: 'exercises/loading' })
@@ -65,15 +66,21 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       error() {
         dispatch({
           type: 'exercises/failed',
-          message: 'EdenOS could not load your Firebase exercise records. Check Firestore and its Security Rules, then try again.',
+          message: 'Exercise records are temporarily unavailable.',
         })
       },
     })
-  }, [exerciseRepository, subscriptionVersion])
+  }, [exerciseRepository, exerciseSubscriptionVersion])
 
   const value = useMemo<RecordsContextValue>(
     () => ({
       ...state,
+      retryExpenseSubscription() {
+        setExpenseSubscriptionVersion((version) => version + 1)
+      },
+      retryExerciseSubscription() {
+        setExerciseSubscriptionVersion((version) => version + 1)
+      },
       discardDraft(id) {
         dispatch({ type: 'draft/discarded', draftId: id })
       },
@@ -149,13 +156,13 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     [connectivity, exerciseRepository, expenseRepository, state],
   )
 
-  if (state.expenseStatus === 'loading') {
+  if (state.expenseStatus === 'loading' && state.exerciseStatus === 'loading') {
     if (connectivity === 'offline') {
       return (
         <AppStatusScreen
           status="offline"
           title="Cloud records are unavailable offline"
-          message="The EdenOS app shell is ready, but this browser has no loaded Firestore expense snapshot. Reconnect to load your records."
+          message="The EdenOS app shell is ready, but this browser has no loaded cloud record snapshot. Reconnect to load your records."
         />
       )
     }
@@ -164,69 +171,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       <AppStatusScreen
         status="loading"
         title="Syncing your records"
-        message="Loading your confirmed expenses from Firestore…"
-      />
-    )
-  }
-
-  if (state.expenseStatus === 'error') {
-    if (connectivity === 'offline') {
-      return (
-        <AppStatusScreen
-          status="offline"
-          title="Cloud records are unavailable offline"
-          message="Reconnect to Firebase, then retry loading your confirmed expense records."
-        />
-      )
-    }
-
-    return (
-      <AppStatusScreen
-        status="error"
-        title="Records are unavailable"
-        message={state.expenseError ?? 'EdenOS could not load your expense records.'}
-        onRetry={() => setSubscriptionVersion((version) => version + 1)}
-      />
-    )
-  }
-
-  if (state.exerciseStatus === 'loading') {
-    if (connectivity === 'offline') {
-      return (
-        <AppStatusScreen
-          status="offline"
-          title="Cloud records are unavailable offline"
-          message="The EdenOS app shell is ready, but this browser has no loaded Firestore exercise snapshot. Reconnect to load your records."
-        />
-      )
-    }
-
-    return (
-      <AppStatusScreen
-        status="loading"
-        title="Syncing your records"
-        message="Loading your confirmed exercises from Firestore…"
-      />
-    )
-  }
-
-  if (state.exerciseStatus === 'error') {
-    if (connectivity === 'offline') {
-      return (
-        <AppStatusScreen
-          status="offline"
-          title="Cloud records are unavailable offline"
-          message="Reconnect to Firebase, then retry loading your confirmed exercise records."
-        />
-      )
-    }
-
-    return (
-      <AppStatusScreen
-        status="error"
-        title="Records are unavailable"
-        message={state.exerciseError ?? 'EdenOS could not load your exercise records.'}
-        onRetry={() => setSubscriptionVersion((version) => version + 1)}
+        message="Loading your confirmed records from the cloud…"
       />
     )
   }

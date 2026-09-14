@@ -13,6 +13,7 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore'
 import { isExpenseCategory, isExpenseSource } from '../domain/expense'
+import { RecordNotFoundWriteError } from '../lib/firebaseWriteError'
 import type { ExpenseData, ExpenseRecord } from '../types/records'
 import type { ExpenseRepository } from './expenseRepository'
 
@@ -117,7 +118,7 @@ export function createFirestoreExpenseRepository(
       const expenseReference = doc(expenseCollection, id)
       await runTransaction(firestore, async (transaction) => {
         const existingExpense = await transaction.get(expenseReference)
-        if (!existingExpense.exists()) throw new Error('Expense record does not exist.')
+        if (!existingExpense.exists()) throw new RecordNotFoundWriteError('Expense')
 
         transaction.update(expenseReference, {
           ...expenseDocumentData(data),
@@ -131,7 +132,7 @@ export function createFirestoreExpenseRepository(
       const expenseReference = doc(expenseCollection, id)
       await runTransaction(firestore, async (transaction) => {
         const existingExpense = await transaction.get(expenseReference)
-        if (!existingExpense.exists()) return
+        if (!existingExpense.exists()) throw new RecordNotFoundWriteError('Expense')
         transaction.delete(expenseReference)
       })
     },

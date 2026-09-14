@@ -12,6 +12,7 @@ import {
   type Firestore,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore'
+import { RecordNotFoundWriteError } from '../lib/firebaseWriteError'
 import type { ExerciseData, ExerciseRecord } from '../types/records'
 import type { ExerciseRepository } from './exerciseRepository'
 
@@ -129,7 +130,7 @@ export function createFirestoreExerciseRepository(
       const exerciseReference = doc(exerciseCollection, id)
       await runTransaction(firestore, async (transaction) => {
         const existingExercise = await transaction.get(exerciseReference)
-        if (!existingExercise.exists()) throw new Error('Exercise record does not exist.')
+        if (!existingExercise.exists()) throw new RecordNotFoundWriteError('Exercise')
 
         transaction.update(exerciseReference, {
           ...exerciseDocumentData(data),
@@ -143,7 +144,7 @@ export function createFirestoreExerciseRepository(
       const exerciseReference = doc(exerciseCollection, id)
       await runTransaction(firestore, async (transaction) => {
         const existingExercise = await transaction.get(exerciseReference)
-        if (!existingExercise.exists()) return
+        if (!existingExercise.exists()) throw new RecordNotFoundWriteError('Exercise')
         transaction.delete(exerciseReference)
       })
     },

@@ -1,4 +1,4 @@
-import { Plus, ReceiptText } from 'lucide-react'
+import { CircleAlert, LoaderCircle, Plus, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CaptureSheet } from '../components/capture/CaptureSheet'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
@@ -11,7 +11,7 @@ import { getExerciseActivityIcon } from '../lib/exerciseIcon'
 import { formatExerciseMetrics, formatMoney } from '../lib/format'
 import { selectTimelineGroups } from '../selectors/recordSelectors'
 import { useRecords } from '../state/useRecords'
-import type { RecordFilter } from '../types/records'
+import type { RecordDomainStatus, RecordFilter } from '../types/records'
 
 const filters: Array<{ value: RecordFilter; label: string }> = [
   { value: 'all', label: 'All' },
@@ -19,18 +19,82 @@ const filters: Array<{ value: RecordFilter; label: string }> = [
   { value: 'exercise', label: 'Exercise' },
 ]
 
+function DomainStatusNotice({
+  label,
+  status,
+  error,
+  onRetry,
+}: {
+  label: string
+  status: RecordDomainStatus
+  error: string | null
+  onRetry: () => void
+}) {
+  if (status === 'loaded') return null
+
+  return (
+    <div
+      role={status === 'error' ? 'alert' : 'status'}
+      className="flex flex-wrap items-center gap-3 border-b border-[var(--border-subtle)] py-4"
+    >
+      {status === 'loading' ? (
+        <LoaderCircle aria-hidden="true" size={18} className="shrink-0 animate-spin text-[var(--text-muted)]" />
+      ) : (
+        <CircleAlert aria-hidden="true" size={18} className="shrink-0 text-[var(--danger)]" />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-[var(--text-primary)]">
+          {status === 'loading' ? `Loading ${label.toLowerCase()} records` : `${label} records unavailable`}
+        </p>
+        {status === 'error' && (
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+            {error ?? `${label} records are temporarily unavailable.`}
+          </p>
+        )}
+      </div>
+      {status === 'error' && (
+        <Button type="button" variant="secondary" onClick={onRetry}>
+          Retry
+        </Button>
+      )}
+    </div>
+  )
+}
+
 export function RecordsPage() {
-  const { expenses, exerciseRecords } = useRecords()
+  const {
+    expenses,
+    exerciseRecords,
+    expenseStatus,
+    expenseError,
+    exerciseStatus,
+    exerciseError,
+    retryExpenseSubscription,
+    retryExerciseSubscription,
+  } = useRecords()
   const [filter, setFilter] = useState<RecordFilter>('all')
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null)
   const referenceDate = useLocalReferenceDate()
   const groups = useMemo(
-    () => selectTimelineGroups(expenses, exerciseRecords, filter),
-    [exerciseRecords, expenses, filter],
+    () =>
+      selectTimelineGroups(
+        expenseStatus === 'loaded' ? expenses : [],
+        exerciseStatus === 'loaded' ? exerciseRecords : [],
+        filter,
+      ),
+    [exerciseRecords, exerciseStatus, expenseStatus, expenses, filter],
   )
   const selectedExpense = expenses.find((expense) => expense.id === selectedExpenseId)
   const selectedExercise = exerciseRecords.find((exercise) => exercise.id === selectedExerciseId)
+  const showExpenseStatus = filter !== 'exercise'
+  const showExerciseStatus = filter !== 'expenses'
+  const relevantStatuses = [
+    ...(showExpenseStatus ? [expenseStatus] : []),
+    ...(showExerciseStatus ? [exerciseStatus] : []),
+  ]
+  const hasRelevantLoading = relevantStatuses.includes('loading')
+  const hasRelevantError = relevantStatuses.includes('error')
 
   return (
     <div className="mx-auto w-full max-w-[72rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
@@ -73,10 +137,38 @@ export function RecordsPage() {
       </div>
 
       <div className="dashboard-card mt-5 overflow-hidden px-5 py-2 sm:px-7 lg:px-8">
+        {showExpenseStatus && (
+          <DomainStatusNotice
+            label="Expense"
+            status={expenseStatus}
+            error={expenseError}
+            onRetry={retryExpenseSubscription}
+          />
+        )}
+        {showExerciseStatus && (
+          <DomainStatusNotice
+            label="Exercise"
+            status={exerciseStatus}
+            error={exerciseError}
+            onRetry={retryExerciseSubscription}
+          />
+        )}
         {groups.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="font-semibold text-[var(--text-primary)]">No records here yet</p>
-            <p className="mt-2 text-sm text-[var(--text-secondary)]">Confirmed activity will appear here.</p>
+            <p className="font-semibold text-[var(--text-primary)]">
+              {hasRelevantLoading
+                ? 'Loading records'
+                : hasRelevantError
+                  ? 'No available records'
+                  : 'No records here yet'}
+            </p>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              {hasRelevantLoading
+                ? 'Available activity will appear as it loads.'
+                : hasRelevantError
+                  ? 'Records from available sources will appear here.'
+                  : 'Confirmed activity will appear here.'}
+            </p>
           </div>
         ) : (
           groups.map((group) => (
