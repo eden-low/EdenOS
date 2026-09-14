@@ -101,7 +101,11 @@ service cloud.firestore {
         && isValidExercise(request.resource.data)
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
-      allow update, delete: if false;
+      allow update: if isOwner(userId)
+        && isValidExercise(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isOwner(userId);
     }
 
     match /{document=**} {
