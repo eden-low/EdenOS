@@ -1,6 +1,7 @@
 import {
   Timestamp,
   collection,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
@@ -121,6 +122,29 @@ export function createFirestoreExerciseRepository(
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })
+      })
+    },
+
+    async updateExercise(id, data) {
+      const exerciseReference = doc(exerciseCollection, id)
+      await runTransaction(firestore, async (transaction) => {
+        const existingExercise = await transaction.get(exerciseReference)
+        if (!existingExercise.exists()) throw new Error('Exercise record does not exist.')
+
+        transaction.update(exerciseReference, {
+          ...exerciseDocumentData(data),
+          distanceMetres: data.distanceMetres ?? deleteField(),
+          updatedAt: serverTimestamp(),
+        })
+      })
+    },
+
+    async deleteExercise(id) {
+      const exerciseReference = doc(exerciseCollection, id)
+      await runTransaction(firestore, async (transaction) => {
+        const existingExercise = await transaction.get(exerciseReference)
+        if (!existingExercise.exists()) return
+        transaction.delete(exerciseReference)
       })
     },
   }

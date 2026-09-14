@@ -2,7 +2,7 @@
 
 Eden OS is a private Personal OS for seeing the most important parts of the day and capturing trusted personal records without unnecessary complexity.
 
-## Current scope: Exercise V1
+## Current scope: Exercise V1.1
 
 The frontend runs locally against the configured Firebase project and includes:
 
@@ -18,7 +18,7 @@ The frontend runs locally against the configured Firebase project and includes:
 - Cloud Firestore as the authoritative source for confirmed expenses and exercises
 - Realtime expense and exercise synchronization across Today and Records on the same Firebase user
 - Firestore-backed expense creation, editing, and deletion
-- Firestore-backed Exercise creation and reading, with distance stored in metres and duration stored in seconds
+- Firestore-backed Exercise creation, reading, editing, and deletion, with distance stored in metres and duration stored in seconds
 - Installable PWA manifest and EdenOS application icons
 - Offline-capable application shell after one successful online load
 - Shared online/offline status with guarded cloud mutations
@@ -166,7 +166,7 @@ Confirmed exercises are stored at:
 users/{uid}/exercises/{exerciseId}
 ```
 
-Exercise V1 supports realtime reading and idempotent manual creation. Distance is stored as optional integer metres and duration as integer seconds. Exercise editing and deletion are not implemented yet.
+Exercise V1.1 supports realtime reading, idempotent manual creation, editing, and confirmed deletion. Distance is stored as optional integer metres and duration as integer seconds. Exercise mutations preserve `createdAt`, update `updatedAt` with a server timestamp, and flow back into the UI through server-confirmed realtime snapshots.
 
 The domain-specific Firestore repositories own all SDK calls and map Firestore timestamps into ISO strings used by the existing domain models. UI components do not depend on Firestore document types. Drafts remain local and in memory; Firestore receives an expense or exercise only after confirmation.
 
@@ -174,15 +174,15 @@ Anonymous identity is specific to a browser profile and origin. Different browse
 
 ## Firestore Security Rules
 
-The prepared rules are in `firestore.rules`. They allow an authenticated user to access only their own expense and exercise collections, validate each domain separately, keep Exercise V1 update/delete access disabled, and deny every unrelated path by default.
+The prepared rules are in `firestore.rules`. They allow an authenticated user to access only their own expense and exercise collections, validate each domain separately, preserve `createdAt` on updates, and deny every unrelated path by default.
 
-Apply them manually in Firebase Console:
+Rules are deployed automatically when relevant rule or Firebase configuration files change on `main`, using `.github/workflows/deploy-firestore-rules.yml` and the `FIREBASE_SERVICE_ACCOUNT` repository secret. To apply them manually in Firebase Console instead:
 
 1. Open **Databases & Storage > Firestore > Rules**.
 2. Replace the editor contents with `firestore.rules`.
 3. Review the selected Firebase project and publish the rules.
 
-The Firebase Web configuration is not a security boundary; UID ownership is enforced by these rules. Rules are not deployed automatically by this repository.
+The Firebase Web configuration is not a security boundary; UID ownership is enforced by these rules.
 
 ## Previous local persistence
 

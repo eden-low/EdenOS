@@ -11,6 +11,8 @@ export interface RecordsContextValue extends RecordsState {
   createExerciseDraft: (data: ExerciseData) => string
   updateExerciseDraft: (id: string, data: ExerciseData) => void
   confirmExerciseDraft: (id: string) => Promise<void>
+  updateExercise: (id: string, data: ExerciseData) => Promise<void>
+  deleteExercise: (id: string) => Promise<void>
 }
 
 export const RecordsContext = createContext<RecordsContextValue | null>(null)

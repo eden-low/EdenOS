@@ -2,6 +2,7 @@ import { Plus, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CaptureSheet } from '../components/capture/CaptureSheet'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
+import { ExerciseRecordDialog } from '../components/records/ExerciseRecordDialog'
 import { Button } from '../components/ui/button'
 import { expenseCategoryLabels } from '../domain/expense'
 import { formatTime, relativeDayLabel } from '../lib/date'
@@ -21,11 +22,13 @@ export function RecordsPage() {
   const { expenses, exerciseRecords } = useRecords()
   const [filter, setFilter] = useState<RecordFilter>('all')
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null)
   const groups = useMemo(
     () => selectTimelineGroups(expenses, exerciseRecords, filter),
     [exerciseRecords, expenses, filter],
   )
   const selectedExpense = expenses.find((expense) => expense.id === selectedExpenseId)
+  const selectedExercise = exerciseRecords.find((exercise) => exercise.id === selectedExerciseId)
   const now = new Date()
 
   return (
@@ -116,7 +119,13 @@ export function RecordsPage() {
                   const exercise = item.record
                   const ExerciseIcon = getExerciseActivityIcon(exercise.activity)
                   return (
-                    <article key={exercise.id} className="flex min-h-20 items-center gap-3 py-4 sm:gap-4">
+                    <button
+                      key={exercise.id}
+                      type="button"
+                      onClick={() => setSelectedExerciseId(exercise.id)}
+                      aria-label={`Open ${exercise.activity} exercise`}
+                      className="group flex min-h-20 w-full items-center gap-3 rounded-xl py-4 text-left outline-none transition-colors hover:px-3 hover:bg-[var(--surface-secondary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:gap-4"
+                    >
                       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--accent-teal)]">
                         <ExerciseIcon aria-hidden="true" size={19} strokeWidth={1.8} />
                       </span>
@@ -129,7 +138,7 @@ export function RecordsPage() {
                       <p className="ml-auto shrink-0 text-right text-xs text-[var(--text-muted)]">
                         {relativeDayLabel(exercise.occurredAt, now)} · {formatTime(exercise.occurredAt)}
                       </p>
-                    </article>
+                    </button>
                   )
                 })}
               </div>
@@ -142,6 +151,11 @@ export function RecordsPage() {
         key={selectedExpenseId ?? 'closed'}
         record={selectedExpense}
         onClose={() => setSelectedExpenseId(null)}
+      />
+      <ExerciseRecordDialog
+        key={selectedExerciseId ?? 'closed'}
+        record={selectedExercise}
+        onClose={() => setSelectedExerciseId(null)}
       />
     </div>
   )
