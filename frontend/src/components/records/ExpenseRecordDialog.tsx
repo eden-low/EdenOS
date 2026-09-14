@@ -63,7 +63,10 @@ export function ExpenseRecordDialog({
 
   return (
     <Dialog open={Boolean(record)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:w-[min(38rem,calc(100vw-2rem))]">
+      <DialogContent
+        closeDisabled={isSaving || isDeleting}
+        className="sm:w-[min(38rem,calc(100vw-2rem))]"
+      >
         {record && step === 'view' && (
           <>
             <DialogTitle className="pr-12 text-xl font-semibold text-[var(--text-primary)]">

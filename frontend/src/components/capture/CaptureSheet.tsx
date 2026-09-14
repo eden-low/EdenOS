@@ -4,6 +4,7 @@ import { exerciseWriteErrorMessage } from '../../lib/exerciseWriteError'
 import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
 import { useRecords } from '../../state/useRecords'
 import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft } from '../../types/records'
+import { Button } from '../ui/button'
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ type CaptureStep = 'menu' | 'expense' | 'expense-review' | 'exercise' | 'exercis
 export function CaptureSheet({ children }: { children: ReactNode }) {
   const {
     drafts,
+    discardDraft,
     createExpenseDraft,
     updateExpenseDraft,
     confirmExpenseDraft,
@@ -33,6 +35,8 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
+  const [hasUnsavedFormChanges, setHasUnsavedFormChanges] = useState(false)
+  const [discardConfirmationOpen, setDiscardConfirmationOpen] = useState(false)
   const confirmInFlight = useRef(false)
   const activeExpenseDraft = drafts.find(
     (draft): draft is ExpenseDraft => draft.kind === 'expense' && draft.id === activeDraftId,
@@ -41,13 +45,33 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     (draft): draft is ExerciseDraft => draft.kind === 'exercise' && draft.id === activeDraftId,
   )
 
+  function resetAndClose() {
+    setOpen(false)
+    setStep('menu')
+    setActiveDraftId(null)
+    setConfirmError(null)
+    setHasUnsavedFormChanges(false)
+    setDiscardConfirmationOpen(false)
+  }
+
   function handleOpenChange(nextOpen: boolean) {
-    setOpen(nextOpen)
-    if (!nextOpen) {
-      setStep('menu')
-      setActiveDraftId(null)
-      setConfirmError(null)
+    if (nextOpen) {
+      setOpen(true)
+      return
     }
+
+    if (isConfirming) return
+    if (activeDraftId || hasUnsavedFormChanges) {
+      setDiscardConfirmationOpen(true)
+      return
+    }
+
+    resetAndClose()
+  }
+
+  function handleDiscard() {
+    if (activeDraftId) discardDraft(activeDraftId)
+    resetAndClose()
   }
 
   function handleExpenseReview(data: ExpenseData) {
@@ -56,6 +80,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     } else {
       setActiveDraftId(createExpenseDraft(data))
     }
+    setHasUnsavedFormChanges(false)
     setConfirmError(null)
     setStep('expense-review')
   }
@@ -66,6 +91,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     } else {
       setActiveDraftId(createExerciseDraft(data))
     }
+    setHasUnsavedFormChanges(false)
     setConfirmError(null)
     setStep('exercise-review')
   }
@@ -78,7 +104,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setConfirmError(null)
     try {
       await confirmExpenseDraft(activeExpenseDraft.id)
-      handleOpenChange(false)
+      resetAndClose()
     } catch (error) {
       setConfirmError(expenseWriteErrorMessage(error, 'create'))
     } finally {
@@ -95,7 +121,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setConfirmError(null)
     try {
       await confirmExerciseDraft(activeExerciseDraft.id)
-      handleOpenChange(false)
+      resetAndClose()
     } catch (error) {
       setConfirmError(exerciseWriteErrorMessage(error, 'create'))
     } finally {
@@ -107,7 +133,10 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className={step === 'menu' ? undefined : 'sm:w-[min(38rem,calc(100vw-2rem))]'}>
+      <DialogContent
+        closeDisabled={isConfirming || discardConfirmationOpen}
+        className={step === 'menu' ? undefined : 'sm:w-[min(38rem,calc(100vw-2rem))]'}
+      >
         {step === 'menu' && (
           <>
             <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
@@ -120,7 +149,10 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
             <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <button
                 type="button"
-                onClick={() => setStep('expense')}
+                onClick={() => {
+                  setHasUnsavedFormChanges(false)
+                  setStep('expense')
+                }}
                 className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--accent-primary)] bg-[var(--accent-wash)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--accent-wash-strong)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
               >
                 <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent-primary)] text-white">
@@ -131,7 +163,10 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
 
               <button
                 type="button"
-                onClick={() => setStep('exercise')}
+                onClick={() => {
+                  setHasUnsavedFormChanges(false)
+                  setStep('exercise')
+                }}
                 className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--accent-teal)] bg-[var(--accent-teal-wash)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
               >
                 <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent-teal)] text-[var(--surface-base)]">
@@ -158,7 +193,11 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               initialData={activeExpenseDraft?.data}
               submitLabel="Review"
               onSubmit={handleExpenseReview}
-              onCancel={() => setStep(activeExpenseDraft ? 'expense-review' : 'menu')}
+              onCancel={() => {
+                setHasUnsavedFormChanges(false)
+                setStep(activeExpenseDraft ? 'expense-review' : 'menu')
+              }}
+              onDirtyChange={setHasUnsavedFormChanges}
             />
           </>
         )}
@@ -175,6 +214,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               draft={activeExpenseDraft}
               onEdit={() => {
                 setConfirmError(null)
+                setHasUnsavedFormChanges(false)
                 setStep('expense')
               }}
               onConfirm={handleExpenseConfirm}
@@ -196,7 +236,11 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               initialData={activeExerciseDraft?.data}
               submitLabel="Review"
               onSubmit={handleExerciseReview}
-              onCancel={() => setStep(activeExerciseDraft ? 'exercise-review' : 'menu')}
+              onCancel={() => {
+                setHasUnsavedFormChanges(false)
+                setStep(activeExerciseDraft ? 'exercise-review' : 'menu')
+              }}
+              onDirtyChange={setHasUnsavedFormChanges}
             />
           </>
         )}
@@ -213,6 +257,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               data={activeExerciseDraft.data}
               onEdit={() => {
                 setConfirmError(null)
+                setHasUnsavedFormChanges(false)
                 setStep('exercise')
               }}
               onConfirm={handleExerciseConfirm}
@@ -222,6 +267,29 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
           </>
         )}
       </DialogContent>
+
+      <Dialog open={discardConfirmationOpen} onOpenChange={setDiscardConfirmationOpen}>
+        <DialogContent showCloseButton={false} className="sm:w-[min(28rem,calc(100vw-2rem))]">
+          <DialogTitle className="text-xl font-semibold text-[var(--text-primary)]">
+            Discard this draft?
+          </DialogTitle>
+          <DialogDescription className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+            Your unconfirmed changes will be removed from this session.
+          </DialogDescription>
+          <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setDiscardConfirmationOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={handleDiscard}>
+              Discard
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }

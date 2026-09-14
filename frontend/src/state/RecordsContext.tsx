@@ -74,6 +74,9 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
   const value = useMemo<RecordsContextValue>(
     () => ({
       ...state,
+      discardDraft(id) {
+        dispatch({ type: 'draft/discarded', draftId: id })
+      },
       createExpenseDraft(data) {
         const now = new Date().toISOString()
         const draft: ExpenseDraft = {

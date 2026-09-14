@@ -19,6 +19,7 @@ export interface RecordsState {
 }
 
 export type RecordsAction =
+  | { type: 'draft/discarded'; draftId: string }
   | { type: 'expenses/loading' }
   | { type: 'expenses/loaded'; expenses: ExpenseRecord[] }
   | { type: 'expenses/failed'; message: string }
@@ -34,6 +35,12 @@ export type RecordsAction =
 
 export function recordsReducer(state: RecordsState, action: RecordsAction): RecordsState {
   switch (action.type) {
+    case 'draft/discarded':
+      return {
+        ...state,
+        drafts: state.drafts.filter((draft) => draft.id !== action.draftId),
+      }
+
     case 'expenses/loading':
       return { ...state, expenseStatus: 'loading', expenseError: null }
 

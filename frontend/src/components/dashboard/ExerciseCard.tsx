@@ -9,28 +9,14 @@ export function ExerciseCard({ exercise }: { exercise: ExerciseSummary }) {
 
   return (
     <section aria-label="Weekly exercise" className="dashboard-card order-4 col-span-2 p-6 md:col-span-3 xl:col-span-5 xl:p-7">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="section-label">This Week</p>
-          <p className="metric-value mt-4 text-3xl font-semibold">
-            {exercise.completedSessions}{' '}
-            <span className="text-lg font-medium tracking-[-0.02em] text-[var(--text-muted)]">
-              / {exercise.targetSessions} sessions
-            </span>
-          </p>
-        </div>
-        <div className="flex gap-1.5 pt-1" aria-hidden="true">
-          {Array.from({ length: exercise.targetSessions }, (_, index) => (
-            <span
-              key={index}
-              className={`h-2 w-7 rounded-full ${
-                index < exercise.completedSessions
-                  ? 'bg-[var(--accent-teal)]'
-                  : 'bg-[var(--surface-elevated)]'
-              }`}
-            />
-          ))}
-        </div>
+      <div>
+        <p className="section-label">This Week</p>
+        <p className="metric-value mt-4 text-3xl font-semibold">
+          {exercise.completedSessions}{' '}
+          <span className="text-lg font-medium tracking-[-0.02em] text-[var(--text-muted)]">
+            {exercise.completedSessions === 1 ? 'session' : 'sessions'} this week
+          </span>
+        </p>
       </div>
 
       <div className="mt-7 flex items-center gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-4 sm:p-5">

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { expenseCategoryOptions, isExpenseCategory } from '../../domain/expense'
 import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../lib/date'
 import { parseRinggitToSen } from '../../lib/format'
@@ -13,6 +13,7 @@ interface ExpenseFormProps {
   onCancel: () => void
   isSubmitting?: boolean
   submitError?: string | null
+  onDirtyChange?: (isDirty: boolean) => void
 }
 
 interface FormErrors {
@@ -29,17 +30,46 @@ export function ExpenseForm({
   onCancel,
   isSubmitting = false,
   submitError = null,
+  onDirtyChange,
 }: ExpenseFormProps) {
-  const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
-  const [amount, setAmount] = useState(
-    initialData ? (initialData.amountSen / 100).toFixed(2) : '',
-  )
-  const [category, setCategory] = useState<ExpenseCategory>(initialData?.category ?? 'food')
-  const [title, setTitle] = useState(initialData?.title ?? '')
-  const [date, setDate] = useState(toLocalDateInput(initialDate))
-  const [time, setTime] = useState(toLocalTimeInput(initialDate))
-  const [note, setNote] = useState(initialData?.note ?? '')
+  const [initialValues] = useState(() => {
+    const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
+    return {
+      amount: initialData ? (initialData.amountSen / 100).toFixed(2) : '',
+      category: initialData?.category ?? 'food',
+      title: initialData?.title ?? '',
+      date: toLocalDateInput(initialDate),
+      time: toLocalTimeInput(initialDate),
+      note: initialData?.note ?? '',
+    }
+  })
+  const [amount, setAmount] = useState(initialValues.amount)
+  const [category, setCategory] = useState<ExpenseCategory>(initialValues.category)
+  const [title, setTitle] = useState(initialValues.title)
+  const [date, setDate] = useState(initialValues.date)
+  const [time, setTime] = useState(initialValues.time)
+  const [note, setNote] = useState(initialValues.note)
   const [errors, setErrors] = useState<FormErrors>({})
+
+  useEffect(() => {
+    onDirtyChange?.(
+      amount !== initialValues.amount ||
+      category !== initialValues.category ||
+      title !== initialValues.title ||
+      date !== initialValues.date ||
+      time !== initialValues.time ||
+      note !== initialValues.note,
+    )
+  }, [
+    amount,
+    category,
+    date,
+    initialValues,
+    note,
+    onDirtyChange,
+    time,
+    title,
+  ])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

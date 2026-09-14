@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../lib/date'
 import type { ExerciseData } from '../../types/records'
 import { Button } from '../ui/button'
@@ -11,6 +11,7 @@ interface ExerciseFormProps {
   onCancel: () => void
   isSubmitting?: boolean
   submitError?: string | null
+  onDirtyChange?: (isDirty: boolean) => void
 }
 
 interface FormErrors {
@@ -35,18 +36,44 @@ export function ExerciseForm({
   onCancel,
   isSubmitting = false,
   submitError = null,
+  onDirtyChange,
 }: ExerciseFormProps) {
-  const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
-  const [activity, setActivity] = useState(initialData?.activity ?? '')
-  const [duration, setDuration] = useState(
-    initialData ? String(Math.round(initialData.durationSeconds / 60)) : '',
-  )
-  const [distance, setDistance] = useState(
-    initialData?.distanceMetres === undefined ? '' : String(initialData.distanceMetres),
-  )
-  const [date, setDate] = useState(toLocalDateInput(initialDate))
-  const [time, setTime] = useState(toLocalTimeInput(initialDate))
+  const [initialValues] = useState(() => {
+    const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
+    return {
+      activity: initialData?.activity ?? '',
+      duration: initialData ? String(Math.round(initialData.durationSeconds / 60)) : '',
+      distance: initialData?.distanceMetres === undefined
+        ? ''
+        : String(initialData.distanceMetres),
+      date: toLocalDateInput(initialDate),
+      time: toLocalTimeInput(initialDate),
+    }
+  })
+  const [activity, setActivity] = useState(initialValues.activity)
+  const [duration, setDuration] = useState(initialValues.duration)
+  const [distance, setDistance] = useState(initialValues.distance)
+  const [date, setDate] = useState(initialValues.date)
+  const [time, setTime] = useState(initialValues.time)
   const [errors, setErrors] = useState<FormErrors>({})
+
+  useEffect(() => {
+    onDirtyChange?.(
+      activity !== initialValues.activity ||
+      duration !== initialValues.duration ||
+      distance !== initialValues.distance ||
+      date !== initialValues.date ||
+      time !== initialValues.time,
+    )
+  }, [
+    activity,
+    date,
+    distance,
+    duration,
+    initialValues,
+    onDirtyChange,
+    time,
+  ])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
