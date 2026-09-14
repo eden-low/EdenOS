@@ -43,5 +43,4 @@ export interface DashboardSummary {
   monthlySpending: MonthlySpendingSummary
   exercise: ExerciseSummary
   recentActivity: RecentActivityItem[]
-  pendingDraftCount: number
 }

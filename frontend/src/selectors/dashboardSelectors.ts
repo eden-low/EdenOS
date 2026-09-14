@@ -6,7 +6,7 @@ import {
   relativeDayLabel,
 } from '../lib/date'
 import type { DashboardSummary, RecentActivityItem } from '../types/dashboard'
-import type { ExpenseRecord, ExerciseRecord, RecordDraft } from '../types/records'
+import type { ExpenseRecord, ExerciseRecord } from '../types/records'
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' })
 
@@ -55,7 +55,6 @@ function selectRecentActivity(
 export function selectDashboardSummary(
   expenses: ExpenseRecord[],
   exerciseRecords: ExerciseRecord[],
-  drafts: RecordDraft[],
   referenceDate: Date,
 ): DashboardSummary {
   const monthlyExpenses = expenses.filter((expense) =>
@@ -100,6 +99,5 @@ export function selectDashboardSummary(
         : null,
     },
     recentActivity: selectRecentActivity(expenses, exerciseRecords, referenceDate),
-    pendingDraftCount: drafts.filter((draft) => draft.status === 'draft').length,
   }
 }
