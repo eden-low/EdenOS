@@ -158,7 +158,7 @@ export function ExpenseForm({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="expense-date" className="form-label">Date</label>
           <input

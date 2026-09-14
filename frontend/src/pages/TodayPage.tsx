@@ -36,7 +36,17 @@ export function TodayPage() {
         ? 'Finance available'
         : exerciseStatus === 'loaded'
           ? 'Exercise available'
-          : 'Activity unavailable'
+          : expenseStatus === 'loading' || exerciseStatus === 'loading'
+            ? 'Activity loading'
+            : 'Activity unavailable'
+  const recentActivityEmptyMessage =
+    expenseStatus === 'loaded' && exerciseStatus === 'loaded'
+      ? 'No recent activity yet'
+      : expenseStatus === 'loaded' || exerciseStatus === 'loaded'
+        ? 'No recent activity in available records'
+        : expenseStatus === 'loading' || exerciseStatus === 'loading'
+          ? 'Loading recent activity…'
+          : 'Recent activity unavailable'
 
   return (
     <div className="mx-auto w-full max-w-[80rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
@@ -57,7 +67,11 @@ export function TodayPage() {
           error={exerciseError}
           onRetry={retryExerciseSubscription}
         />
-        <RecentActivity items={dashboard.recentActivity} sourceLabel={recentActivitySource} />
+        <RecentActivity
+          items={dashboard.recentActivity}
+          sourceLabel={recentActivitySource}
+          emptyMessage={recentActivityEmptyMessage}
+        />
       </div>
     </div>
   )

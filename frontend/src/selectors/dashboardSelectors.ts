@@ -76,7 +76,7 @@ export function selectDashboardSummary(
     .sort((left, right) =>
       right.occurredAt.localeCompare(left.occurredAt),
     )
-  const latestExercise = weeklyExercise[0] ?? exerciseRecords[0]
+  const latestExercise = weeklyExercise[0]
   const hour = referenceDate.getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
 
