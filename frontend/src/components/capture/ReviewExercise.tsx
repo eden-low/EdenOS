@@ -1,60 +1,68 @@
 import { formatLongDate, formatTime } from '../../lib/date'
 import { formatDistance, formatDuration } from '../../lib/format'
-import type { ExerciseDraft } from '../../types/records'
+import type { ExerciseData } from '../../types/records'
 import { Button } from '../ui/button'
 import { InlineError } from '../ui/InlineError'
 
 export function ReviewExercise({
-  draft,
+  data,
   onEdit,
   onConfirm,
   isConfirming,
   error,
+  label = 'Exercise draft',
+  helperText = 'Confirmed exercise becomes a trusted record and updates Today.',
+  confirmLabel = 'Confirm exercise',
+  confirmingLabel = 'Confirming…',
 }: {
-  draft: ExerciseDraft
+  data: ExerciseData
   onEdit: () => void
   onConfirm: () => Promise<void>
   isConfirming: boolean
   error: string | null
+  label?: string
+  helperText?: string
+  confirmLabel?: string
+  confirmingLabel?: string
 }) {
   return (
     <div>
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5 sm:p-6">
-        <p className="section-label">Exercise draft</p>
-        <h3 className="mt-4 text-xl font-semibold text-[var(--text-primary)]">{draft.data.activity}</h3>
+        <p className="section-label">{label}</p>
+        <h3 className="mt-4 text-xl font-semibold text-[var(--text-primary)]">{data.activity}</h3>
 
         <dl className="mt-6 grid grid-cols-2 gap-x-5 gap-y-4 border-t border-[var(--border-subtle)] pt-5 text-sm">
           <div>
             <dt className="text-[var(--text-muted)]">Duration</dt>
             <dd className="mt-1 font-medium text-[var(--text-primary)]">
-              {formatDuration(draft.data.durationSeconds)}
+              {formatDuration(data.durationSeconds)}
             </dd>
           </div>
-          {draft.data.distanceMetres !== undefined && (
+          {data.distanceMetres !== undefined && (
             <div>
               <dt className="text-[var(--text-muted)]">Distance</dt>
               <dd className="mt-1 font-medium text-[var(--text-primary)]">
-                {formatDistance(draft.data.distanceMetres)}
+                {formatDistance(data.distanceMetres)}
               </dd>
             </div>
           )}
           <div>
             <dt className="text-[var(--text-muted)]">Date</dt>
             <dd className="mt-1 font-medium text-[var(--text-primary)]">
-              {formatLongDate(draft.data.occurredAt)}
+              {formatLongDate(data.occurredAt)}
             </dd>
           </div>
           <div>
             <dt className="text-[var(--text-muted)]">Time</dt>
             <dd className="mt-1 font-medium text-[var(--text-primary)]">
-              {formatTime(draft.data.occurredAt)}
+              {formatTime(data.occurredAt)}
             </dd>
           </div>
         </dl>
       </div>
 
       <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
-        Confirmed exercise becomes a trusted record and updates Today.
+        {helperText}
       </p>
 
       {error && <InlineError message={error} />}
@@ -62,7 +70,7 @@ export function ReviewExercise({
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onEdit} disabled={isConfirming}>Edit</Button>
         <Button type="button" onClick={() => void onConfirm()} disabled={isConfirming}>
-          {isConfirming ? 'Confirming…' : 'Confirm exercise'}
+          {isConfirming ? confirmingLabel : confirmLabel}
         </Button>
       </div>
     </div>

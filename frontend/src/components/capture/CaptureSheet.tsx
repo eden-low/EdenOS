@@ -97,7 +97,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
       await confirmExerciseDraft(activeExerciseDraft.id)
       handleOpenChange(false)
     } catch (error) {
-      setConfirmError(exerciseWriteErrorMessage(error))
+      setConfirmError(exerciseWriteErrorMessage(error, 'create'))
     } finally {
       confirmInFlight.current = false
       setIsConfirming(false)
@@ -210,7 +210,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               Check this draft before it joins your records.
             </DialogDescription>
             <ReviewExercise
-              draft={activeExerciseDraft}
+              data={activeExerciseDraft.data}
               onEdit={() => {
                 setConfirmError(null)
                 setStep('exercise')

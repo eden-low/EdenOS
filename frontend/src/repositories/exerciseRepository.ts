@@ -8,4 +8,6 @@ export interface ExerciseSubscriptionObserver {
 export interface ExerciseRepository {
   subscribeExercises: (observer: ExerciseSubscriptionObserver) => () => void
   createExercise: (id: string, data: ExerciseData) => Promise<void>
+  updateExercise: (id: string, data: ExerciseData) => Promise<void>
+  deleteExercise: (id: string) => Promise<void>
 }

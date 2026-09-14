@@ -134,6 +134,14 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         await exerciseRepository.createExercise(draft.id, draft.data)
         dispatch({ type: 'exerciseDraft/confirmed', draftId: id })
       },
+      async updateExercise(id, data) {
+        if (connectivity === 'offline') throw new OfflineExerciseWriteError()
+        await exerciseRepository.updateExercise(id, data)
+      },
+      async deleteExercise(id) {
+        if (connectivity === 'offline') throw new OfflineExerciseWriteError()
+        await exerciseRepository.deleteExercise(id)
+      },
     }),
     [connectivity, exerciseRepository, expenseRepository, state],
   )
