@@ -1,19 +1,14 @@
-import {
-  browserLocalPersistence,
-  onAuthStateChanged,
-  setPersistence,
-  signInAnonymously,
-  type Auth,
-  type UserCredential,
-} from 'firebase/auth'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { AuthChoiceScreen } from '../components/account/AuthChoiceScreen'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { firebaseInitialization } from '../lib/firebase'
+import { createFirebaseAuthService, type AuthIdentity } from '../services/firebaseAuthService'
 import { FirebaseAuthContext, type FirebaseSession } from './firebaseAuthContextDefinition'
 
 type AuthenticationState =
   | { status: 'initializing' }
-  | { status: 'authenticated'; session: FirebaseSession }
+  | { status: 'unauthenticated' }
+  | { status: 'authenticated'; identity: AuthIdentity }
   | { status: 'error'; message: string }
 
 function createInitialAuthenticationState(): AuthenticationState {
@@ -22,64 +17,42 @@ function createInitialAuthenticationState(): AuthenticationState {
     : { status: 'initializing' }
 }
 
-let anonymousSignInPromise: Promise<UserCredential> | null = null
-
-function ensureAnonymousUser(auth: Auth): Promise<UserCredential> {
-  anonymousSignInPromise ??= signInAnonymously(auth).finally(() => {
-    anonymousSignInPromise = null
-  })
-  return anonymousSignInPromise
-}
-
 export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
   const [authentication, setAuthentication] = useState<AuthenticationState>(
     createInitialAuthenticationState,
   )
+  const authService = useMemo(
+    () => firebaseInitialization.status === 'ready'
+      ? createFirebaseAuthService(firebaseInitialization.services.auth)
+      : null,
+    [],
+  )
 
   useEffect(() => {
-    if (firebaseInitialization.status === 'error') return
+    if (!authService) return
 
-    const { auth, firestore } = firebaseInitialization.services
     let cancelled = false
     let unsubscribe: () => void = () => undefined
-
-    async function startAuthentication() {
-      await setPersistence(auth, browserLocalPersistence)
-      if (cancelled) return
-
-      unsubscribe = onAuthStateChanged(
-        auth,
-        (user) => {
-          if (cancelled) return
-          if (user) {
-            setAuthentication({
-              status: 'authenticated',
-              session: { uid: user.uid, firestore },
-            })
-            return
-          }
-
-          void ensureAnonymousUser(auth).catch(() => {
-            if (!cancelled) {
-              setAuthentication({
-                status: 'error',
-                message: 'EdenOS could not start its private Firebase session. Check Anonymous Authentication and try again.',
-              })
-            }
+    void authService.observe({
+      next(identity) {
+        if (!cancelled) {
+          setAuthentication(identity
+            ? { status: 'authenticated', identity }
+            : { status: 'unauthenticated' })
+        }
+      },
+      error() {
+        if (!cancelled) {
+          setAuthentication({
+            status: 'error',
+            message: 'EdenOS could not observe the Firebase authentication state. Try again.',
           })
-        },
-        () => {
-          if (!cancelled) {
-            setAuthentication({
-              status: 'error',
-              message: 'EdenOS could not observe the Firebase authentication state. Try again.',
-            })
-          }
-        },
-      )
-    }
-
-    void startAuthentication().catch(() => {
+        }
+      },
+    }).then((stop) => {
+      if (cancelled) stop()
+      else unsubscribe = stop
+    }).catch(() => {
       if (!cancelled) {
         setAuthentication({
           status: 'error',
@@ -92,32 +65,64 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
       cancelled = true
       unsubscribe()
     }
-  }, [])
+  }, [authService])
 
   if (authentication.status === 'initializing') {
     return (
       <AppStatusScreen
         status="loading"
         title="Opening your private workspace"
-        message="Starting a secure local Firebase session…"
+        message="Checking for your existing EdenOS session…"
       />
     )
   }
 
-  if (authentication.status === 'error') {
+  if (authentication.status === 'error' || !authService || firebaseInitialization.status === 'error') {
     return (
       <AppStatusScreen
         status="error"
         title="Firebase setup required"
-        message={authentication.message}
+        message={authentication.status === 'error' ? authentication.message : 'Firebase could not initialize.'}
         onRetry={() => window.location.reload()}
       />
     )
   }
 
-  return (
-    <FirebaseAuthContext.Provider value={authentication.session}>
-      {children}
-    </FirebaseAuthContext.Provider>
-  )
+  if (authentication.status === 'unauthenticated') {
+    return (
+      <AuthChoiceScreen
+        onContinueAnonymous={async () => {
+          const identity = await authService.continueAnonymously()
+          setAuthentication({ status: 'authenticated', identity })
+        }}
+        onSignInGoogle={async () => {
+          const identity = await authService.signInWithGoogle()
+          if (identity) setAuthentication({ status: 'authenticated', identity })
+        }}
+      />
+    )
+  }
+
+  const { identity } = authentication
+  const session: FirebaseSession = {
+    uid: identity.uid,
+    firestore: firebaseInitialization.services.firestore,
+    isAnonymous: identity.isAnonymous,
+    email: identity.email,
+    async connectGoogle() {
+      if (!identity.isAnonymous) throw new Error('This account is already connected.')
+      const linked = await authService.linkGoogle(identity.uid)
+      if (!linked) return 'cancelled'
+      if (linked.uid !== identity.uid) throw new Error('The linked Google identity changed unexpectedly.')
+      setAuthentication({ status: 'authenticated', identity: linked })
+      return 'connected'
+    },
+    async signOutGoogle() {
+      if (identity.isAnonymous) throw new Error('A guest account cannot be signed out.')
+      await authService.signOutGoogle()
+      setAuthentication({ status: 'unauthenticated' })
+    },
+  }
+
+  return <FirebaseAuthContext.Provider value={session}>{children}</FirebaseAuthContext.Provider>
 }

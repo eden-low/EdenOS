@@ -1,4 +1,5 @@
-import { CalendarDays, ClipboardCheck, Layers3, Plus, Settings } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, Layers3, Plus, UserRound } from 'lucide-react'
+import { AccountDialog } from '../account/AccountDialog'
 import { CaptureSheet } from '../capture/CaptureSheet'
 import { Button } from '../ui/button'
 
@@ -61,15 +62,15 @@ export function DesktopNavigation({
         })}
       </nav>
 
-      <button
-        type="button"
-        disabled
-        aria-label="Settings"
-        aria-disabled="true"
-        className="mt-auto grid size-11 place-items-center rounded-2xl text-[var(--text-muted)] outline-none"
-      >
-        <Settings aria-hidden="true" size={20} strokeWidth={1.7} />
-      </button>
+      <AccountDialog>
+        <button
+          type="button"
+          aria-label="Account"
+          className="mt-auto grid size-11 place-items-center rounded-2xl text-[var(--text-muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
+        >
+          <UserRound aria-hidden="true" size={20} strokeWidth={1.7} />
+        </button>
+      </AccountDialog>
     </aside>
   )
 }
@@ -86,7 +87,7 @@ export function MobileNavigation({
       aria-label="Primary navigation"
       className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 rounded-[1.4rem] border border-[var(--border-subtle)] bg-[var(--mobile-nav)] px-2 shadow-[var(--shadow-soft)] backdrop-blur-xl lg:hidden"
     >
-      <div className="mx-auto grid h-17 max-w-md grid-cols-4 items-center">
+      <div className="mx-auto grid h-17 max-w-md grid-cols-5 items-center">
         <MobileNavItem
           label="Today"
           icon={CalendarDays}
@@ -105,6 +106,16 @@ export function MobileNavigation({
           </Button>
         </CaptureSheet>
         <MobileNavItem label="Review" icon={ClipboardCheck} disabled />
+        <AccountDialog>
+          <button
+            type="button"
+            aria-label="Account"
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-xs font-medium text-[var(--text-muted)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
+          >
+            <UserRound aria-hidden="true" size={19} strokeWidth={1.7} />
+            Account
+          </button>
+        </AccountDialog>
       </div>
     </nav>
   )
