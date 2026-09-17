@@ -24,7 +24,7 @@ The frontend runs locally against the configured Firebase project and includes:
 - Shared online/offline status with guarded cloud mutations
 - User-controlled service-worker update prompts
 
-Text Capture and Weekly Review are available. Photo capture and future Personal OS modules remain backlog items.
+Text Capture and Weekly Review are available. Receipt OCR V1 is implemented locally and awaits review and deployment configuration.
 
 ## Repository structure
 
@@ -86,6 +86,19 @@ VITE_FIREBASE_APP_ID=
 `frontend/.env.local` is ignored by Git. Restart the Vite development server after changing it. EdenOS validates every required variable at startup and shows a configuration message instead of silently selecting a project. Configuration values are never logged by the app.
 
 For Netlify, add the same six variables under **Site configuration > Environment variables**. Do not commit real Firebase configuration to this repository.
+
+### Receipt OCR V1 configuration
+
+Receipt Capture sends a transient image to `/.netlify/functions/receipt-ocr`. The Netlify Function is in `frontend/netlify/functions/`; it verifies the user's Firebase ID token, then uses Google Cloud Vision `DOCUMENT_TEXT_DETECTION`. Ordinary `npm run dev` serves only Vite, so use Netlify Dev when testing this endpoint locally.
+
+Before deploying OCR, an operator must:
+
+1. Enable billing and the Cloud Vision API in the Google Cloud project used by EdenOS.
+2. Provision a server-side service account for that same Firebase project and grant only the Vision access needed for document text detection.
+3. Set `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON` in Netlify's environment variables for the intended deploy context, with a scope that includes **Functions**. Its value is the complete service account JSON, including `project_id`, `client_email`, and `private_key`. Keep it out of `VITE_*`, the repository, and browser storage.
+4. Review the staging deploy and test an authenticated guest and Google-linked user before production promotion.
+
+The endpoint safely reports `not-configured` until the server credential is present. Uploaded files are limited to JPEG, PNG, and WebP. Large phone photos are compressed in browser memory to fit the Netlify Function's binary payload limit; an image that remains too large is rejected. EdenOS does not persist the image in Storage, Firestore, localStorage, IndexedDB, or the function filesystem. Google Cloud Vision's own retention is governed by its policy and project configuration.
 
 ## Validation and production build
 
@@ -196,10 +209,9 @@ New anonymous users begin with empty Firestore expense and exercise collections.
 
 ## Intentionally deferred
 
-- Google/email login, account management, and cross-device identity
-- Firebase Storage, Cloud Functions, and custom backend services
-- AI, OCR, Text capture, and Photo capture
-- Review page implementation
+- Email/password login, account merging, and multi-profile identity
+- Firebase Storage, Cloud Functions, and broader backend services
+- AI-generated insights and other capture modes
 - IndexedDB, Firestore offline persistence, and offline mutation synchronization
 - Calendar and Today's Schedule
 - Tasks, Playlist, Focus Timer, Habits, Deadlines, Notes, and Weather

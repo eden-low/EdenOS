@@ -4,6 +4,7 @@ import { exerciseWriteErrorMessage } from '../../lib/exerciseWriteError'
 import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
 import { useRecords } from '../../state/useRecords'
 import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft } from '../../types/records'
+import type { ReceiptCandidate } from '../../types/receipt'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -16,9 +17,10 @@ import { ExpenseForm } from './ExpenseForm'
 import { ExerciseForm } from './ExerciseForm'
 import { ReviewExercise } from './ReviewExercise'
 import { ReviewExpense } from './ReviewExpense'
+import { ReceiptCaptureForm } from './ReceiptCaptureForm'
 import { TextCaptureForm } from './TextCaptureForm'
 
-type CaptureStep = 'menu' | 'expense' | 'expense-text' | 'expense-review' | 'exercise' | 'exercise-review'
+type CaptureStep = 'menu' | 'expense' | 'expense-text' | 'expense-receipt' | 'expense-receipt-edit' | 'expense-review' | 'exercise' | 'exercise-review'
 
 export function CaptureSheet({ children }: { children: ReactNode }) {
   const {
@@ -37,6 +39,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const [isConfirming, setIsConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
   const [hasUnsavedFormChanges, setHasUnsavedFormChanges] = useState(false)
+  const [receiptCandidate, setReceiptCandidate] = useState<ReceiptCandidate | null>(null)
   const [discardConfirmationOpen, setDiscardConfirmationOpen] = useState(false)
   const confirmInFlight = useRef(false)
   const activeExpenseDraft = drafts.find(
@@ -52,6 +55,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setActiveDraftId(null)
     setConfirmError(null)
     setHasUnsavedFormChanges(false)
+    setReceiptCandidate(null)
     setDiscardConfirmationOpen(false)
   }
 
@@ -189,7 +193,19 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
                 </span>
                 Text Capture
               </button>
-              <ComingSoonOption label="Photo" icon={Camera} />
+              <button
+                type="button"
+                onClick={() => {
+                  setHasUnsavedFormChanges(false)
+                  setStep('expense-receipt')
+                }}
+                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
+              >
+                <span className="grid size-10 place-items-center rounded-xl bg-[var(--surface-elevated)] text-[var(--accent-soft)]">
+                  <Camera aria-hidden="true" size={19} strokeWidth={1.8} />
+                </span>
+                Receipt Capture
+              </button>
             </div>
           </>
         )}
@@ -234,6 +250,63 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
                 setStep('expense')
               }}
               onDirtyChange={setHasUnsavedFormChanges}
+            />
+          </>
+        )}
+
+        {step === 'expense-receipt' && (
+          <>
+            <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
+              Receipt Capture
+            </DialogTitle>
+            <DialogDescription className="mt-2 mb-6 text-sm leading-6 text-[var(--text-secondary)]">
+              Choose or paste one receipt image, then edit what was read.
+            </DialogDescription>
+            <ReceiptCaptureForm
+              onContinue={(candidate) => {
+                setReceiptCandidate(candidate)
+                setHasUnsavedFormChanges(true)
+                setStep('expense-receipt-edit')
+              }}
+              onCancel={() => {
+                setHasUnsavedFormChanges(false)
+                setStep('menu')
+              }}
+              onManual={() => {
+                setReceiptCandidate(null)
+                setHasUnsavedFormChanges(false)
+                setStep('expense')
+              }}
+              onDirtyChange={setHasUnsavedFormChanges}
+            />
+          </>
+        )}
+
+        {step === 'expense-receipt-edit' && receiptCandidate && (
+          <>
+            <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
+              Edit receipt expense
+            </DialogTitle>
+            <DialogDescription className="mt-2 mb-6 text-sm leading-6 text-[var(--text-secondary)]">
+              Check every field before review. The receipt image is no longer kept.
+            </DialogDescription>
+            {receiptCandidate.amountIssue && (
+              <p className="mb-5 text-sm text-[var(--text-secondary)]">
+                {receiptCandidate.amountIssue === 'ambiguous'
+                  ? 'Several totals were found. Enter the correct amount.'
+                  : 'A clear total was not found. Enter the amount.'}
+              </p>
+            )}
+            <ExpenseForm
+              receiptCandidate={receiptCandidate}
+              submitLabel="Review"
+              onSubmit={handleExpenseReview}
+              onCancel={() => {
+                setReceiptCandidate(null)
+                setHasUnsavedFormChanges(false)
+                setStep('menu')
+              }}
+              onDirtyChange={() => setHasUnsavedFormChanges(true)}
             />
           </>
         )}
@@ -327,29 +400,5 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
         </DialogContent>
       </Dialog>
     </Dialog>
-  )
-}
-
-function ComingSoonOption({
-  label,
-  icon: Icon,
-}: {
-  label: string
-  icon: typeof Camera
-}) {
-  return (
-    <button
-      type="button"
-      disabled
-      className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 text-sm font-medium text-[var(--text-secondary)] opacity-75"
-    >
-      <span className="grid size-10 place-items-center rounded-xl bg-[var(--surface-elevated)] text-[var(--text-muted)]">
-        <Icon aria-hidden="true" size={19} strokeWidth={1.7} />
-      </span>
-      <span>{label}</span>
-      <span className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-        Coming soon
-      </span>
-    </button>
   )
 }
