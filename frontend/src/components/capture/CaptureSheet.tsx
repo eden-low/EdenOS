@@ -16,8 +16,9 @@ import { ExpenseForm } from './ExpenseForm'
 import { ExerciseForm } from './ExerciseForm'
 import { ReviewExercise } from './ReviewExercise'
 import { ReviewExpense } from './ReviewExpense'
+import { TextCaptureForm } from './TextCaptureForm'
 
-type CaptureStep = 'menu' | 'expense' | 'expense-review' | 'exercise' | 'exercise-review'
+type CaptureStep = 'menu' | 'expense' | 'expense-text' | 'expense-review' | 'exercise' | 'exercise-review'
 
 export function CaptureSheet({ children }: { children: ReactNode }) {
   const {
@@ -143,7 +144,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               What do you want to capture?
             </DialogTitle>
             <DialogDescription className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-              Start a manual expense or exercise draft.
+              Start an expense or exercise draft.
             </DialogDescription>
 
             <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -175,7 +176,19 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
                 Exercise
               </button>
 
-              <ComingSoonOption label="Text" icon={MessageSquareText} />
+              <button
+                type="button"
+                onClick={() => {
+                  setHasUnsavedFormChanges(false)
+                  setStep('expense-text')
+                }}
+                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
+              >
+                <span className="grid size-10 place-items-center rounded-xl bg-[var(--surface-elevated)] text-[var(--accent-soft)]">
+                  <MessageSquareText aria-hidden="true" size={19} strokeWidth={1.8} />
+                </span>
+                Text Capture
+              </button>
               <ComingSoonOption label="Photo" icon={Camera} />
             </div>
           </>
@@ -196,6 +209,29 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               onCancel={() => {
                 setHasUnsavedFormChanges(false)
                 setStep(activeExpenseDraft ? 'expense-review' : 'menu')
+              }}
+              onDirtyChange={setHasUnsavedFormChanges}
+            />
+          </>
+        )}
+
+        {step === 'expense-text' && (
+          <>
+            <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
+              Text Capture
+            </DialogTitle>
+            <DialogDescription className="mt-2 mb-6 text-sm leading-6 text-[var(--text-secondary)]">
+              Describe one expense, then review it before confirming.
+            </DialogDescription>
+            <TextCaptureForm
+              onContinue={handleExpenseReview}
+              onCancel={() => {
+                setHasUnsavedFormChanges(false)
+                setStep('menu')
+              }}
+              onManual={() => {
+                setHasUnsavedFormChanges(false)
+                setStep('expense')
               }}
               onDirtyChange={setHasUnsavedFormChanges}
             />

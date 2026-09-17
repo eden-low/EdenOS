@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecordsContext, type RecordsContextValue } from '../../state/recordsContextDefinition'
@@ -86,5 +86,51 @@ describe('Capture discard confirmation', () => {
     expect(screen.getByText('Discard this draft?')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
     expect(screen.getByTestId('draft-count').textContent).toBe('0')
+  })
+})
+
+describe('Text Capture', () => {
+  it('sends a parsed candidate through the existing editable Review and explicit Confirm flow', async () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Text Capture' }))
+    fireEvent.change(screen.getByLabelText('What did you spend?'), {
+      target: { value: 'coffee RM6.80' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByTestId('draft-count').textContent).toBe('1')
+    expect(screen.getByTestId('draft-data').textContent).toBe('680:text:coffee')
+    expect(screen.getByText('Review expense')).toBeTruthy()
+    expect(confirmExpenseDraft).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.change(screen.getByLabelText('Merchant / title'), { target: { value: 'Coffee shop' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(screen.getByTestId('draft-data').textContent).toBe('680:text:Coffee shop')
+    expect(confirmExpenseDraft).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm expense' }))
+    await waitFor(() => expect(confirmExpenseDraft).toHaveBeenCalledWith('expense-draft'))
+  })
+
+  it('keeps ambiguous text recoverable and allows manual entry', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Text Capture' }))
+    fireEvent.change(screen.getByLabelText('What did you spend?'), {
+      target: { value: 'lunch 12 30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByRole('alert').textContent).toContain('one clear amount')
+    expect(screen.getByTestId('draft-count').textContent).toBe('0')
+    expect(confirmExpenseDraft).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    expect(screen.getByText('Discard this draft?')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enter manually' }))
+    expect(screen.getByText('Quick Expense')).toBeTruthy()
   })
 })
