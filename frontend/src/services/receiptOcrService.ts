@@ -1,9 +1,10 @@
 import { firebaseInitialization } from '../lib/firebase'
-import type { ReceiptOcrResult } from '../types/receipt'
+import { combineLocalDateTime, toLocalTimeInput } from '../lib/date'
+import type { ReceiptCandidate, ReceiptExtractionResponse } from '../types/receipt'
 
 export type ReceiptOcrErrorCode =
   | 'auth' | 'unsupported' | 'too-large' | 'invalid' | 'not-configured'
-  | 'empty' | 'provider' | 'network'
+  | 'provider' | 'network'
 
 export class ReceiptOcrError extends Error {
   readonly code: ReceiptOcrErrorCode
@@ -15,10 +16,10 @@ export class ReceiptOcrError extends Error {
 }
 
 const serverCodes = new Set<ReceiptOcrErrorCode>([
-  'auth', 'unsupported', 'too-large', 'invalid', 'not-configured', 'empty', 'provider',
+  'auth', 'unsupported', 'too-large', 'invalid', 'not-configured', 'provider',
 ])
 
-export async function readReceiptImage(image: Blob, signal?: AbortSignal): Promise<ReceiptOcrResult> {
+export async function readReceiptImage(image: Blob, signal?: AbortSignal): Promise<ReceiptCandidate> {
   if (firebaseInitialization.status !== 'ready') throw new ReceiptOcrError('auth')
   const user = firebaseInitialization.services.auth.currentUser
   if (!user) throw new ReceiptOcrError('auth')
@@ -48,9 +49,24 @@ export async function readReceiptImage(image: Blob, signal?: AbortSignal): Promi
       ? code as ReceiptOcrErrorCode
       : 'provider')
   }
-  if (!result || typeof result !== 'object' || !('rawText' in result) ||
-      typeof result.rawText !== 'string' || !result.rawText.trim()) {
-    throw new ReceiptOcrError('empty')
+  if (!result || typeof result !== 'object' ||
+      !('merchant' in result) || !('amountSen' in result) ||
+      !('receiptDate' in result) || !('amountIssue' in result) ||
+      (result.merchant !== null && typeof result.merchant !== 'string') ||
+      (result.amountSen !== null && (!Number.isSafeInteger(result.amountSen) ||
+        typeof result.amountSen !== 'number' || result.amountSen <= 0)) ||
+      (result.receiptDate !== null && typeof result.receiptDate !== 'string') ||
+      ![null, 'missing', 'ambiguous'].includes(result.amountIssue as null)) {
+    throw new ReceiptOcrError('provider')
   }
-  return { rawText: result.rawText }
+  const extracted = result as ReceiptExtractionResponse
+  const occurredAt = extracted.receiptDate
+    ? combineLocalDateTime(extracted.receiptDate, toLocalTimeInput(new Date()))
+    : null
+  return {
+    title: extracted.merchant ?? '',
+    amountSen: extracted.amountSen ?? undefined,
+    occurredAt: occurredAt ?? undefined,
+    amountIssue: extracted.amountIssue ?? undefined,
+  }
 }

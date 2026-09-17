@@ -4,7 +4,7 @@ import { ReceiptOcrError } from '../../services/receiptOcrService'
 import { ReceiptCaptureForm } from './ReceiptCaptureForm'
 
 const { readReceiptImage } = vi.hoisted(() => ({
-  readReceiptImage: vi.fn(async () => ({ rawText: 'SHOP\nTOTAL RM1.23' })),
+  readReceiptImage: vi.fn(async () => ({ title: 'SHOP', amountSen: 123 })),
 }))
 vi.mock('../../services/receiptOcrService', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../services/receiptOcrService')>(), readReceiptImage,
@@ -88,7 +88,7 @@ describe('receipt image input and lifetime', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('temporarily unavailable'))
     expect(screen.getByAltText('Receipt preview')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Retry OCR' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
     await waitFor(() => expect(readReceiptImage).toHaveBeenCalledTimes(2))
     fireEvent.click(screen.getByRole('button', { name: 'Enter manually' }))
     expect(onManual).toHaveBeenCalledOnce()

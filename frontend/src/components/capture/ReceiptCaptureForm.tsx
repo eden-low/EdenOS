@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { parseReceiptText } from '../../domain/parseReceiptText'
 import { prepareReceiptImage, ReceiptImageInputError } from '../../services/receiptImage'
 import { readReceiptImage, ReceiptOcrError } from '../../services/receiptOcrService'
 import type { ReceiptCandidate } from '../../types/receipt'
@@ -12,7 +11,6 @@ const errorMessages = {
   invalid: 'This image could not be read. Try another photo or enter the expense manually.',
   auth: 'Your session could not be verified. Try again after reconnecting.',
   'not-configured': 'Receipt reading is not available yet. You can enter this expense manually.',
-  empty: 'No readable text was found. Try a clearer photo or enter the expense manually.',
   provider: 'Receipt reading is temporarily unavailable. Try again or enter manually.',
   network: 'Could not reach receipt reading. Check your connection and try again.',
 } as const
@@ -105,9 +103,8 @@ export function ReceiptCaptureForm({
     setReading(true)
     setError(null)
     try {
-      const result = await readReceiptImage(image.blob, controller.signal)
+      const candidate = await readReceiptImage(image.blob, controller.signal)
       if (controller.signal.aborted) return
-      const candidate = parseReceiptText(result.rawText, new Date())
       onContinue(candidate)
     } catch (cause) {
       if (controller.signal.aborted) return
@@ -149,7 +146,7 @@ export function ReceiptCaptureForm({
         <Button type="button" variant="ghost" onClick={onCancel} disabled={reading}>Back</Button>
         <Button type="button" variant="secondary" onClick={onManual} disabled={reading}>Enter manually</Button>
         <Button type="button" onClick={() => void handleRead()} disabled={!image || reading}>
-          {reading ? 'Reading receipt...' : hasFailed ? 'Retry OCR' : 'Continue'}
+          {reading ? 'Reading receipt...' : hasFailed ? 'Retry' : 'Continue'}
         </Button>
       </div>
     </div>

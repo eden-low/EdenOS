@@ -24,7 +24,7 @@ The frontend runs locally against the configured Firebase project and includes:
 - Shared online/offline status with guarded cloud mutations
 - User-controlled service-worker update prompts
 
-Text Capture and Weekly Review are available. Receipt OCR V1 is implemented locally and awaits review and deployment configuration.
+Text Capture and Weekly Review are available. Receipt extraction is implemented locally and awaits review and deployment configuration.
 
 ## Repository structure
 
@@ -87,18 +87,17 @@ VITE_FIREBASE_APP_ID=
 
 For Netlify, add the same six variables under **Site configuration > Environment variables**. Do not commit real Firebase configuration to this repository.
 
-### Receipt OCR V1 configuration
+### Receipt extraction configuration
 
-Receipt Capture sends a transient image to `/.netlify/functions/receipt-ocr`. The Netlify Function is in `frontend/netlify/functions/`; it verifies the user's Firebase ID token, then uses Google Cloud Vision `DOCUMENT_TEXT_DETECTION`. Ordinary `npm run dev` serves only Vite, so use Netlify Dev when testing this endpoint locally.
+Receipt Capture sends a transient image to `/.netlify/functions/receipt-ocr`. The Netlify Function is in `frontend/netlify/functions/`; it verifies the user's Firebase ID token, then uses Gemini structured multimodal extraction. The returned fields are validated before becoming an editable Expense candidate. Only the existing Review and Confirm flow can save an Expense. Ordinary `npm run dev` serves only Vite, so use Netlify Dev when testing this endpoint locally.
 
-Before deploying OCR, an operator must:
+For the intended Netlify deploy context, an operator must set these **Functions** environment variables:
 
-1. Enable billing and the Cloud Vision API in the Google Cloud project used by EdenOS.
-2. Provision a server-side service account for that same Firebase project and grant only the Vision access needed for document text detection.
-3. Set `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON` in Netlify's environment variables for the intended deploy context, with a scope that includes **Functions**. Its value is the complete service account JSON, including `project_id`, `client_email`, and `private_key`. Keep it out of `VITE_*`, the repository, and browser storage.
-4. Review the staging deploy and test an authenticated guest and Google-linked user before production promotion.
+1. `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON`: the Firebase project's server service-account JSON, with `project_id`, `client_email`, and `private_key`, for Firebase Admin ID-token verification only.
+2. `GEMINI_API_KEY`: server-side Gemini API key for receipt extraction.
+3. Optionally set `RECEIPT_AI_PROVIDER=gemini`, `RECEIPT_GEMINI_PRIMARY_MODEL=gemini-3.6-flash`, and `RECEIPT_GEMINI_FALLBACK_MODEL=gemini-2.5-flash`. These are the pinned code defaults; no latest-model alias is used. Model changes require a separate regression evaluation.
 
-The endpoint safely reports `not-configured` until the server credential is present. Uploaded files are limited to JPEG, PNG, and WebP. Large phone photos are compressed in browser memory to fit the Netlify Function's binary payload limit; an image that remains too large is rejected. EdenOS does not persist the image in Storage, Firestore, localStorage, IndexedDB, or the function filesystem. Google Cloud Vision's own retention is governed by its policy and project configuration.
+Keep both credentials out of `VITE_*`, Git, and browser storage. Once Firebase Admin verification is configured, the endpoint safely reports `not-configured` if the Gemini key is absent. The primary model falls back to the secondary model once for uncertain amounts or recoverable availability errors; fallback is best effort and does not guarantee separate quota. Uploaded files are limited to JPEG, PNG, and WebP. Large phone photos are compressed in browser memory to fit the Netlify Function's binary payload limit; an image that remains too large is rejected. EdenOS does not persist the image in Storage, Firestore, localStorage, IndexedDB, or the function filesystem. Preview object URLs are revoked when replaced, removed, or closed. Gemini's provider-side data handling and retention depend on the applicable Gemini API tier and Google policy; EdenOS cannot control that retention.
 
 ## Validation and production build
 

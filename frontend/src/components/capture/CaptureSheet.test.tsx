@@ -3,10 +3,11 @@ import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecordsContext, type RecordsContextValue } from '../../state/recordsContextDefinition'
 import type { ExpenseData, ExpenseDraft, RecordDraft } from '../../types/records'
+import type { ReceiptCandidate } from '../../types/receipt'
 import { CaptureSheet } from './CaptureSheet'
 
 const { readReceiptImage } = vi.hoisted(() => ({
-  readReceiptImage: vi.fn(async () => ({ rawText: 'STARBUCKS\n17/09/2026\nTOTAL RM15.90' })),
+  readReceiptImage: vi.fn(async (): Promise<ReceiptCandidate> => ({ title: 'STARBUCKS', amountSen: 1590 })),
 }))
 vi.mock('../../services/receiptOcrService', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../services/receiptOcrService')>(), readReceiptImage,
@@ -175,7 +176,7 @@ describe('Receipt Capture', () => {
   })
 
   it('requires an amount when OCR totals conflict and cleans up on discard', async () => {
-    readReceiptImage.mockResolvedValueOnce({ rawText: 'SHOP\nTOTAL RM10.00\nGRAND TOTAL RM12.00' })
+    readReceiptImage.mockResolvedValueOnce({ title: 'SHOP', amountIssue: 'ambiguous' })
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
     fireEvent.click(screen.getByRole('button', { name: 'Receipt Capture' }))

@@ -19,10 +19,11 @@ beforeEach(() => {
 describe('receipt OCR browser boundary', () => {
   it('sends a Firebase ID token and image to the same-origin endpoint', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
-      JSON.stringify({ rawText: 'SHOP\nTOTAL RM1.23' }), { status: 200 },
+      JSON.stringify({ merchant: 'SHOP', amountSen: 123, receiptDate: null,
+        amountIssue: null, fallbackUsed: false }), { status: 200 },
     ))
     const result = await readReceiptImage(new Blob(['image'], { type: 'image/png' }))
-    expect(result.rawText).toContain('SHOP')
+    expect(result).toMatchObject({ title: 'SHOP', amountSen: 123 })
     expect(fetchMock).toHaveBeenCalledOnce()
     const [url, options] = fetchMock.mock.calls[0]
     expect(url).toBe('/.netlify/functions/receipt-ocr')
@@ -37,6 +38,20 @@ describe('receipt OCR browser boundary', () => {
     await expect(readReceiptImage(new Blob(['image'], { type: 'image/png' })))
       .rejects.toEqual(new ReceiptOcrError('auth'))
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('maps a receipt date using the browser local calendar and keeps a missing amount empty', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      merchant: 'Cafe', amountSen: null, receiptDate: '2026-09-17',
+      amountIssue: 'missing', fallbackUsed: true,
+    }), { status: 200 }))
+    const result = await readReceiptImage(new Blob(['image'], { type: 'image/png' }))
+    expect(result.title).toBe('Cafe')
+    expect(result.amountSen).toBeUndefined()
+    expect(result.amountIssue).toBe('missing')
+    expect(new Date(result.occurredAt!).getFullYear()).toBe(2026)
+    expect(new Date(result.occurredAt!).getMonth()).toBe(8)
+    expect(new Date(result.occurredAt!).getDate()).toBe(17)
   })
 
   it('maps provider and transport failures without exposing server details', async () => {
