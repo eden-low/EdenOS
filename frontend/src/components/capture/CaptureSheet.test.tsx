@@ -5,6 +5,13 @@ import { RecordsContext, type RecordsContextValue } from '../../state/recordsCon
 import type { ExpenseData, ExpenseDraft, RecordDraft } from '../../types/records'
 import { CaptureSheet } from './CaptureSheet'
 
+const { readReceiptImage } = vi.hoisted(() => ({
+  readReceiptImage: vi.fn(async () => ({ rawText: 'STARBUCKS\n17/09/2026\nTOTAL RM15.90' })),
+}))
+vi.mock('../../services/receiptOcrService', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../services/receiptOcrService')>(), readReceiptImage,
+}))
+
 const confirmExpenseDraft = vi.fn(async () => undefined)
 
 function Harness() {
@@ -52,7 +59,12 @@ function Harness() {
   </RecordsContext.Provider>
 }
 
-beforeEach(() => { confirmExpenseDraft.mockClear() })
+beforeEach(() => {
+  confirmExpenseDraft.mockClear()
+  readReceiptImage.mockClear()
+  URL.createObjectURL = vi.fn(() => 'blob:receipt')
+  URL.revokeObjectURL = vi.fn()
+})
 
 function openExpenseForm() {
   fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
@@ -132,5 +144,68 @@ describe('Text Capture', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     fireEvent.click(screen.getByRole('button', { name: 'Enter manually' }))
     expect(screen.getByText('Quick Expense')).toBeTruthy()
+  })
+})
+
+describe('Receipt Capture', () => {
+  it('keeps OCR untrusted through Edit, Review, and explicit Confirm', async () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Receipt Capture' }))
+    fireEvent.change(screen.getByLabelText('Choose receipt image'), {
+      target: { files: [new File(['image'], 'receipt.png', { type: 'image/png' })] },
+    })
+    await waitFor(() => expect(screen.getByAltText('Receipt preview')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    await waitFor(() => expect(screen.getByText('Edit receipt expense')).toBeTruthy())
+    expect(screen.getByLabelText('Amount').getAttribute('value')).toBe('15.90')
+    expect(screen.getByTestId('draft-count').textContent).toBe('0')
+    expect(confirmExpenseDraft).not.toHaveBeenCalled()
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:receipt')
+
+    fireEvent.change(screen.getByLabelText('Merchant / title'), { target: { value: 'Coffee shop' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(screen.getByTestId('draft-data').textContent).toBe('1590:photo:Coffee shop')
+    expect(confirmExpenseDraft).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm expense' }))
+    await waitFor(() => expect(confirmExpenseDraft).toHaveBeenCalledOnce())
+  })
+
+  it('requires an amount when OCR totals conflict and cleans up on discard', async () => {
+    readReceiptImage.mockResolvedValueOnce({ rawText: 'SHOP\nTOTAL RM10.00\nGRAND TOTAL RM12.00' })
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Receipt Capture' }))
+    fireEvent.change(screen.getByLabelText('Choose receipt image'), {
+      target: { files: [new File(['image'], 'receipt.png', { type: 'image/png' })] },
+    })
+    await waitFor(() => expect(screen.getByAltText('Receipt preview')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    await waitFor(() => expect(screen.getByText('Several totals were found. Enter the correct amount.')).toBeTruthy())
+    expect(screen.getByLabelText('Amount').getAttribute('value')).toBe('')
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(screen.getByTestId('draft-count').textContent).toBe('0')
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    expect(screen.getByText('Discard this draft?')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(confirmExpenseDraft).not.toHaveBeenCalled()
+  })
+
+  it('releases the selected image when an unconfirmed capture is discarded', async () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Receipt Capture' }))
+    fireEvent.change(screen.getByLabelText('Choose receipt image'), {
+      target: { files: [new File(['image'], 'receipt.png', { type: 'image/png' })] },
+    })
+    await waitFor(() => expect(screen.getByAltText('Receipt preview')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    expect(screen.getByText('Discard this draft?')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:receipt'))
+    expect(readReceiptImage).not.toHaveBeenCalled()
   })
 })

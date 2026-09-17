@@ -3,11 +3,13 @@ import { expenseCategoryOptions, isExpenseCategory } from '../../domain/expense'
 import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../lib/date'
 import { parseRinggitToSen } from '../../lib/format'
 import type { ExpenseCategory, ExpenseData } from '../../types/records'
+import type { ReceiptCandidate } from '../../types/receipt'
 import { Button } from '../ui/button'
 import { InlineError } from '../ui/InlineError'
 
 interface ExpenseFormProps {
   initialData?: ExpenseData
+  receiptCandidate?: ReceiptCandidate
   submitLabel: string
   onSubmit: (data: ExpenseData) => void | Promise<void>
   onCancel: () => void
@@ -25,6 +27,7 @@ interface FormErrors {
 
 export function ExpenseForm({
   initialData,
+  receiptCandidate,
   submitLabel,
   onSubmit,
   onCancel,
@@ -33,11 +36,15 @@ export function ExpenseForm({
   onDirtyChange,
 }: ExpenseFormProps) {
   const [initialValues] = useState(() => {
-    const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
+    const initialDate = new Date(initialData?.occurredAt ?? receiptCandidate?.occurredAt ?? Date.now())
     return {
-      amount: initialData ? (initialData.amountSen / 100).toFixed(2) : '',
+      amount: initialData?.amountSen !== undefined
+        ? (initialData.amountSen / 100).toFixed(2)
+        : receiptCandidate?.amountSen !== undefined
+          ? (receiptCandidate.amountSen / 100).toFixed(2)
+          : '',
       category: initialData?.category ?? 'food',
-      title: initialData?.title ?? '',
+      title: initialData?.title ?? receiptCandidate?.title ?? '',
       date: toLocalDateInput(initialDate),
       time: toLocalTimeInput(initialDate),
       note: initialData?.note ?? '',
@@ -93,7 +100,7 @@ export function ExpenseForm({
       title: title.trim(),
       note: note.trim() || undefined,
       occurredAt,
-      source: initialData?.source ?? 'manual',
+      source: initialData?.source ?? (receiptCandidate ? 'photo' : 'manual'),
     })
   }
 
