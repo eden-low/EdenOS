@@ -6,6 +6,7 @@ import {
 } from './components/layout/Navigation'
 import { RecordsPage } from './pages/RecordsPage'
 import { TodayPage } from './pages/TodayPage'
+import { WeeklyReviewPage } from './pages/WeeklyReviewPage'
 import { PwaUpdatePrompt } from './pwa/PwaUpdatePrompt'
 
 function App() {
@@ -16,7 +17,13 @@ function App() {
       <DesktopNavigation activePage={activePage} onNavigate={setActivePage} />
 
       <main className="min-w-0 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:ml-28 lg:pb-8">
-        {activePage === 'today' ? <TodayPage /> : <RecordsPage />}
+        {activePage === 'today' ? (
+          <TodayPage />
+        ) : activePage === 'records' ? (
+          <RecordsPage />
+        ) : (
+          <WeeklyReviewPage />
+        )}
       </main>
 
       <MobileNavigation activePage={activePage} onNavigate={setActivePage} />
