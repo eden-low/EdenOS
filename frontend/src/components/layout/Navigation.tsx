@@ -3,7 +3,7 @@ import { AccountDialog } from '../account/AccountDialog'
 import { CaptureSheet } from '../capture/CaptureSheet'
 import { Button } from '../ui/button'
 
-export type AppPage = 'today' | 'records'
+export type AppPage = 'today' | 'records' | 'review'
 
 const navItems: Array<{
   label: string
@@ -12,7 +12,7 @@ const navItems: Array<{
 }> = [
   { label: 'Today', icon: CalendarDays, page: 'today' },
   { label: 'Records', icon: Layers3, page: 'records' },
-  { label: 'Review', icon: ClipboardCheck, page: null },
+  { label: 'Review', icon: ClipboardCheck, page: 'review' },
 ]
 
 export function DesktopNavigation({
@@ -105,7 +105,12 @@ export function MobileNavigation({
             <Plus aria-hidden="true" size={22} strokeWidth={2.2} />
           </Button>
         </CaptureSheet>
-        <MobileNavItem label="Review" icon={ClipboardCheck} disabled />
+        <MobileNavItem
+          label="Review"
+          icon={ClipboardCheck}
+          active={activePage === 'review'}
+          onClick={() => onNavigate('review')}
+        />
         <AccountDialog>
           <button
             type="button"

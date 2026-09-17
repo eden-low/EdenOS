@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addLocalWeeks,
   combineLocalDateTime,
   isSameLocalDay,
   isSameLocalMonth,
   localDateKey,
   relativeDayLabel,
+  startOfLocalWeek,
   toLocalDateInput,
 } from './date'
 
@@ -29,5 +31,13 @@ describe('local dates', () => {
     const septemberStart = new Date(2026, 8, 1, 0, 0)
     expect(isSameLocalMonth(septemberStart, new Date(2026, 8, 30, 23, 59))).toBe(true)
     expect(isSameLocalMonth(septemberStart, new Date(2026, 7, 31, 23, 59))).toBe(false)
+  })
+
+  it('starts weeks on local Monday and advances by local calendar days', () => {
+    const sunday = new Date(2027, 0, 3, 23, 59)
+    const weekStart = startOfLocalWeek(sunday)
+    expect(weekStart).toEqual(new Date(2026, 11, 28, 0, 0))
+    expect(addLocalWeeks(weekStart, 1)).toEqual(new Date(2027, 0, 4, 0, 0))
+    expect(sunday).toEqual(new Date(2027, 0, 3, 23, 59))
   })
 })

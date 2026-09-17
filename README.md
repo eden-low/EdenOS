@@ -24,7 +24,7 @@ The frontend runs locally against the configured Firebase project and includes:
 - Shared online/offline status with guarded cloud mutations
 - User-controlled service-worker update prompts
 
-Text Capture is available. Photo capture and Review remain placeholders; future Personal OS modules remain backlog items.
+Text Capture and Weekly Review are available. Photo capture and future Personal OS modules remain backlog items.
 
 ## Repository structure
 

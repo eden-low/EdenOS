@@ -1,22 +1,16 @@
 import { expenseCategoryLabels } from '../domain/expense'
 import {
+  addLocalWeeks,
   formatDashboardDate,
   isSameLocalDay,
   isSameLocalMonth,
   relativeDayLabel,
+  startOfLocalWeek,
 } from '../lib/date'
 import type { DashboardSummary, RecentActivityItem } from '../types/dashboard'
 import type { ExpenseRecord, ExerciseRecord } from '../types/records'
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' })
-
-function startOfWeek(date: Date): Date {
-  const start = new Date(date)
-  const daysSinceMonday = (start.getDay() + 6) % 7
-  start.setDate(start.getDate() - daysSinceMonday)
-  start.setHours(0, 0, 0, 0)
-  return start
-}
 
 function selectRecentActivity(
   expenses: ExpenseRecord[],
@@ -65,9 +59,8 @@ export function selectDashboardSummary(
     .filter((expense) => isSameLocalDay(new Date(expense.occurredAt), referenceDate))
     .reduce((total, expense) => total + expense.amountSen, 0)
 
-  const weekStart = startOfWeek(referenceDate)
-  const nextWeek = new Date(weekStart)
-  nextWeek.setDate(nextWeek.getDate() + 7)
+  const weekStart = startOfLocalWeek(referenceDate)
+  const nextWeek = addLocalWeeks(weekStart, 1)
   const weeklyExercise = exerciseRecords
     .filter((record) => {
       const occurredAt = new Date(record.occurredAt)

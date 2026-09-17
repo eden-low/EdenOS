@@ -100,3 +100,17 @@ export function isSameLocalDay(left: Date, right: Date): boolean {
 export function isSameLocalMonth(left: Date, right: Date): boolean {
   return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth()
 }
+
+export function startOfLocalWeek(date: Date): Date {
+  const start = new Date(date)
+  const daysSinceMonday = (start.getDay() + 6) % 7
+  start.setDate(start.getDate() - daysSinceMonday)
+  start.setHours(0, 0, 0, 0)
+  return start
+}
+
+export function addLocalWeeks(date: Date, weeks: number): Date {
+  const result = new Date(date)
+  result.setDate(result.getDate() + weeks * 7)
+  return result
+}
