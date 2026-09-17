@@ -14,7 +14,7 @@ The frontend runs locally against the configured Firebase project and includes:
 - Editing and confirmed deletion of expense and exercise records
 - Dashboard totals derived from confirmed Firestore records
 - Separate expense and exercise domain models
-- Silent Firebase Anonymous Authentication with browser-local session persistence
+- Firebase Anonymous Authentication and optional Google account linking with browser-local session persistence
 - Cloud Firestore as the authoritative source for confirmed expenses and exercises
 - Realtime expense and exercise synchronization across Today and Records on the same Firebase user
 - Firestore-backed expense creation, editing, and deletion
@@ -141,7 +141,9 @@ Netlify serves `sw.js` and `manifest.webmanifest` with revalidation headers. Fin
 ```text
 Firebase initialization
         |
-anonymous auth observer
+browser-local auth session restoration
+        |
+existing user or explicit guest / Google choice
         |
 authenticated UID
         |
@@ -152,7 +154,7 @@ Separate Expense and Exercise repositories
 Cloud Firestore realtime subscription
 ```
 
-Firebase is initialized once in `frontend/src/lib/firebase.ts` with the modular Web SDK. Authentication uses browser-local persistence, observes the existing session, and silently calls anonymous sign-in only when no user exists. There is no visible login experience.
+Firebase is initialized once in `frontend/src/lib/firebase.ts` with the modular Web SDK. Authentication uses browser-local persistence and waits for session restoration before showing the app or an account choice. When no session exists, the user can continue anonymously or sign in with Google. An existing guest can connect Google through Account; the SDK links the Google provider to the current Firebase user, retaining the UID. Only a connected Google user can sign out. Signing out returns to the account choice without automatically creating a new guest.
 
 Confirmed expenses are stored at:
 
@@ -170,7 +172,9 @@ Exercise V1.1 supports realtime reading, idempotent manual creation, editing, an
 
 The domain-specific Firestore repositories own all SDK calls and map Firestore timestamps into ISO strings used by the existing domain models. UI components do not depend on Firestore document types. Drafts remain local and in memory; Firestore receives an expense or exercise only after confirmation.
 
-Anonymous identity is specific to a browser profile and origin. Different browsers, cleared browser storage, and different devices will generally receive different anonymous users, so EdenOS does not yet provide cross-device account identity. A future phase may link an anonymous user to Google, but Phase 2B does not implement that.
+Anonymous identity is specific to a browser profile and origin. Linking Google upgrades that same Firebase user so another device can sign in to its UID and read the existing collections. Conflicting Google accounts are not merged or migrated.
+
+To enable Google sign-in, open **Firebase Console > Authentication > Sign-in method > Google**, enable the provider, and configure its required support email. In **Authentication > Settings > Authorized domains**, include each domain that serves EdenOS. Anonymous sign-in remains enabled for guests. Local development may require explicitly authorizing `localhost`.
 
 ## Firestore Security Rules
 
