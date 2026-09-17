@@ -1,4 +1,4 @@
-import type { ReceiptOcrResult } from '../src/types/receipt'
+import type { ReceiptExtractionInput, ReceiptExtractionResult } from './receiptExtraction'
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 const responseHeaders = {
@@ -10,10 +10,10 @@ const responseHeaders = {
 export interface ReceiptOcrDependencies {
   verifyToken: (token: string) => Promise<boolean>
   isConfigured: () => boolean
-  readText: (image: Uint8Array) => Promise<string>
+  extract: (input: ReceiptExtractionInput) => Promise<ReceiptExtractionResult>
 }
 
-function json(status: number, value: ReceiptOcrResult | { code: string }): Response {
+function json(status: number, value: ReceiptExtractionResult | { code: string }): Response {
   return new Response(JSON.stringify(value), { status, headers: responseHeaders })
 }
 
@@ -31,12 +31,12 @@ export function createReceiptOcrHandler(dependencies: ReceiptOcrDependencies) {
 
     const match = request.headers.get('Authorization')?.match(/^Bearer\s+(\S+)$/i)
     if (!match) return json(401, { code: 'auth' })
-    if (!dependencies.isConfigured()) return json(503, { code: 'not-configured' })
     try {
       if (!await dependencies.verifyToken(match[1])) return json(401, { code: 'auth' })
     } catch {
       return json(401, { code: 'auth' })
     }
+    if (!dependencies.isConfigured()) return json(503, { code: 'not-configured' })
 
     if (!request.headers.get('Content-Type')?.toLowerCase().startsWith('multipart/form-data')) {
       return json(415, { code: 'unsupported' })
@@ -62,9 +62,7 @@ export function createReceiptOcrHandler(dependencies: ReceiptOcrDependencies) {
     if (imageType(bytes) !== image.type) return json(400, { code: 'invalid' })
 
     try {
-      const rawText = await dependencies.readText(bytes)
-      if (!rawText.trim()) return json(422, { code: 'empty' })
-      return json(200, { rawText })
+      return json(200, await dependencies.extract({ image: bytes, mimeType: image.type as ReceiptExtractionInput['mimeType'] }))
     } catch {
       return json(503, { code: 'provider' })
     }

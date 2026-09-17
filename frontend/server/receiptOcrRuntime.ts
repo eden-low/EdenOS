@@ -1,6 +1,7 @@
-import { ImageAnnotatorClient } from '@google-cloud/vision'
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
+import { createGeminiReceiptProvider } from './geminiReceiptProvider'
+import { extractReceipt, receiptModelConfig } from './receiptExtraction'
 import type { ReceiptOcrDependencies } from './receiptOcrHandler'
 
 interface ServiceAccountConfig {
@@ -25,12 +26,14 @@ function readServiceAccount(): ServiceAccountConfig | null {
   }
 }
 
-let visionClient: ImageAnnotatorClient | null = null
-
 export function createReceiptOcrRuntime(): ReceiptOcrDependencies {
   const serviceAccount = readServiceAccount()
+  const apiKey = process.env.GEMINI_API_KEY?.trim()
+  const providerName = process.env.RECEIPT_AI_PROVIDER?.trim() || 'gemini'
+  const provider = apiKey && providerName === 'gemini' ? createGeminiReceiptProvider(apiKey) : null
+  const models = receiptModelConfig(process.env)
   return {
-    isConfigured: () => serviceAccount !== null,
+    isConfigured: () => serviceAccount !== null && provider !== null,
     async verifyToken(token) {
       if (!serviceAccount) return false
       const app = getApps().find((item) => item.name === 'edenos-receipt-ocr') ?? initializeApp({
@@ -43,18 +46,9 @@ export function createReceiptOcrRuntime(): ReceiptOcrDependencies {
       const decoded = await getAuth(app).verifyIdToken(token)
       return Boolean(decoded.uid)
     },
-    async readText(image) {
-      if (!serviceAccount) throw new Error('OCR provider is not configured')
-      visionClient ??= new ImageAnnotatorClient({
-        projectId: serviceAccount.project_id,
-        credentials: {
-          client_email: serviceAccount.client_email,
-          private_key: serviceAccount.private_key,
-        },
-      })
-      const [result] = await visionClient.documentTextDetection({ image: { content: Buffer.from(image) } })
-      if (result.error?.message) throw new Error('OCR provider failed')
-      return result.fullTextAnnotation?.text ?? ''
+    async extract(input) {
+      if (!provider) throw new Error('Receipt provider is not configured')
+      return extractReceipt(provider, input, models)
     },
   }
 }
