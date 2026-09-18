@@ -35,6 +35,50 @@ export function isFitnessExtractionResponse(value: unknown): value is FitnessExt
     typeof v.multipleWorkouts === 'boolean' && typeof v.uncertain === 'boolean'
 }
 
+/** Keep readable workout fields when Gemini supplies one invalid or ambiguous value.
+ * Invalid fields are discarded, never coerced into exercise data. */
+export function normalizeFitnessExtractionResponse(value: unknown):
+  { response: FitnessExtractionResponse; discardedFields: string[] } | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const raw = value as Record<string, unknown>
+  // Without this flag we cannot safely decide whether the image shows one workout.
+  if (typeof raw.multipleWorkouts !== 'boolean') return null
+  const fields = { ...raw }
+  const discardedFields: string[] = []
+  function discard(name: string, replacement: null | string | boolean): void {
+    fields[name] = replacement
+    discardedFields.push(name)
+  }
+
+  if (fields.activity !== null &&
+    (typeof fields.activity !== 'string' || fields.activity.trim().length > 80)) discard('activity', null)
+  for (const [name, minimum] of [
+    ['durationSeconds', 1], ['distanceMetres', 1], ['reportedActiveCaloriesKcal', 0],
+    ['reportedTotalCaloriesKcal', 0], ['reportedAverageHeartRateBpm', 1], ['reportedSteps', 0],
+  ] as const) {
+    if (!optionalInteger(fields[name], minimum)) discard(name, null)
+  }
+  if (fields.workoutDate !== null &&
+    (typeof fields.workoutDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fields.workoutDate))) {
+    discard('workoutDate', null)
+  }
+  if (fields.workoutTime !== null &&
+    (typeof fields.workoutTime !== 'string' || !/^\d{2}:\d{2}$/.test(fields.workoutTime))) {
+    discard('workoutTime', null)
+  }
+  if (!['workout', 'daily', 'unclear', 'none'].includes(fields.stepsScope as string)) {
+    discard('stepsScope', 'unclear')
+    if (fields.reportedSteps !== null) discard('reportedSteps', null)
+  }
+  if (!['Apple Fitness', 'Apple Health', 'Fitness screenshot'].includes(fields.metricsSource as string)) {
+    discard('metricsSource', 'Fitness screenshot')
+  }
+  if (typeof fields.uncertain !== 'boolean') discard('uncertain', true)
+  if (discardedFields.length) fields.uncertain = true
+  if (!isFitnessExtractionResponse(fields)) return null
+  return { response: fields, discardedFields }
+}
+
 function canonicalActivity(value: string | null): { activity?: string; recognized: boolean } {
   const text = value?.trim() ?? ''
   if (!text) return { recognized: false }

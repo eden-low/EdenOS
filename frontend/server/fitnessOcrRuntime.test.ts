@@ -30,15 +30,36 @@ describe('fitness extraction server runtime', () => {
     mocked.extract.mockResolvedValue(valid)
     expect(await createFitnessOcrRuntime().extract(input)).toEqual(valid)
     expect(mocked.extract).toHaveBeenCalledOnce()
-    expect(mocked.extract).toHaveBeenCalledWith(input, 'gemini-2.5-flash')
+    expect(mocked.extract).toHaveBeenCalledWith(input, 'gemini-3.6-flash')
   })
 
-  it('tries the existing fallback model when the first response is malformed', async () => {
+  it('tries the Receipt fallback model when the primary response is unusable', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'server-test-key')
     mocked.extract.mockResolvedValueOnce({ activity: 'Running' }).mockResolvedValueOnce(valid)
     expect(await createFitnessOcrRuntime().extract(input)).toEqual(valid)
     expect(mocked.extract).toHaveBeenCalledTimes(2)
-    expect(mocked.extract.mock.calls.map((call) => call[1])).toEqual(['gemini-2.5-flash', 'gemini-3.6-flash'])
+    expect(mocked.extract.mock.calls.map((call) => call[1])).toEqual(['gemini-3.6-flash', 'gemini-2.5-flash'])
+  })
+
+  it('keeps readable fields when Gemini returns a relative date', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'server-test-key')
+    mocked.extract.mockResolvedValue({ ...valid, workoutDate: 'Today' })
+    const result = await createFitnessOcrRuntime().extract(input)
+    expect(result).toMatchObject({ activity: 'Running', durationSeconds: 1800,
+      workoutDate: null, uncertain: true })
+    expect(mocked.extract).toHaveBeenCalledOnce()
+  })
+
+  it('reports provider status without logging its message or credentials', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'server-test-key')
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    mocked.extract.mockRejectedValue({ status: 429, message: 'secret-sensitive-message' })
+    try {
+      await expect(createFitnessOcrRuntime().extract(input)).rejects.toThrow('unavailable')
+      expect(warning).toHaveBeenCalledWith('Fitness extraction provider failed',
+        { role: 'primary', status: 429, code: undefined })
+      expect(JSON.stringify(warning.mock.calls)).not.toContain('secret-sensitive-message')
+    } finally { warning.mockRestore() }
   })
 
   it('rejects two malformed responses without persisting anything', async () => {

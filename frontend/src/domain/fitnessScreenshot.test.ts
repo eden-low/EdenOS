@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fitnessExtractionToCandidate, isFitnessExtractionResponse, type FitnessExtractionResponse } from './fitnessScreenshot'
+import { fitnessExtractionToCandidate, isFitnessExtractionResponse, normalizeFitnessExtractionResponse, type FitnessExtractionResponse } from './fitnessScreenshot'
 
 const running: FitnessExtractionResponse = {
   activity: 'Outdoor Run', durationSeconds: 2760, distanceMetres: 5200,
@@ -50,6 +50,35 @@ describe('fitness screenshot candidate boundary', () => {
       source: 'fitness_screenshot', needsEdit: true,
     })
     expect(fitnessExtractionToCandidate({ ...running, multipleWorkouts: true })).not.toHaveProperty('activity')
+  })
+
+  it('discards an ambiguous relative date and opens a partial exercise for editing', () => {
+    const normalized = normalizeFitnessExtractionResponse({ ...running, workoutDate: 'Today' })
+    expect(normalized?.discardedFields).toEqual(['workoutDate'])
+    expect(normalized?.response).toMatchObject({ workoutDate: null, uncertain: true })
+    expect(fitnessExtractionToCandidate(normalized?.response)).toMatchObject({
+      activity: 'Running', durationSeconds: 2760, needsEdit: true,
+    })
+  })
+
+  it('discards invalid optional metrics without turning them into persisted numbers', () => {
+    const normalized = normalizeFitnessExtractionResponse({ ...running,
+      reportedActiveCaloriesKcal: '382 kcal', reportedAverageHeartRateBpm: -2,
+      stepsScope: 'unknown',
+    })
+    expect(normalized?.discardedFields).toEqual([
+      'reportedActiveCaloriesKcal', 'reportedAverageHeartRateBpm', 'stepsScope', 'reportedSteps',
+    ])
+    const candidate = fitnessExtractionToCandidate(normalized?.response)
+    expect(candidate?.needsEdit).toBe(true)
+    expect(candidate).not.toHaveProperty('reportedActiveCaloriesKcal')
+    expect(candidate).not.toHaveProperty('reportedAverageHeartRateBpm')
+    expect(candidate).not.toHaveProperty('reportedSteps')
+  })
+
+  it('rejects a response that omits the multiple-workout safety flag', () => {
+    const { multipleWorkouts: _omitted, ...withoutSafetyFlag } = running
+    expect(normalizeFitnessExtractionResponse(withoutSafetyFlag)).toBeNull()
   })
 
   it('rejects malformed structured responses and invalid numeric values', () => {
