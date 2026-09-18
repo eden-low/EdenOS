@@ -39,13 +39,14 @@ describe('exercise metrics', () => {
 
   it.each([
     ['1小时', 3600], ['1.5小时', 5400], ['一个半小时', 5400],
-    ['90分钟', 5400], ['45min', 2700], ['1h30m', 5400],
+    ['90分钟', 5400], ['45min', 2700], ['1h30', 5400], ['2h15', 8100],
+    ['1h30m', 5400],
     ['2小时15分钟', 8100], ['1 hr 30 min', 5400],
   ])('parses %s as %i internal seconds', (input, seconds) => {
     expect(parseDurationToSeconds(input)).toBe(seconds)
   })
 
-  it.each(['0分钟', '1.5分钟', '1小时90分钟', '1.234小时', '1h30', '45km', '30', '-30min'])
+  it.each(['0分钟', '1.5分钟', '1小时90分钟', '1.234小时', '1h60', '1h3', '1h300', '45km', '30', '-30min'])
     ('does not guess an invalid or incomplete duration: %s', (input) => {
       expect(parseDurationToSeconds(input)).toBeNull()
     })
