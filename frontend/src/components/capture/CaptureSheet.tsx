@@ -6,6 +6,7 @@ import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
 import { useRecords } from '../../state/useRecords'
 import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft } from '../../types/records'
 import type { ReceiptCandidate } from '../../types/receipt'
+import type { FitnessScreenshotCandidate } from '../../types/fitnessScreenshot'
 import { Button } from '../ui/button'
 import { capturePressFeedback } from '../ui/pressFeedback'
 import {
@@ -18,12 +19,13 @@ import {
 import { ExpenseForm } from './ExpenseForm'
 import { ExerciseForm } from './ExerciseForm'
 import { ExerciseTextCaptureForm } from './ExerciseTextCaptureForm'
+import { FitnessScreenshotCaptureForm } from './FitnessScreenshotCaptureForm'
 import { ReviewExercise } from './ReviewExercise'
 import { ReviewExpense } from './ReviewExpense'
 import { ReceiptCaptureForm } from './ReceiptCaptureForm'
 import { TextCaptureForm } from './TextCaptureForm'
 
-type CaptureStep = 'menu' | 'expense' | 'expense-text' | 'expense-receipt' | 'expense-receipt-edit' | 'expense-review' | 'exercise' | 'exercise-text' | 'exercise-review'
+type CaptureStep = 'menu' | 'expense' | 'expense-text' | 'expense-receipt' | 'expense-receipt-edit' | 'expense-review' | 'exercise' | 'exercise-text' | 'exercise-screenshot' | 'exercise-review'
 
 export function CaptureSheet({ children }: { children: ReactNode }) {
   const {
@@ -47,6 +49,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const [exerciseText, setExerciseText] = useState('')
   const [exerciseTextError, setExerciseTextError] = useState<string | null>(null)
   const [exerciseTextCandidate, setExerciseTextCandidate] = useState<ExerciseTextCandidate | null>(null)
+  const [fitnessCandidate, setFitnessCandidate] = useState<FitnessScreenshotCandidate | null>(null)
   const [stepHeight, setStepHeight] = useState<number | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [stepContent, setStepContent] = useState<HTMLDivElement | null>(null)
@@ -91,6 +94,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setExerciseText('')
     setExerciseTextError(null)
     setExerciseTextCandidate(null)
+    setFitnessCandidate(null)
     setStepHeight(null)
     setClosingDraft(null)
   }
@@ -158,6 +162,25 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setExerciseTextCandidate(result.candidate)
     setHasUnsavedFormChanges(true)
     setStep('exercise')
+  }
+
+  function handleFitnessContinue(candidate: FitnessScreenshotCandidate) {
+    setFitnessCandidate(candidate)
+    setHasUnsavedFormChanges(true)
+    if (candidate.needsEdit || !candidate.activity || !candidate.durationSeconds || !candidate.occurredAt) {
+      setStep('exercise')
+      return
+    }
+    handleExerciseReview({
+      activity: candidate.activity, durationSeconds: candidate.durationSeconds,
+      occurredAt: candidate.occurredAt, source: 'fitness_screenshot',
+      ...(candidate.distanceMetres === undefined ? {} : { distanceMetres: candidate.distanceMetres }),
+      ...(candidate.metricsSource === undefined ? {} : { metricsSource: candidate.metricsSource }),
+      ...(candidate.reportedActiveCaloriesKcal === undefined ? {} : { reportedActiveCaloriesKcal: candidate.reportedActiveCaloriesKcal }),
+      ...(candidate.reportedTotalCaloriesKcal === undefined ? {} : { reportedTotalCaloriesKcal: candidate.reportedTotalCaloriesKcal }),
+      ...(candidate.reportedAverageHeartRateBpm === undefined ? {} : { reportedAverageHeartRateBpm: candidate.reportedAverageHeartRateBpm }),
+      ...(candidate.reportedSteps === undefined ? {} : { reportedSteps: candidate.reportedSteps }),
+    })
   }
 
   async function handleExpenseConfirm() {
@@ -264,7 +287,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               </section>
               <section aria-labelledby="capture-exercise-heading" className="border-t border-[var(--border-subtle)] pt-5">
                 <h2 id="capture-exercise-heading" className="section-label mb-3">Exercise</h2>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     aria-label="Exercise Manual"
@@ -289,6 +312,11 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
                   >
                     <MessageSquareText aria-hidden="true" size={20} strokeWidth={1.8} />
                     <span>Text</span>
+                  </button>
+                  <button type="button" aria-label="Exercise Fitness Screenshot" className="capture-method capture-method-exercise"
+                    onClick={() => { setFitnessCandidate(null); setHasUnsavedFormChanges(false); setStep('exercise-screenshot') }}>
+                    <Camera aria-hidden="true" size={20} strokeWidth={1.8} />
+                    <span className="max-w-full text-center text-xs leading-4">Fitness<br />Screenshot</span>
                   </button>
                 </div>
               </section>
@@ -422,22 +450,25 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
         {step === 'exercise' && (
           <>
             <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
-              {exerciseTextCandidate ? 'Complete exercise' : 'Manual Exercise'}
+              {fitnessCandidate ? 'Edit screenshot exercise' : exerciseTextCandidate ? 'Complete exercise' : 'Manual Exercise'}
             </DialogTitle>
             <DialogDescription className="mt-2 mb-6 text-sm leading-6 text-[var(--text-secondary)]">
-              {exerciseTextCandidate
+              {fitnessCandidate
+                ? 'Check all extracted fields before review. If the screenshot omits a date or time, confirm the default shown here.'
+                : exerciseTextCandidate
                 ? 'Check the fields we could read, then complete or correct this exercise before review.'
                 : 'Capture the session essentials. Nothing is trusted until you confirm it.'}
             </DialogDescription>
+            {fitnessCandidate?.issue && <p className="mb-4 text-sm text-[var(--text-secondary)]">{fitnessCandidate.issue}</p>}
             <ExerciseForm
-              initialData={activeExerciseDraft?.data ?? exerciseTextCandidate ?? undefined}
+              initialData={activeExerciseDraft?.data ?? fitnessCandidate ?? exerciseTextCandidate ?? undefined}
               submitLabel="Review"
               onSubmit={handleExerciseReview}
               onCancel={() => {
                 setHasUnsavedFormChanges(false)
                 setStep(activeExerciseDraft ? 'exercise-review' : exerciseTextCandidate ? 'exercise-text' : 'menu')
               }}
-              onDirtyChange={(dirty) => setHasUnsavedFormChanges(dirty || Boolean(exerciseTextCandidate))}
+              onDirtyChange={(dirty) => setHasUnsavedFormChanges(dirty || Boolean(exerciseTextCandidate) || Boolean(fitnessCandidate))}
             />
           </>
         )}
@@ -472,6 +503,21 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               }}
               error={exerciseTextError}
             />
+          </>
+        )}
+
+        {step === 'exercise-screenshot' && (
+          <>
+            <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
+              Fitness Screenshot
+            </DialogTitle>
+            <DialogDescription className="mt-2 mb-6 text-sm leading-6 text-[var(--text-secondary)]">
+              Choose an Apple Fitness or Apple Health workout screenshot. Check the extracted details before confirming. The image is not saved.
+            </DialogDescription>
+            <FitnessScreenshotCaptureForm onContinue={handleFitnessContinue}
+              onCancel={() => { setHasUnsavedFormChanges(false); setStep('menu') }}
+              onManual={() => { setFitnessCandidate(null); setHasUnsavedFormChanges(false); setStep('exercise') }}
+              onDirtyChange={setHasUnsavedFormChanges} />
           </>
         )}
 

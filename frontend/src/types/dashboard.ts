@@ -12,6 +12,9 @@ export interface ExerciseActivity {
   intensity?: ExerciseIntensity
   distanceMetres?: number
   durationSeconds: number
+  reportedActiveCaloriesKcal?: number
+  reportedTotalCaloriesKcal?: number
+  metricsSource?: 'Apple Fitness' | 'Apple Health' | 'Fitness screenshot'
 }
 
 export interface ExerciseSummary {
@@ -36,6 +39,9 @@ export interface RecentExerciseActivity extends RecentActivityBase {
   intensity?: ExerciseIntensity
   distanceMetres?: number
   durationSeconds: number
+  reportedActiveCaloriesKcal?: number
+  reportedTotalCaloriesKcal?: number
+  metricsSource?: 'Apple Fitness' | 'Apple Health' | 'Fitness screenshot'
 }
 
 export type RecentActivityItem = FinanceActivity | RecentExerciseActivity

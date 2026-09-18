@@ -4,14 +4,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecordsContext, type RecordsContextValue } from '../../state/recordsContextDefinition'
 import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft, RecordDraft } from '../../types/records'
 import type { ReceiptCandidate } from '../../types/receipt'
+import type { FitnessScreenshotCandidate } from '../../types/fitnessScreenshot'
 import { CaptureSheet } from './CaptureSheet'
 
 const { readReceiptImage } = vi.hoisted(() => ({
   readReceiptImage: vi.fn(async (): Promise<ReceiptCandidate> => ({ title: 'STARBUCKS', amountSen: 1590 })),
 }))
+const { readFitnessScreenshot } = vi.hoisted(() => ({
+  readFitnessScreenshot: vi.fn(async (): Promise<FitnessScreenshotCandidate> => ({
+    source: 'fitness_screenshot', activity: 'Running', durationSeconds: 1800,
+    occurredAt: '2026-09-18T07:30:00.000Z', metricsSource: 'Apple Fitness',
+    reportedActiveCaloriesKcal: 382, needsEdit: false,
+  })),
+}))
 vi.mock('../../services/receiptOcrService', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../services/receiptOcrService')>(), readReceiptImage,
 }))
+vi.mock('../../services/fitnessScreenshotService', () => ({ readFitnessScreenshot }))
 
 const confirmExpenseDraft = vi.fn(async (): Promise<void> => undefined)
 const confirmExerciseDraft = vi.fn(async (): Promise<void> => undefined)
@@ -81,6 +90,7 @@ beforeEach(() => {
   confirmExerciseDraft.mockReset()
   confirmExerciseDraft.mockResolvedValue(undefined)
   readReceiptImage.mockClear()
+  readFitnessScreenshot.mockClear()
   URL.createObjectURL = vi.fn(() => 'blob:receipt')
   URL.revokeObjectURL = vi.fn()
 })
@@ -106,7 +116,55 @@ describe('Capture prototype', () => {
     expect(within(expense).getAllByRole('button').map((button) => button.getAttribute('aria-label')))
       .toEqual(['Expense Manual', 'Expense Text', 'Expense Receipt'])
     expect(within(exercise).getAllByRole('button').map((button) => button.getAttribute('aria-label')))
-      .toEqual(['Exercise Manual', 'Exercise Text'])
+      .toEqual(['Exercise Manual', 'Exercise Text', 'Exercise Fitness Screenshot'])
+  })
+
+  it('reviews a screenshot candidate and writes only after explicit confirmation', async () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise Fitness Screenshot' }))
+    fireEvent.change(screen.getByLabelText('Choose fitness screenshot'), {
+      target: { files: [new File(['png'], 'workout.png', { type: 'image/png' })] },
+    })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' }).hasAttribute('disabled')).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByText('Review exercise')).toBeTruthy()
+    expect(screen.getByText(/Active Calories · 382 kcal/)).toBeTruthy()
+    expect(screen.getByTestId('draft-data').textContent).toBe('Running:1800:fitness_screenshot')
+    expect(confirmExerciseDraft).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm exercise' }))
+    await waitFor(() => expect(confirmExerciseDraft).toHaveBeenCalledOnce())
+  })
+
+  it('sends a partial screenshot candidate to edit and cancel never writes', async () => {
+    readFitnessScreenshot.mockResolvedValueOnce({ source: 'fitness_screenshot', activity: 'Rowing',
+      needsEdit: true, issue: 'Check the extracted fields.' })
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise Fitness Screenshot' }))
+    fireEvent.change(screen.getByLabelText('Choose fitness screenshot'), {
+      target: { files: [new File(['png'], 'workout.png', { type: 'image/png' })] },
+    })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' }).hasAttribute('disabled')).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(await screen.findByText('Edit screenshot exercise')).toBeTruthy()
+    expect(screen.getByLabelText('Activity').getAttribute('value')).toBe('Rowing')
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(confirmExerciseDraft).not.toHaveBeenCalled()
+    expect(screen.getByTestId('draft-count').textContent).toBe('0')
+  })
+
+  it('rejects unsupported and oversized screenshot inputs before extraction', async () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise Fitness Screenshot' }))
+    const input = screen.getByLabelText('Choose fitness screenshot')
+    fireEvent.change(input, { target: { files: [new File(['x'], 'workout.txt', { type: 'text/plain' })] } })
+    expect((await screen.findByRole('alert')).textContent).toContain('JPEG, PNG, or WebP')
+    const oversized = new File([new Uint8Array(20 * 1024 * 1024 + 1)], 'large.png', { type: 'image/png' })
+    fireEvent.change(input, { target: { files: [oversized] } })
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('too large'))
+    expect(readFitnessScreenshot).not.toHaveBeenCalled()
   })
 
   it('starts press feedback on pointer down and clears it on cancellation or release', () => {

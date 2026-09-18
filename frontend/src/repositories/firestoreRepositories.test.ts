@@ -57,6 +57,34 @@ describe('Firestore optional-field updates', () => {
     )
   })
 
+  it('writes source-reported screenshot metrics separately from derived estimates', async () => {
+    firestoreMock.transaction.get.mockResolvedValueOnce({ exists: () => false })
+    firestoreMock.transaction.set.mockClear()
+    const repository = createFirestoreExerciseRepository(firestore, 'user')
+    await repository.createExercise('screenshot', {
+      activity: 'Running', durationSeconds: 1800, occurredAt, source: 'fitness_screenshot',
+      metricsSource: 'Apple Fitness', reportedActiveCaloriesKcal: 382, reportedSteps: 6100,
+    })
+    const data = firestoreMock.transaction.set.mock.calls[0][1]
+    expect(data).toMatchObject({ source: 'fitness_screenshot', metricsSource: 'Apple Fitness',
+      reportedActiveCaloriesKcal: 382, reportedSteps: 6100 })
+    expect(data).not.toHaveProperty('estimatedCalories')
+  })
+
+  it('removes cleared screenshot metrics during edit', async () => {
+    firestoreMock.transaction.update.mockClear()
+    const repository = createFirestoreExerciseRepository(firestore, 'user')
+    await repository.updateExercise('screenshot', {
+      activity: 'Running', durationSeconds: 1800, occurredAt, source: 'fitness_screenshot',
+    })
+    expect(firestoreMock.transaction.update.mock.calls[0][1]).toMatchObject({
+      reportedActiveCaloriesKcal: firestoreMock.deletedField,
+      reportedTotalCaloriesKcal: firestoreMock.deletedField,
+      reportedAverageHeartRateBpm: firestoreMock.deletedField,
+      reportedSteps: firestoreMock.deletedField,
+    })
+  })
+
   it('deletes a cleared Expense note while keeping the integer sen amount', async () => {
     firestoreMock.transaction.update.mockClear()
     const repository = createFirestoreExpenseRepository(firestore, 'user')

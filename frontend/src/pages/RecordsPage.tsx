@@ -4,7 +4,7 @@ import { CaptureSheet } from '../components/capture/CaptureSheet'
 import { triggerPressFeedback } from '../components/ui/pressFeedback'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
 import { ExerciseRecordDialog } from '../components/records/ExerciseRecordDialog'
-import { EstimatedCalories } from '../components/exercise/EstimatedCalories'
+import { ExerciseCalories } from '../components/exercise/ExerciseCalories'
 import { Button } from '../components/ui/button'
 import { expenseCategoryLabels } from '../domain/expense'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
@@ -243,7 +243,7 @@ export function RecordsPage() {
                         <p className="mt-1 text-sm text-[var(--text-secondary)]">
                           {formatExerciseMetrics(exercise.durationSeconds, exercise.distanceMetres)}
                         </p>
-                        <EstimatedCalories compact exercise={exercise} />
+                        <ExerciseCalories compact exercise={exercise} />
                       </div>
                       <p className="ml-auto shrink-0 text-right text-xs text-[var(--text-muted)]">
                         {relativeDayLabel(exercise.occurredAt, referenceDate)} · {formatTime(exercise.occurredAt)}

@@ -4,7 +4,7 @@ import { formatExerciseMetrics } from '../../lib/format'
 import type { ExerciseSummary } from '../../types/dashboard'
 import type { RecordDomainStatus } from '../../types/records'
 import { Button } from '../ui/button'
-import { EstimatedCalories } from '../exercise/EstimatedCalories'
+import { ExerciseCalories } from '../exercise/ExerciseCalories'
 
 interface ExerciseCardProps {
   exercise: ExerciseSummary
@@ -60,7 +60,8 @@ export function ExerciseCard({ exercise, status, error, onRetry }: ExerciseCardP
                 Latest activity
               </p>
               <p className="mt-1 font-semibold text-[var(--text-primary)]">{latestActivity.name}</p>
-              <EstimatedCalories exercise={{ activity: latestActivity.name, durationSeconds: latestActivity.durationSeconds, intensity: latestActivity.intensity }} />
+              <ExerciseCalories exercise={{ activity: latestActivity.name, durationSeconds: latestActivity.durationSeconds, intensity: latestActivity.intensity,
+                reportedActiveCaloriesKcal: latestActivity.reportedActiveCaloriesKcal, reportedTotalCaloriesKcal: latestActivity.reportedTotalCaloriesKcal, metricsSource: latestActivity.metricsSource }} />
             </div>
             <p className="ml-auto shrink-0 text-right text-sm font-semibold text-[var(--text-primary)]">
               {formatExerciseMetrics(latestActivity.durationSeconds, latestActivity.distanceMetres)}

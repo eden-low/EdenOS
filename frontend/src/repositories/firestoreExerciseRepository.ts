@@ -25,6 +25,8 @@ const exerciseFields = new Set([
   'occurredAt',
   'createdAt',
   'updatedAt',
+  'metricsSource', 'reportedActiveCaloriesKcal', 'reportedTotalCaloriesKcal',
+  'reportedAverageHeartRateBpm', 'reportedSteps',
 ])
 
 function toIsoString(value: unknown): string | null {
@@ -45,6 +47,10 @@ function mapExerciseDocument(
   const hasValidDistance =
     data.distanceMetres === undefined ||
     (Number.isSafeInteger(data.distanceMetres) && data.distanceMetres > 0)
+  const validMetric = (value: unknown, min: number) => value === undefined ||
+    (Number.isSafeInteger(value) && typeof value === 'number' && value >= min)
+  const hasReportedMetrics = ['metricsSource', 'reportedActiveCaloriesKcal', 'reportedTotalCaloriesKcal',
+    'reportedAverageHeartRateBpm', 'reportedSteps'].some((field) => data[field] !== undefined)
 
   if (
     !hasOnlyExerciseFields ||
@@ -54,7 +60,12 @@ function mapExerciseDocument(
     data.durationSeconds <= 0 ||
     !hasValidDistance ||
     (data.intensity !== undefined && !['light', 'moderate', 'vigorous'].includes(data.intensity)) ||
-    (data.source !== 'manual' && data.source !== 'text') ||
+    !['manual', 'text', 'fitness_screenshot'].includes(data.source) ||
+    (hasReportedMetrics && data.source !== 'fitness_screenshot') ||
+    (data.metricsSource !== undefined && !['Apple Fitness', 'Apple Health', 'Fitness screenshot'].includes(data.metricsSource)) ||
+    !validMetric(data.reportedActiveCaloriesKcal, 0) ||
+    !validMetric(data.reportedTotalCaloriesKcal, 0) ||
+    !validMetric(data.reportedAverageHeartRateBpm, 1) || !validMetric(data.reportedSteps, 0) ||
     !occurredAt ||
     !createdAt ||
     !updatedAt
@@ -72,6 +83,11 @@ function mapExerciseDocument(
     ...(data.distanceMetres === undefined ? {} : { distanceMetres: data.distanceMetres }),
     durationSeconds: data.durationSeconds,
     source: data.source,
+    ...(data.metricsSource === undefined ? {} : { metricsSource: data.metricsSource }),
+    ...(data.reportedActiveCaloriesKcal === undefined ? {} : { reportedActiveCaloriesKcal: data.reportedActiveCaloriesKcal }),
+    ...(data.reportedTotalCaloriesKcal === undefined ? {} : { reportedTotalCaloriesKcal: data.reportedTotalCaloriesKcal }),
+    ...(data.reportedAverageHeartRateBpm === undefined ? {} : { reportedAverageHeartRateBpm: data.reportedAverageHeartRateBpm }),
+    ...(data.reportedSteps === undefined ? {} : { reportedSteps: data.reportedSteps }),
     occurredAt,
     createdAt,
     updatedAt,
@@ -85,6 +101,11 @@ function exerciseDocumentData(data: ExerciseData) {
     ...(data.distanceMetres === undefined ? {} : { distanceMetres: data.distanceMetres }),
     durationSeconds: data.durationSeconds,
     source: data.source,
+    ...(data.metricsSource === undefined ? {} : { metricsSource: data.metricsSource }),
+    ...(data.reportedActiveCaloriesKcal === undefined ? {} : { reportedActiveCaloriesKcal: data.reportedActiveCaloriesKcal }),
+    ...(data.reportedTotalCaloriesKcal === undefined ? {} : { reportedTotalCaloriesKcal: data.reportedTotalCaloriesKcal }),
+    ...(data.reportedAverageHeartRateBpm === undefined ? {} : { reportedAverageHeartRateBpm: data.reportedAverageHeartRateBpm }),
+    ...(data.reportedSteps === undefined ? {} : { reportedSteps: data.reportedSteps }),
     occurredAt: Timestamp.fromDate(new Date(data.occurredAt)),
   }
 }
@@ -140,6 +161,11 @@ export function createFirestoreExerciseRepository(
           ...exerciseDocumentData(data),
           distanceMetres: data.distanceMetres ?? deleteField(),
           intensity: data.intensity ?? deleteField(),
+          metricsSource: data.metricsSource ?? deleteField(),
+          reportedActiveCaloriesKcal: data.reportedActiveCaloriesKcal ?? deleteField(),
+          reportedTotalCaloriesKcal: data.reportedTotalCaloriesKcal ?? deleteField(),
+          reportedAverageHeartRateBpm: data.reportedAverageHeartRateBpm ?? deleteField(),
+          reportedSteps: data.reportedSteps ?? deleteField(),
           updatedAt: serverTimestamp(),
         })
       })

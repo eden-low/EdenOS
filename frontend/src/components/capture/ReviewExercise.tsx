@@ -2,7 +2,7 @@ import { formatLongDate, formatTime } from '../../lib/date'
 import { formatDistance, formatDuration } from '../../lib/format'
 import { defaultIntensity, intensityOptions, type ExerciseIntensity } from '../../domain/estimatedCalories'
 import type { ExerciseData } from '../../types/records'
-import { EstimatedCalories } from '../exercise/EstimatedCalories'
+import { ExerciseCalories, WorkoutMetrics } from '../exercise/ExerciseCalories'
 import { Button } from '../ui/button'
 import { InlineError } from '../ui/InlineError'
 
@@ -64,7 +64,8 @@ export function ReviewExercise({
             </dd>
           </div>
         </dl>
-        {options.length > 1 && onIntensityChange && (
+        {options.length > 1 && onIntensityChange && data.reportedActiveCaloriesKcal === undefined &&
+          data.reportedTotalCaloriesKcal === undefined && (
           <div className="mt-5">
             <label htmlFor="exercise-intensity" className="form-label">Intensity</label>
             <select id="exercise-intensity" className="form-control" value={data.intensity ?? defaultIntensity(data.activity) ?? ''}
@@ -74,7 +75,10 @@ export function ReviewExercise({
             <p className="mt-2 text-xs text-[var(--text-muted)]">Default: Moderate (social play). Vigorous uses competitive play.</p>
           </div>
         )}
-        <div className="mt-5 border-t border-[var(--border-subtle)] pt-4"><EstimatedCalories exercise={data} /></div>
+        <div className="mt-5 border-t border-[var(--border-subtle)] pt-4">
+          <ExerciseCalories exercise={data} />
+          <WorkoutMetrics exercise={data} />
+        </div>
       </div>
 
       <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
