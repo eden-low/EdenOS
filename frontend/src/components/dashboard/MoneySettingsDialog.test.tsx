@@ -5,6 +5,7 @@ import { emptyUserSettings, type UserSettings } from '../../domain/userSettings'
 import { UserSettingsContext } from '../../state/userSettingsContextDefinition'
 import { DailySpendingCards, SpendingCard } from './SpendingCard'
 import { SavingsGoalCard } from './SavingsGoalCard'
+import { MoneySettingsDialog } from './MoneySettingsDialog'
 
 function Harness({ initial = emptyUserSettings, fail = false }: { initial?: UserSettings; fail?: boolean }) {
   const [settings, setSettings] = useState(initial)
@@ -27,6 +28,23 @@ function Harness({ initial = emptyUserSettings, fail = false }: { initial?: User
 }
 
 describe('Budget and Savings Goal configuration', () => {
+  it('keeps the editor pending until the authoritative budget write succeeds', async () => {
+    let finish: (() => void) | undefined
+    const write = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
+    render(<UserSettingsContext.Provider value={{
+      settings: emptyUserSettings, status: 'loaded', saveBodyWeight: vi.fn(async () => undefined),
+      saveMonthlyBudget: write, saveSavingsGoal: vi.fn(async () => undefined),
+    }}><MoneySettingsDialog kind="budget" /></UserSettingsContext.Provider>)
+    fireEvent.click(screen.getByRole('button', { name: 'Configure Budget' }))
+    fireEvent.change(screen.getByLabelText('Budget amount (RM)'), { target: { value: '20.25' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save Budget' }))
+    expect(write).toHaveBeenCalledWith(2025)
+    expect(screen.getByRole('button', { name: 'Saving…' }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    await act(async () => finish?.())
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
   it('creates and edits a monthly budget in integer sen', async () => {
     render(<Harness />)
     expect(screen.getAllByText('Budget not configured')).toHaveLength(2)
