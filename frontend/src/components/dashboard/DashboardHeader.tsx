@@ -29,7 +29,7 @@ export function DashboardHeader({
         </div>
 
         <CaptureSheet>
-          <Button className="self-start sm:self-auto">
+          <Button className="press-feedback self-start sm:self-auto">
             <Plus aria-hidden="true" size={18} strokeWidth={2.2} />
             Capture
           </Button>
