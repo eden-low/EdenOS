@@ -9,18 +9,18 @@ export function createFitnessOcrRuntime(): ReceiptOcrDependencies<FitnessExtract
   const key = process.env.GEMINI_API_KEY?.trim()
   const provider = key ? createGeminiFitnessProvider(key) : null
   const models = receiptModelConfig(process.env)
-  // Stable image + structured-output fallback. Receipt's 2.5 fallback returns
-  // 404 in staging; see https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite.
-  const fitnessFallbackModel = 'gemini-3.1-flash-lite'
+  // Fitness's primary uses a stable image + structured-output model that
+  // recovered staging requests when Receipt's primary returned 503.
+  // https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite
+  const fitnessPrimaryModel = 'gemini-3.1-flash-lite'
   return {
     verifyToken: receiptRuntime.verifyToken,
     isConfigured: () => receiptRuntime.isConfigured() && provider !== null,
     async extract(input: ReceiptExtractionInput) {
       if (!provider) throw new Error('Fitness extraction is not configured')
       let providerFailed = false
-      // Use Receipt's working primary model first. A second bounded attempt
-      // remains available for a transient provider failure or unusable response.
-      for (const [role, model] of [['primary', models.primary], ['fallback', fitnessFallbackModel]] as const) {
+      // Receipt's working primary remains a bounded fallback for Fitness.
+      for (const [role, model] of [['primary', fitnessPrimaryModel], ['fallback', models.primary]] as const) {
         try {
           const result = normalizeFitnessExtractionResponse(await provider(input, model))
           if (result) {
