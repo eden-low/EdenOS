@@ -8,6 +8,7 @@ const environment = await initializeTestEnvironment({ projectId: 'demo-edenos-ru
 
 try {
   const alice = environment.authenticatedContext('alice').firestore()
+  const anotherAliceDevice = environment.authenticatedContext('alice').firestore()
   const bob = environment.authenticatedContext('bob').firestore()
   const guest = environment.unauthenticatedContext().firestore()
   const path = 'users/alice/settings/preferences'
@@ -23,6 +24,7 @@ try {
   assert.equal(saved?.bodyWeightKg, 70.5)
   assert.equal(saved?.monthlyBudgetSen, 20025)
   assert.equal(saved?.savingsGoalSen, 150050)
+  assert.equal((await getDoc(doc(anotherAliceDevice, path))).data()?.savingsGoalSen, 150050)
   await assertSucceeds(setDoc(own, { monthlyBudgetSen: 30000, updatedAt: serverTimestamp() }, { merge: true }))
   assert.equal((await getDoc(own)).data()?.monthlyBudgetSen, 30000)
   await assertFails(setDoc(doc(bob, path), { bodyWeightKg: 80, updatedAt: serverTimestamp() }, { merge: true }))

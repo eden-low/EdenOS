@@ -71,6 +71,7 @@ function Harness() {
           ? `${drafts[0].data.activity}:${drafts[0].data.durationSeconds}:${drafts[0].data.source}`
           : ''
     }</output>
+    <output data-testid="draft-intensity">{drafts[0]?.kind === 'exercise' ? drafts[0].data.intensity ?? 'default' : ''}</output>
   </RecordsContext.Provider>
 }
 
@@ -327,6 +328,16 @@ describe('Receipt Capture', () => {
 })
 
 describe('Exercise text capture', () => {
+  it('keeps a supported intensity choice on the reviewed Exercise draft', () => {
+    render(<Harness />)
+    openExerciseReview('Badminton 30 min')
+    const select = screen.getByLabelText('Intensity') as HTMLSelectElement
+    expect(select.value).toBe('moderate')
+    fireEvent.change(select, { target: { value: 'vigorous' } })
+    expect(screen.getByTestId('draft-intensity').textContent).toBe('vigorous')
+    expect(screen.getByText(/Add body weight in Account/)).toBeTruthy()
+  })
+
   it('reviews a compact hour-minute duration without an automatic write', () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
