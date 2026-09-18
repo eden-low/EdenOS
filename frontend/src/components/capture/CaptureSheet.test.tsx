@@ -179,6 +179,9 @@ describe('Capture discard confirmation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
 
     expect(screen.getByText('Discard this draft?')).toBeTruthy()
+    expect(document.querySelector('.confirmation-overlay')).not.toBeNull()
+    expect(document.querySelector('.confirmation-dialog')).not.toBeNull()
+    expect(document.querySelector('.capture-dialog')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.getByLabelText('Amount')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
@@ -198,6 +201,19 @@ describe('Capture discard confirmation', () => {
     expect(screen.getByText('Discard this draft?')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
     expect(screen.getByTestId('draft-count').textContent).toBe('0')
+  })
+
+  it('lets Escape cancel nested Discard without closing the parent draft', async () => {
+    render(<Harness />)
+    openExpenseForm()
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '12.34' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+
+    expect(screen.getByRole('dialog', { name: 'Discard this draft?' })).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Discard this draft?' })).toBeNull())
+    expect(screen.getByLabelText('Amount')).toBeTruthy()
+    expect(screen.getByLabelText<HTMLInputElement>('Amount').value).toBe('12.34')
   })
 })
 

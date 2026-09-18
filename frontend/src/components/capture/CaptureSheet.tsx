@@ -202,6 +202,12 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
         {...capturePressFeedback}
         variant="capture"
         closeDisabled={isConfirming || discardConfirmationOpen}
+        onEscapeKeyDown={(event) => {
+          if (discardConfirmationOpen) {
+            setDiscardConfirmationOpen(false)
+            event.preventDefault()
+          }
+        }}
         className="sm:w-[min(38rem,calc(100vw-2rem))]"
       >
         <div className="capture-scroll-region" style={{ height: stepHeight ?? undefined }}>
@@ -495,7 +501,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
       </DialogContent>
 
       <Dialog open={discardConfirmationOpen} onOpenChange={setDiscardConfirmationOpen}>
-        <DialogContent showCloseButton={false} className="sm:w-[min(28rem,calc(100vw-2rem))]">
+        <DialogContent variant="confirmation" showCloseButton={false} className="sm:w-[min(28rem,calc(100vw-2rem))]">
           <DialogTitle className="text-xl font-semibold text-[var(--text-primary)]">
             Discard this draft?
           </DialogTitle>

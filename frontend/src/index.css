@@ -259,6 +259,103 @@ button:not(:disabled) {
 .capture-method-expense svg { color: var(--accent-blue); }
 .capture-method-exercise svg { color: var(--accent-teal); }
 
+/* Account and nested confirmation keep their own depth without changing Capture or default dialogs. */
+.account-overlay {
+  background: rgba(3, 5, 10, 0.68);
+  backdrop-filter: blur(2px);
+}
+
+.account-dialog {
+  border-color: var(--border-strong);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+}
+
+.account-dialog [aria-label="Close dialog"] {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--text-secondary);
+}
+
+.account-dialog [aria-label="Close dialog"]:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.account-dialog[data-state="open"] {
+  animation: account-mobile-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.account-dialog[data-state="closed"] {
+  animation: account-mobile-out 140ms ease-in both;
+}
+
+.confirmation-overlay {
+  background: rgba(3, 5, 10, 0.3);
+  backdrop-filter: none;
+}
+
+.confirmation-dialog {
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  max-height: calc(100dvh - 1.5rem - env(safe-area-inset-bottom));
+  border-color: var(--border-strong);
+  border-radius: 1.5rem;
+  background: var(--surface-hover);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+}
+
+.confirmation-dialog[data-state="open"] {
+  animation: confirmation-mobile-in 170ms ease-out both;
+}
+
+.confirmation-dialog[data-state="closed"] {
+  animation: confirmation-mobile-out 130ms ease-in both;
+}
+
+@keyframes account-mobile-in {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes account-mobile-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(1rem); }
+}
+
+@keyframes confirmation-mobile-in {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes confirmation-mobile-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(0.75rem); }
+}
+
+@keyframes refined-dialog-in {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes refined-dialog-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.985); }
+}
+
+@media (min-width: 640px) {
+  .account-dialog[data-state="open"],
+  .confirmation-dialog[data-state="open"] { animation-name: refined-dialog-in; }
+  .account-dialog[data-state="closed"],
+  .confirmation-dialog[data-state="closed"] { animation-name: refined-dialog-out; }
+  .confirmation-dialog {
+    left: 50%;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    max-height: 88dvh;
+  }
+}
+
 .capture-success {
   position: fixed;
   right: 1rem;
@@ -322,6 +419,8 @@ button:not(:disabled) {
 @media (prefers-reduced-transparency: reduce) {
   .capture-overlay { background: rgba(3, 5, 10, 0.9); backdrop-filter: none; }
   .capture-dialog { background: var(--surface-elevated); }
+  .account-overlay { background: rgba(3, 5, 10, 0.88); backdrop-filter: none; }
+  .confirmation-overlay { background: rgba(3, 5, 10, 0.42); backdrop-filter: none; }
 }
 
 @media (prefers-contrast: more) {
@@ -337,6 +436,13 @@ button:not(:disabled) {
     border-color: var(--border-strong);
   }
   .capture-method { border-color: var(--border-strong); }
+  .account-dialog,
+  .confirmation-dialog {
+    --border-subtle: rgba(255, 255, 255, 0.32);
+    --border-strong: rgba(255, 255, 255, 0.55);
+    --text-muted: #bdc7d7;
+    border-color: var(--border-strong);
+  }
 }
 
 @keyframes fade-in {
