@@ -161,9 +161,11 @@ button:not(:disabled) {
 /* Capture prototype: scoped feedback and one continuous task surface. */
 .press-feedback,
 .capture-dialog button:not(:disabled) {
-  transition: transform 100ms ease-out, background-color 100ms ease-out, box-shadow 100ms ease-out, color 100ms ease-out;
+  transition: transform 100ms ease-out, background-color 100ms ease-out, color 100ms ease-out;
 }
 
+.press-feedback[data-pressed="true"],
+.capture-dialog button[data-pressed="true"]:not(:disabled),
 .press-feedback:not(:disabled):active:hover,
 .capture-dialog button:not(:disabled):active:hover {
   transform: scale(0.98);
@@ -356,6 +358,8 @@ button:not(:disabled) {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .press-feedback[data-pressed="true"],
+  .capture-dialog button[data-pressed="true"]:not(:disabled),
   .press-feedback:not(:disabled):active:hover,
   .capture-dialog button:not(:disabled):active:hover {
     transform: none;
@@ -363,6 +367,8 @@ button:not(:disabled) {
 }
 
 @media (prefers-reduced-motion: reduce) and (hover: none) {
+  .press-feedback[data-pressed="true"],
+  .capture-dialog button[data-pressed="true"]:not(:disabled),
   .press-feedback:not(:disabled):active,
   .capture-dialog button:not(:disabled):active { transform: none; }
 }
