@@ -30,6 +30,7 @@ describe('fitness extraction server runtime', () => {
     mocked.extract.mockResolvedValue(valid)
     expect(await createFitnessOcrRuntime().extract(input)).toEqual(valid)
     expect(mocked.extract).toHaveBeenCalledOnce()
+    expect(mocked.extract).toHaveBeenCalledWith(input, 'gemini-2.5-flash')
   })
 
   it('tries the existing fallback model when the first response is malformed', async () => {
@@ -37,6 +38,7 @@ describe('fitness extraction server runtime', () => {
     mocked.extract.mockResolvedValueOnce({ activity: 'Running' }).mockResolvedValueOnce(valid)
     expect(await createFitnessOcrRuntime().extract(input)).toEqual(valid)
     expect(mocked.extract).toHaveBeenCalledTimes(2)
+    expect(mocked.extract.mock.calls.map((call) => call[1])).toEqual(['gemini-2.5-flash', 'gemini-3.6-flash'])
   })
 
   it('rejects two malformed responses without persisting anything', async () => {

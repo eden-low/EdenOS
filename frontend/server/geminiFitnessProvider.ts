@@ -35,7 +35,9 @@ export function createGeminiFitnessProvider(apiKey: string) {
         { inlineData: { mimeType: input.mimeType, data: Buffer.from(input.image).toString('base64') } },
         { text: instruction },
       ],
-      config: { responseMimeType: 'application/json', responseJsonSchema: schema },
+      // Keep both attempts inside Netlify's synchronous function window.
+      config: { responseMimeType: 'application/json', responseJsonSchema: schema,
+        httpOptions: { timeout: 12000, retryOptions: { attempts: 1 } } },
     })
     try { return response.text ? JSON.parse(response.text) as unknown : null } catch { return null }
   }

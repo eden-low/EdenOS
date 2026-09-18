@@ -15,9 +15,15 @@ export function createFitnessOcrRuntime(): ReceiptOcrDependencies<FitnessExtract
     async extract(input: ReceiptExtractionInput) {
       if (!provider) throw new Error('Fitness extraction is not configured')
       let value: unknown
-      try { value = await provider(input, models.primary) } catch { /* One fallback attempt. */ }
+      // Receipt's established fallback is the faster first choice for the
+      // larger workout schema. A bounded second attempt uses its primary.
+      try { value = await provider(input, models.fallback) } catch (error) {
+        const status = error && typeof error === 'object' && 'status' in error &&
+          typeof error.status === 'number' ? error.status : undefined
+        console.warn('Fitness extraction first attempt failed', { status })
+      }
       if (isFitnessExtractionResponse(value)) return value
-      value = await provider(input, models.fallback)
+      value = await provider(input, models.primary)
       if (!isFitnessExtractionResponse(value)) throw new Error('Malformed fitness extraction')
       return value
     },
