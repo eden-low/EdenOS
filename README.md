@@ -141,6 +141,20 @@ request uses the previous cached sentence or a quiet built-in fallback, and
 waits 30 minutes before another attempt. The request times out after 5 seconds.
 This optional content is never stored in Firestore.
 
+### Weather V1
+
+Today uses the [Open-Meteo Forecast API](https://open-meteo.com/en/docs) for a
+one-day summary. No API key, Netlify Function, or Firestore location setting is
+needed. The app asks for browser geolocation only after the user selects
+**Enable weather**. It rounds coordinates to two decimals for the request and
+keeps them in browser session storage, together with a normalized forecast.
+Weather is reused for 20 minutes; a recent cached result can remain visible
+for up to two hours if a refresh fails. There is no polling. The displayed
+temperatures are rounded to whole degrees Celsius. The Weather attribution
+links to Open-Meteo, whose free API requires non-commercial use and attribution.
+
+### Local validation
+
 ```bash
 cd frontend
 npm run lint
