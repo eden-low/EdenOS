@@ -1,4 +1,5 @@
 export type MoneyInSen = number
+import type { ExerciseIntensity } from '../domain/estimatedCalories'
 
 export interface MonthlySpendingSummary {
   month: string
@@ -8,6 +9,7 @@ export interface MonthlySpendingSummary {
 
 export interface ExerciseActivity {
   name: string
+  intensity?: ExerciseIntensity
   distanceMetres?: number
   durationSeconds: number
 }
@@ -31,6 +33,7 @@ export interface FinanceActivity extends RecentActivityBase {
 
 export interface RecentExerciseActivity extends RecentActivityBase {
   type: 'exercise'
+  intensity?: ExerciseIntensity
   distanceMetres?: number
   durationSeconds: number
 }

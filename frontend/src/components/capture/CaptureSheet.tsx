@@ -485,6 +485,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
             </DialogDescription>
             <ReviewExercise
               data={visibleExerciseDraft.data}
+              onIntensityChange={(intensity) => updateExerciseDraft(visibleExerciseDraft.id, { ...visibleExerciseDraft.data, intensity })}
               onEdit={() => {
                 setConfirmError(null)
                 setHasUnsavedFormChanges(false)

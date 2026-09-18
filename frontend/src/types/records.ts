@@ -1,4 +1,5 @@
 import type { MoneyInSen } from './dashboard'
+import type { ExerciseIntensity } from '../domain/estimatedCalories'
 
 export const expenseCategories = [
   'food',
@@ -32,6 +33,7 @@ export interface ExpenseRecord extends ExpenseData {
 
 export interface ExerciseData {
   activity: string
+  intensity?: ExerciseIntensity
   distanceMetres?: number
   durationSeconds: number
   occurredAt: string
