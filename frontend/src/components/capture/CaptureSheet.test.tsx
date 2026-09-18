@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecordsContext, type RecordsContextValue } from '../../state/recordsContextDefinition'
-import type { ExpenseData, ExpenseDraft, RecordDraft } from '../../types/records'
+import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft, RecordDraft } from '../../types/records'
 import type { ReceiptCandidate } from '../../types/receipt'
 import { CaptureSheet } from './CaptureSheet'
 
@@ -14,6 +14,7 @@ vi.mock('../../services/receiptOcrService', async (importOriginal) => ({
 }))
 
 const confirmExpenseDraft = vi.fn(async () => undefined)
+const confirmExerciseDraft = vi.fn(async () => undefined)
 
 function Harness() {
   const [drafts, setDrafts] = useState<RecordDraft[]>([])
@@ -38,9 +39,20 @@ function Harness() {
       ))
     },
     confirmExpenseDraft,
-    createExerciseDraft: vi.fn(),
-    updateExerciseDraft: vi.fn(),
-    confirmExerciseDraft: vi.fn(async () => undefined),
+    createExerciseDraft(data: ExerciseData) {
+      const draft: ExerciseDraft = {
+        id: 'exercise-draft', kind: 'exercise', status: 'draft', data,
+        createdAt: data.occurredAt, updatedAt: data.occurredAt,
+      }
+      setDrafts((current) => [...current, draft])
+      return draft.id
+    },
+    updateExerciseDraft(id: string, data: ExerciseData) {
+      setDrafts((current) => current.map((draft) =>
+        draft.kind === 'exercise' && draft.id === id ? { ...draft, data } : draft,
+      ))
+    },
+    confirmExerciseDraft,
     retryExpenseSubscription: vi.fn(),
     retryExerciseSubscription: vi.fn(),
     updateExpense: vi.fn(async () => undefined),
@@ -55,13 +67,16 @@ function Harness() {
     <output data-testid="draft-data">{
       drafts[0]?.kind === 'expense'
         ? `${drafts[0].data.amountSen}:${drafts[0].data.source}:${drafts[0].data.title}`
-        : ''
+        : drafts[0]?.kind === 'exercise'
+          ? `${drafts[0].data.activity}:${drafts[0].data.durationSeconds}:${drafts[0].data.source}`
+          : ''
     }</output>
   </RecordsContext.Provider>
 }
 
 beforeEach(() => {
   confirmExpenseDraft.mockClear()
+  confirmExerciseDraft.mockClear()
   readReceiptImage.mockClear()
   URL.createObjectURL = vi.fn(() => 'blob:receipt')
   URL.revokeObjectURL = vi.fn()
@@ -208,5 +223,51 @@ describe('Receipt Capture', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
     await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:receipt'))
     expect(readReceiptImage).not.toHaveBeenCalled()
+  })
+})
+
+describe('Exercise text capture', () => {
+  it('creates a text candidate for Review, keeps Edit normalized, and writes only after Confirm', async () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise text' }))
+    fireEvent.change(screen.getByLabelText('What exercise did you do?'), {
+      target: { value: '羽毛球1.5小时' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByTestId('draft-data').textContent).toBe('Badminton:5400:text')
+    expect(screen.getByText('Review exercise')).toBeTruthy()
+    expect(screen.getByText('1 hr 30 min')).toBeTruthy()
+    expect(confirmExerciseDraft).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    expect((screen.getByLabelText('Duration') as HTMLInputElement).value).toBe('1 hr 30 min')
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(screen.getByTestId('draft-data').textContent).toBe('Badminton:5400:text')
+    expect(confirmExerciseDraft).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm exercise' }))
+    await waitFor(() => expect(confirmExerciseDraft).toHaveBeenCalledWith('exercise-draft'))
+  })
+
+  it('routes incomplete text through editable fields before it can become a draft', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise text' }))
+    fireEvent.change(screen.getByLabelText('What exercise did you do?'), {
+      target: { value: '跑步1h30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByTestId('draft-count').textContent).toBe('0')
+    expect((screen.getByLabelText('Activity') as HTMLInputElement).value).toBe('Running')
+    expect((screen.getByLabelText('Duration') as HTMLInputElement).value).toBe('')
+    expect(confirmExerciseDraft).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText('Duration'), { target: { value: '1 hr 30 min' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(screen.getByTestId('draft-data').textContent).toBe('Running:5400:text')
+    expect(confirmExerciseDraft).not.toHaveBeenCalled()
   })
 })

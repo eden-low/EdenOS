@@ -52,7 +52,7 @@ function mapExerciseDocument(
     !Number.isSafeInteger(data.durationSeconds) ||
     data.durationSeconds <= 0 ||
     !hasValidDistance ||
-    data.source !== 'manual' ||
+    (data.source !== 'manual' && data.source !== 'text') ||
     !occurredAt ||
     !createdAt ||
     !updatedAt
@@ -68,7 +68,7 @@ function mapExerciseDocument(
     activity,
     ...(data.distanceMetres === undefined ? {} : { distanceMetres: data.distanceMetres }),
     durationSeconds: data.durationSeconds,
-    source: 'manual',
+    source: data.source,
     occurredAt,
     createdAt,
     updatedAt,

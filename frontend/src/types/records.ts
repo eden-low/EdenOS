@@ -35,7 +35,7 @@ export interface ExerciseData {
   distanceMetres?: number
   durationSeconds: number
   occurredAt: string
-  source: 'manual'
+  source: 'manual' | 'text'
 }
 
 export interface ExerciseRecord extends ExerciseData {

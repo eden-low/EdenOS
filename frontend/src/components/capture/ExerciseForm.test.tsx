@@ -13,7 +13,7 @@ describe('Exercise form conversion', () => {
     const onSubmit = vi.fn()
     render(<ExerciseForm submitLabel="Review" onSubmit={onSubmit} onCancel={vi.fn()} />)
     setInput('Activity', '  Walk  ')
-    setInput('Duration (minutes)', '30')
+    setInput('Duration', '30')
     setInput(/Distance/, '2400')
     setInput('Date', '2026-09-17')
     setInput('Time', '14:30')
@@ -42,5 +42,21 @@ describe('Exercise form conversion', () => {
     const submitted = onSubmit.mock.calls[0][0]
     expect(submitted.durationSeconds).toBe(1800)
     expect(submitted).not.toHaveProperty('distanceMetres')
+  })
+
+  it('shows normalized duration on edit and keeps a text candidate text-sourced', () => {
+    const onSubmit = vi.fn()
+    render(<ExerciseForm
+      initialData={{ activity: 'Badminton', durationSeconds: 5400, occurredAt, source: 'text' }}
+      submitLabel="Review"
+      onSubmit={onSubmit}
+      onCancel={vi.fn()}
+    />)
+
+    expect((screen.getByLabelText('Duration') as HTMLInputElement).value).toBe('1 hr 30 min')
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(onSubmit).toHaveBeenCalledWith({
+      activity: 'Badminton', durationSeconds: 5400, occurredAt, source: 'text',
+    })
   })
 })

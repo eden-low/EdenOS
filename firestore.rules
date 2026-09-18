@@ -76,7 +76,7 @@ service cloud.firestore {
           || (data.distanceMetres is int
             && data.distanceMetres > 0
             && data.distanceMetres <= 9007199254740991))
-        && data.source == 'manual'
+        && data.source in ['manual', 'text']
         && data.occurredAt is timestamp
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;

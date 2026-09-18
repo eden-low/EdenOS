@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../lib/date'
+import { formatDuration, parseDurationToSeconds } from '../../lib/format'
 import type { ExerciseData } from '../../types/records'
 import { Button } from '../ui/button'
 import { InlineError } from '../ui/InlineError'
 
 interface ExerciseFormProps {
-  initialData?: ExerciseData
+  initialData?: Partial<ExerciseData>
   submitLabel: string
   onSubmit: (data: ExerciseData) => void | Promise<void>
   onCancel: () => void
@@ -39,10 +40,10 @@ export function ExerciseForm({
   onDirtyChange,
 }: ExerciseFormProps) {
   const [initialValues] = useState(() => {
-    const initialDate = initialData ? new Date(initialData.occurredAt) : new Date()
+    const initialDate = initialData?.occurredAt ? new Date(initialData.occurredAt) : new Date()
     return {
       activity: initialData?.activity ?? '',
-      duration: initialData ? String(Math.round(initialData.durationSeconds / 60)) : '',
+      duration: initialData?.durationSeconds ? formatDuration(initialData.durationSeconds) : '',
       distance: initialData?.distanceMetres === undefined
         ? ''
         : String(initialData.distanceMetres),
@@ -79,18 +80,14 @@ export function ExerciseForm({
     event.preventDefault()
     const nextErrors: FormErrors = {}
     const trimmedActivity = activity.trim()
-    const wholeMinutes = parsePositiveWholeNumber(duration)
-    const durationSeconds =
-      wholeMinutes !== null && wholeMinutes <= Math.floor(Number.MAX_SAFE_INTEGER / 60)
-        ? wholeMinutes * 60
-        : null
+    const durationSeconds = parseDurationToSeconds(duration, true)
     const hasDistance = distance.trim().length > 0
     const distanceMetres = hasDistance ? parsePositiveWholeNumber(distance) : undefined
     const occurredAt = combineLocalDateTime(date, time)
 
     if (!trimmedActivity) nextErrors.activity = 'Add an activity.'
     if (trimmedActivity.length > 80) nextErrors.activity = 'Keep the activity to 80 characters or fewer.'
-    if (!durationSeconds) nextErrors.duration = 'Enter a whole number of minutes greater than 0.'
+    if (!durationSeconds) nextErrors.duration = 'Enter a duration like 45 min or 1 hr 30 min.'
     if (hasDistance && !distanceMetres) {
       nextErrors.distance = 'Enter a whole number of metres greater than 0, or leave it blank.'
     }
@@ -106,7 +103,7 @@ export function ExerciseForm({
       ...(typeof distanceMetres === 'number' ? { distanceMetres } : {}),
       durationSeconds,
       occurredAt,
-      source: 'manual',
+      source: initialData?.source ?? 'manual',
     })
   }
 
@@ -133,16 +130,16 @@ export function ExerciseForm({
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="exercise-duration" className="form-label">Duration (minutes)</label>
+          <label htmlFor="exercise-duration" className="form-label">Duration</label>
           <input
             id="exercise-duration"
             name="duration"
             type="text"
-            inputMode="numeric"
+            inputMode="text"
             autoComplete="off"
             value={duration}
             onChange={(event) => setDuration(event.target.value)}
-            placeholder="30"
+            placeholder="45 min or 1 hr 30 min"
             aria-invalid={Boolean(errors.duration)}
             aria-describedby={errors.duration ? 'exercise-duration-error' : undefined}
             className="form-control"
