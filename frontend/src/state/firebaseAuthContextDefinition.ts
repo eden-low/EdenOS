@@ -6,7 +6,9 @@ export interface FirebaseSession {
   firestore: Firestore
   isAnonymous: boolean
   email: string | null
-  connectGoogle: () => Promise<'connected' | 'cancelled'>
+  connectGoogle: () => Promise<'connected' | 'cancelled' | 'existing-empty' | 'existing-with-data' | 'existing-unavailable'>
+  continueWithExistingGoogle: () => Promise<void>
+  discardExistingGoogleChoice: () => void
   signOutGoogle: () => Promise<void>
 }
 

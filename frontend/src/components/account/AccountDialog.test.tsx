@@ -9,12 +9,16 @@ vi.mock('../../state/useFirebaseAuth', () => ({ useFirebaseAuth: vi.fn() }))
 
 const connectGoogle = vi.fn()
 const signOutGoogle = vi.fn()
+const continueWithExistingGoogle = vi.fn()
+const discardExistingGoogleChoice = vi.fn()
 
 function renderAccount(isAnonymous = true, email: string | null = null) {
   vi.mocked(useFirebaseAuth).mockReturnValue({
     isAnonymous,
     email,
     connectGoogle,
+    continueWithExistingGoogle,
+    discardExistingGoogleChoice,
     signOutGoogle,
   } as unknown as ReturnType<typeof useFirebaseAuth>)
   render(<UserSettingsContext.Provider value={{
@@ -29,6 +33,8 @@ function renderAccount(isAnonymous = true, email: string | null = null) {
 beforeEach(() => {
   connectGoogle.mockReset()
   signOutGoogle.mockReset()
+  continueWithExistingGoogle.mockReset()
+  discardExistingGoogleChoice.mockReset()
 })
 
 describe('Account dialog presentation', () => {
@@ -46,22 +52,40 @@ describe('Account dialog presentation', () => {
     expect(document.activeElement).toBe(trigger)
   })
 
-  it('keeps the exact conflict message as an alert and prioritizes exit', async () => {
-    connectGoogle.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+  it('keeps a Guest with data protected and prioritizes exit', async () => {
+    connectGoogle.mockResolvedValue('existing-with-data')
     const trigger = renderAccount()
 
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
     const alert = await screen.findByRole('alert')
-    expect(alert.textContent).toBe(
-      'This Google account is already connected to another EdenOS account. Your guest records are unchanged.',
-    )
-    expect(screen.getByRole('button', { name: 'Connect Google account' }).className).toContain('border')
+    expect(alert.textContent).toContain('This Guest has saved data')
+    expect(screen.queryByRole('button', { name: 'Continue with existing Google account' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy()
     expect(signOutGoogle).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Done' }))
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Account' })).toBeNull())
     expect(document.activeElement).toBe(trigger)
+  })
+
+  it('offers an explicit existing-account action only for an empty Guest', async () => {
+    connectGoogle.mockResolvedValue('existing-empty')
+    renderAccount()
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
+    expect(await screen.findByRole('button', { name: 'Continue with existing Google account' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Continue with existing Google account' }))
+    await waitFor(() => expect(continueWithExistingGoogle).toHaveBeenCalledOnce())
+    expect(signOutGoogle).not.toHaveBeenCalled()
+  })
+
+  it('keeps the Guest dialog available if existing-account sign-in fails', async () => {
+    connectGoogle.mockResolvedValue('existing-empty')
+    continueWithExistingGoogle.mockRejectedValue({ code: 'auth/network-request-failed' })
+    renderAccount()
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue with existing Google account' }))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('connection was interrupted'))
+    expect(screen.getByText('Guest')).toBeTruthy()
   })
 
   it('renders an existing Google-linked status without changing its action', () => {
