@@ -9,6 +9,8 @@ import {
 } from '../services/firebaseAuthService'
 import { FirebaseAuthProvider } from './FirebaseAuthProvider'
 import { useFirebaseAuth } from './useFirebaseAuth'
+import { UserSettingsContext } from './userSettingsContextDefinition'
+import { emptyUserSettings } from '../domain/userSettings'
 
 vi.mock('../lib/firebase', () => ({
   firebaseInitialization: { status: 'ready', services: { auth: {}, firestore: {} } },
@@ -26,7 +28,10 @@ function Workspace() {
     <>
       <output data-testid="uid">{uid}</output>
       <output data-testid="account-kind">{isAnonymous ? 'guest' : 'google'}</output>
-      <AccountDialog><button type="button">Account</button></AccountDialog>
+      <UserSettingsContext.Provider value={{
+        settings: emptyUserSettings, status: 'loaded',
+        saveBodyWeight: vi.fn(async () => undefined), saveMonthlyBudget: vi.fn(async () => undefined), saveSavingsGoal: vi.fn(async () => undefined),
+      }}><AccountDialog><button type="button">Account</button></AccountDialog></UserSettingsContext.Provider>
     </>
   )
 }

@@ -59,6 +59,7 @@ service cloud.firestore {
         ])
         && data.keys().hasOnly([
           'activity',
+          'intensity',
           'distanceMetres',
           'durationSeconds',
           'source',
@@ -69,6 +70,7 @@ service cloud.firestore {
         && data.activity is string
         && data.activity.size() > 0
         && data.activity.size() <= 80
+        && (!('intensity' in data) || data.intensity in ['light', 'moderate', 'vigorous'])
         && data.durationSeconds is int
         && data.durationSeconds > 0
         && data.durationSeconds <= 9007199254740991
@@ -106,6 +108,28 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time;
       allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/settings/preferences {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.keys().hasOnly([
+          'bodyWeightKg', 'monthlyBudgetSen', 'savingsGoalSen', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll(['updatedAt'])
+        && request.resource.data.updatedAt == request.time
+        && (!('bodyWeightKg' in request.resource.data)
+          || (request.resource.data.bodyWeightKg is number
+            && request.resource.data.bodyWeightKg >= 20
+            && request.resource.data.bodyWeightKg <= 500))
+        && (!('monthlyBudgetSen' in request.resource.data)
+          || (request.resource.data.monthlyBudgetSen is int
+            && request.resource.data.monthlyBudgetSen > 0
+            && request.resource.data.monthlyBudgetSen <= 9007199254740991))
+        && (!('savingsGoalSen' in request.resource.data)
+          || (request.resource.data.savingsGoalSen is int
+            && request.resource.data.savingsGoalSen > 0
+            && request.resource.data.savingsGoalSen <= 9007199254740991));
     }
 
     match /{document=**} {
