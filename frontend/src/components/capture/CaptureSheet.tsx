@@ -1,5 +1,6 @@
 import { Camera, Dumbbell, Keyboard, MessageSquareText } from 'lucide-react'
 import { useRef, useState, type ReactNode } from 'react'
+import type { ExerciseTextCandidate, ExerciseTextParseResult } from '../../domain/parseExerciseText'
 import { exerciseWriteErrorMessage } from '../../lib/exerciseWriteError'
 import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
 import { useRecords } from '../../state/useRecords'
@@ -15,12 +16,13 @@ import {
 } from '../ui/dialog'
 import { ExpenseForm } from './ExpenseForm'
 import { ExerciseForm } from './ExerciseForm'
+import { ExerciseTextCaptureForm } from './ExerciseTextCaptureForm'
 import { ReviewExercise } from './ReviewExercise'
 import { ReviewExpense } from './ReviewExpense'
 import { ReceiptCaptureForm } from './ReceiptCaptureForm'
 import { TextCaptureForm } from './TextCaptureForm'
 
-type CaptureStep = 'menu' | 'expense' | 'expense-text' | 'expense-receipt' | 'expense-receipt-edit' | 'expense-review' | 'exercise' | 'exercise-review'
+type CaptureStep = 'menu' | 'expense' | 'expense-text' | 'expense-receipt' | 'expense-receipt-edit' | 'expense-review' | 'exercise' | 'exercise-text' | 'exercise-review'
 
 export function CaptureSheet({ children }: { children: ReactNode }) {
   const {
@@ -41,6 +43,9 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const [hasUnsavedFormChanges, setHasUnsavedFormChanges] = useState(false)
   const [receiptCandidate, setReceiptCandidate] = useState<ReceiptCandidate | null>(null)
   const [discardConfirmationOpen, setDiscardConfirmationOpen] = useState(false)
+  const [exerciseText, setExerciseText] = useState('')
+  const [exerciseTextError, setExerciseTextError] = useState<string | null>(null)
+  const [exerciseTextCandidate, setExerciseTextCandidate] = useState<ExerciseTextCandidate | null>(null)
   const confirmInFlight = useRef(false)
   const activeExpenseDraft = drafts.find(
     (draft): draft is ExpenseDraft => draft.kind === 'expense' && draft.id === activeDraftId,
@@ -57,6 +62,9 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setHasUnsavedFormChanges(false)
     setReceiptCandidate(null)
     setDiscardConfirmationOpen(false)
+    setExerciseText('')
+    setExerciseTextError(null)
+    setExerciseTextCandidate(null)
   }
 
   function handleOpenChange(nextOpen: boolean) {
@@ -99,6 +107,21 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setHasUnsavedFormChanges(false)
     setConfirmError(null)
     setStep('exercise-review')
+  }
+
+  function handleExerciseTextContinue(result: ExerciseTextParseResult) {
+    if (result.kind === 'empty') {
+      setExerciseTextError('Describe an activity and duration, like running 45min.')
+      return
+    }
+    setExerciseTextError(null)
+    if (result.kind === 'complete') {
+      handleExerciseReview(result.data)
+      return
+    }
+    setExerciseTextCandidate(result.candidate)
+    setHasUnsavedFormChanges(true)
+    setStep('exercise')
   }
 
   async function handleExpenseConfirm() {
@@ -151,7 +174,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               Start an expense or exercise draft.
             </DialogDescription>
 
-            <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => {
@@ -169,6 +192,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={() => {
+                  setExerciseTextCandidate(null)
                   setHasUnsavedFormChanges(false)
                   setStep('exercise')
                 }}
@@ -178,6 +202,20 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
                   <Dumbbell aria-hidden="true" size={19} strokeWidth={1.8} />
                 </span>
                 Exercise
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setHasUnsavedFormChanges(false)
+                  setStep('exercise-text')
+                }}
+                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--accent-teal)] bg-[var(--accent-teal-wash)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
+              >
+                <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent-teal)] text-[var(--surface-base)]">
+                  <MessageSquareText aria-hidden="true" size={19} strokeWidth={1.8} />
+                </span>
+                Exercise text
               </button>
 
               <button
@@ -336,20 +374,55 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
         {step === 'exercise' && (
           <>
             <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
-              Manual Exercise
+              {exerciseTextCandidate ? 'Complete exercise' : 'Manual Exercise'}
             </DialogTitle>
             <DialogDescription className="mt-2 mb-6 text-sm leading-6 text-[var(--text-secondary)]">
-              Capture the session essentials. Nothing is trusted until you confirm it.
+              {exerciseTextCandidate
+                ? 'Check the fields we could read, then complete or correct this exercise before review.'
+                : 'Capture the session essentials. Nothing is trusted until you confirm it.'}
             </DialogDescription>
             <ExerciseForm
-              initialData={activeExerciseDraft?.data}
+              initialData={activeExerciseDraft?.data ?? exerciseTextCandidate ?? undefined}
               submitLabel="Review"
               onSubmit={handleExerciseReview}
               onCancel={() => {
                 setHasUnsavedFormChanges(false)
-                setStep(activeExerciseDraft ? 'exercise-review' : 'menu')
+                setStep(activeExerciseDraft ? 'exercise-review' : exerciseTextCandidate ? 'exercise-text' : 'menu')
               }}
-              onDirtyChange={setHasUnsavedFormChanges}
+              onDirtyChange={(dirty) => setHasUnsavedFormChanges(dirty || Boolean(exerciseTextCandidate))}
+            />
+          </>
+        )}
+
+        {step === 'exercise-text' && (
+          <>
+            <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
+              Exercise text
+            </DialogTitle>
+            <DialogDescription className="mt-2 mb-6 text-sm leading-6 text-[var(--text-secondary)]">
+              Describe one session, then review it before confirming.
+            </DialogDescription>
+            <ExerciseTextCaptureForm
+              text={exerciseText}
+              onTextChange={(value) => {
+                setExerciseText(value)
+                setExerciseTextError(null)
+                setHasUnsavedFormChanges(value.length > 0)
+              }}
+              onContinue={handleExerciseTextContinue}
+              onCancel={() => {
+                setHasUnsavedFormChanges(false)
+                setExerciseTextCandidate(null)
+                setExerciseText('')
+                setStep('menu')
+              }}
+              onManual={() => {
+                setExerciseTextCandidate(null)
+                setExerciseText('')
+                setHasUnsavedFormChanges(false)
+                setStep('exercise')
+              }}
+              error={exerciseTextError}
             />
           </>
         )}

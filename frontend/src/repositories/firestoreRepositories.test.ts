@@ -6,7 +6,8 @@ import { createFirestoreExpenseRepository } from './firestoreExpenseRepository'
 const firestoreMock = vi.hoisted(() => {
   const deletedField = { deleted: true }
   const transaction = {
-    get: vi.fn(async () => ({ exists: () => true })),
+    get: vi.fn(async () => ({ exists: (): boolean => true })),
+    set: vi.fn(),
     update: vi.fn(),
   }
   return { deletedField, transaction }
@@ -28,6 +29,21 @@ const firestore = {} as Firestore
 const occurredAt = '2026-09-17T10:00:00.000Z'
 
 describe('Firestore optional-field updates', () => {
+  it('writes a confirmed text-sourced Exercise with internal seconds and no inferred distance', async () => {
+    firestoreMock.transaction.get.mockResolvedValueOnce({ exists: () => false })
+    firestoreMock.transaction.set.mockClear()
+    const repository = createFirestoreExerciseRepository(firestore, 'user')
+    await repository.createExercise('exercise', {
+      activity: 'Badminton', durationSeconds: 5400, occurredAt, source: 'text',
+    })
+
+    expect(firestoreMock.transaction.set).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ activity: 'Badminton', durationSeconds: 5400, source: 'text' }),
+    )
+    expect(firestoreMock.transaction.set.mock.calls[0][1]).not.toHaveProperty('distanceMetres')
+  })
+
   it('deletes cleared Exercise distance instead of writing zero', async () => {
     firestoreMock.transaction.update.mockClear()
     const repository = createFirestoreExerciseRepository(firestore, 'user')

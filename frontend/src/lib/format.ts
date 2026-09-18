@@ -47,6 +47,40 @@ export function formatDuration(durationSeconds: number): string {
   return `${hours} hr ${minutes} min`
 }
 
+export function parseDurationToSeconds(input: string, allowBareMinutes = false): number | null {
+  const value = input.trim()
+  if (!value) return null
+
+  let minutes: number | null = null
+  if (allowBareMinutes && /^\d+$/.test(value)) {
+    minutes = Number(value)
+  } else if (/^一个半\s*小时$/.test(value)) {
+    minutes = 90
+  } else {
+    const minuteUnit = '(?:分钟|分|minutes?|mins?|m)'
+    const hourUnit = '(?:小时|hours?|hrs?|h)'
+    const minuteOnly = value.match(new RegExp(`^(\\d+)\\s*${minuteUnit}$`, 'i'))
+    const hoursAndMinutes = value.match(
+      new RegExp(`^(\\d+(?:\\.\\d+)?|一|半)\\s*${hourUnit}(?:\\s*(\\d+)\\s*${minuteUnit})?$`, 'i'),
+    )
+
+    if (minuteOnly) {
+      minutes = Number(minuteOnly[1])
+    } else if (hoursAndMinutes) {
+      const hourValue = hoursAndMinutes[1] === '一'
+        ? 1
+        : hoursAndMinutes[1] === '半' ? 0.5 : Number(hoursAndMinutes[1])
+      const extraMinutes = Number(hoursAndMinutes[2] ?? 0)
+      if (extraMinutes >= 60) return null
+      minutes = hourValue * 60 + extraMinutes
+    }
+  }
+
+  if (minutes === null || !Number.isSafeInteger(minutes) || minutes <= 0) return null
+  const seconds = minutes * 60
+  return Number.isSafeInteger(seconds) ? seconds : null
+}
+
 export function formatExerciseMetrics(
   durationSeconds: number,
   distanceMetres?: number,
