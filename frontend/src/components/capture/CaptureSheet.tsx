@@ -1,5 +1,5 @@
 import { Camera, Dumbbell, Keyboard, MessageSquareText } from 'lucide-react'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { ExerciseTextCandidate, ExerciseTextParseResult } from '../../domain/parseExerciseText'
 import { exerciseWriteErrorMessage } from '../../lib/exerciseWriteError'
 import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
@@ -46,6 +46,10 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const [exerciseText, setExerciseText] = useState('')
   const [exerciseTextError, setExerciseTextError] = useState<string | null>(null)
   const [exerciseTextCandidate, setExerciseTextCandidate] = useState<ExerciseTextCandidate | null>(null)
+  const [stepHeight, setStepHeight] = useState<number | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [stepContent, setStepContent] = useState<HTMLDivElement | null>(null)
+  const [closingDraft, setClosingDraft] = useState<ExpenseDraft | ExerciseDraft | null>(null)
   const confirmInFlight = useRef(false)
   const activeExpenseDraft = drafts.find(
     (draft): draft is ExpenseDraft => draft.kind === 'expense' && draft.id === activeDraftId,
@@ -53,9 +57,30 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const activeExerciseDraft = drafts.find(
     (draft): draft is ExerciseDraft => draft.kind === 'exercise' && draft.id === activeDraftId,
   )
+  const visibleExpenseDraft = activeExpenseDraft ?? (!open && closingDraft?.kind === 'expense' ? closingDraft : undefined)
+  const visibleExerciseDraft = activeExerciseDraft ?? (!open && closingDraft?.kind === 'exercise' ? closingDraft : undefined)
 
-  function resetAndClose() {
-    setOpen(false)
+  useLayoutEffect(() => {
+    if (!open || !stepContent) return
+    const content = stepContent
+    const measure = () => {
+      const height = content.getBoundingClientRect().height
+      if (height > 0) setStepHeight(height)
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [open, stepContent])
+
+  useEffect(() => {
+    if (!successMessage) return
+    const timeout = window.setTimeout(() => setSuccessMessage(null), 4000)
+    return () => window.clearTimeout(timeout)
+  }, [successMessage])
+
+  function clearCaptureState() {
     setStep('menu')
     setActiveDraftId(null)
     setConfirmError(null)
@@ -65,10 +90,20 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     setExerciseText('')
     setExerciseTextError(null)
     setExerciseTextCandidate(null)
+    setStepHeight(null)
+    setClosingDraft(null)
+  }
+
+  function resetAndClose() {
+    setClosingDraft(activeExpenseDraft ?? activeExerciseDraft ?? null)
+    setOpen(false)
+    setDiscardConfirmationOpen(false)
   }
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
+      clearCaptureState()
+      setSuccessMessage(null)
       setOpen(true)
       return
     }
@@ -150,6 +185,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     try {
       await confirmExerciseDraft(activeExerciseDraft.id)
       resetAndClose()
+      setSuccessMessage('Exercise saved')
     } catch (error) {
       setConfirmError(exerciseWriteErrorMessage(error, 'create'))
     } finally {
@@ -162,88 +198,92 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
+        variant="capture"
         closeDisabled={isConfirming || discardConfirmationOpen}
-        className={step === 'menu' ? undefined : 'sm:w-[min(38rem,calc(100vw-2rem))]'}
+        className="sm:w-[min(38rem,calc(100vw-2rem))]"
       >
+        <div className="capture-scroll-region" style={{ height: stepHeight ?? undefined }}>
+          <div ref={setStepContent} key={step} className="capture-step">
         {step === 'menu' && (
           <>
             <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
-              What do you want to capture?
+              Capture
             </DialogTitle>
             <DialogDescription className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-              Start an expense or exercise draft.
+              Choose a method. Review before confirming.
             </DialogDescription>
-
-            <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setHasUnsavedFormChanges(false)
-                  setStep('expense')
-                }}
-                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--accent-primary)] bg-[var(--accent-wash)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--accent-wash-strong)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
-              >
-                <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent-primary)] text-white">
-                  <Keyboard aria-hidden="true" size={19} strokeWidth={1.8} />
-                </span>
-                Quick entry
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setExerciseTextCandidate(null)
-                  setHasUnsavedFormChanges(false)
-                  setStep('exercise')
-                }}
-                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--accent-teal)] bg-[var(--accent-teal-wash)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
-              >
-                <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent-teal)] text-[var(--surface-base)]">
-                  <Dumbbell aria-hidden="true" size={19} strokeWidth={1.8} />
-                </span>
-                Exercise
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setHasUnsavedFormChanges(false)
-                  setStep('exercise-text')
-                }}
-                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--accent-teal)] bg-[var(--accent-teal-wash)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
-              >
-                <span className="grid size-10 place-items-center rounded-xl bg-[var(--accent-teal)] text-[var(--surface-base)]">
-                  <MessageSquareText aria-hidden="true" size={19} strokeWidth={1.8} />
-                </span>
-                Exercise text
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setHasUnsavedFormChanges(false)
-                  setStep('expense-text')
-                }}
-                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
-              >
-                <span className="grid size-10 place-items-center rounded-xl bg-[var(--surface-elevated)] text-[var(--accent-soft)]">
-                  <MessageSquareText aria-hidden="true" size={19} strokeWidth={1.8} />
-                </span>
-                Text Capture
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setHasUnsavedFormChanges(false)
-                  setStep('expense-receipt')
-                }}
-                className="flex min-h-30 flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-2 text-sm font-semibold text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
-              >
-                <span className="grid size-10 place-items-center rounded-xl bg-[var(--surface-elevated)] text-[var(--accent-soft)]">
-                  <Camera aria-hidden="true" size={19} strokeWidth={1.8} />
-                </span>
-                Receipt Capture
-              </button>
+            <div className="mt-6 space-y-6">
+              <section aria-labelledby="capture-expense-heading">
+                <h2 id="capture-expense-heading" className="section-label mb-3">Expense</h2>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    aria-label="Expense Manual"
+                    className="capture-method capture-method-expense"
+                    onClick={() => {
+                      setHasUnsavedFormChanges(false)
+                      setStep('expense')
+                    }}
+                  >
+                    <Keyboard aria-hidden="true" size={20} strokeWidth={1.8} />
+                    <span>Manual</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Expense Text"
+                    className="capture-method capture-method-expense"
+                    onClick={() => {
+                      setHasUnsavedFormChanges(false)
+                      setStep('expense-text')
+                    }}
+                  >
+                    <MessageSquareText aria-hidden="true" size={20} strokeWidth={1.8} />
+                    <span>Text</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Expense Receipt"
+                    className="capture-method capture-method-expense"
+                    onClick={() => {
+                      setHasUnsavedFormChanges(false)
+                      setStep('expense-receipt')
+                    }}
+                  >
+                    <Camera aria-hidden="true" size={20} strokeWidth={1.8} />
+                    <span>Receipt</span>
+                  </button>
+                </div>
+              </section>
+              <section aria-labelledby="capture-exercise-heading" className="border-t border-[var(--border-subtle)] pt-5">
+                <h2 id="capture-exercise-heading" className="section-label mb-3">Exercise</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    aria-label="Exercise Manual"
+                    className="capture-method capture-method-exercise"
+                    onClick={() => {
+                      setExerciseTextCandidate(null)
+                      setHasUnsavedFormChanges(false)
+                      setStep('exercise')
+                    }}
+                  >
+                    <Dumbbell aria-hidden="true" size={20} strokeWidth={1.8} />
+                    <span>Manual</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Exercise Text"
+                    className="capture-method capture-method-exercise"
+                    onClick={() => {
+                      setHasUnsavedFormChanges(false)
+                      setStep('exercise-text')
+                    }}
+                  >
+                    <MessageSquareText aria-hidden="true" size={20} strokeWidth={1.8} />
+                    <span>Text</span>
+                  </button>
+                </div>
+              </section>
             </div>
           </>
         )}
@@ -349,7 +389,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
           </>
         )}
 
-        {step === 'expense-review' && activeExpenseDraft && (
+        {step === 'expense-review' && visibleExpenseDraft && (
           <>
             <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
               Review expense
@@ -358,7 +398,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               Check this draft before it joins your records.
             </DialogDescription>
             <ReviewExpense
-              draft={activeExpenseDraft}
+              draft={visibleExpenseDraft}
               onEdit={() => {
                 setConfirmError(null)
                 setHasUnsavedFormChanges(false)
@@ -427,7 +467,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
           </>
         )}
 
-        {step === 'exercise-review' && activeExerciseDraft && (
+        {step === 'exercise-review' && visibleExerciseDraft && (
           <>
             <DialogTitle className="pr-12 text-xl font-semibold tracking-[-0.025em] text-[var(--text-primary)]">
               Review exercise
@@ -436,7 +476,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
               Check this draft before it joins your records.
             </DialogDescription>
             <ReviewExercise
-              data={activeExerciseDraft.data}
+              data={visibleExerciseDraft.data}
               onEdit={() => {
                 setConfirmError(null)
                 setHasUnsavedFormChanges(false)
@@ -448,6 +488,8 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
             />
           </>
         )}
+          </div>
+        </div>
       </DialogContent>
 
       <Dialog open={discardConfirmationOpen} onOpenChange={setDiscardConfirmationOpen}>
@@ -472,6 +514,11 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
           </div>
         </DialogContent>
       </Dialog>
+      {successMessage && (
+        <div role="status" aria-live="polite" className="capture-success">
+          {successMessage}
+        </div>
+      )}
     </Dialog>
   )
 }

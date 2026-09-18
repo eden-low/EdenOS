@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RecordsContext, type RecordsContextValue } from '../../state/recordsContextDefinition'
@@ -13,8 +13,8 @@ vi.mock('../../services/receiptOcrService', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../services/receiptOcrService')>(), readReceiptImage,
 }))
 
-const confirmExpenseDraft = vi.fn(async () => undefined)
-const confirmExerciseDraft = vi.fn(async () => undefined)
+const confirmExpenseDraft = vi.fn(async (): Promise<void> => undefined)
+const confirmExerciseDraft = vi.fn(async (): Promise<void> => undefined)
 
 function Harness() {
   const [drafts, setDrafts] = useState<RecordDraft[]>([])
@@ -75,8 +75,10 @@ function Harness() {
 }
 
 beforeEach(() => {
-  confirmExpenseDraft.mockClear()
-  confirmExerciseDraft.mockClear()
+  confirmExpenseDraft.mockReset()
+  confirmExpenseDraft.mockResolvedValue(undefined)
+  confirmExerciseDraft.mockReset()
+  confirmExerciseDraft.mockResolvedValue(undefined)
   readReceiptImage.mockClear()
   URL.createObjectURL = vi.fn(() => 'blob:receipt')
   URL.revokeObjectURL = vi.fn()
@@ -84,8 +86,74 @@ beforeEach(() => {
 
 function openExpenseForm() {
   fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Quick entry' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Expense Manual' }))
 }
+
+function openExerciseReview(text: string) {
+  fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Exercise Text' }))
+  fireEvent.change(screen.getByLabelText('What exercise did you do?'), { target: { value: text } })
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+}
+
+describe('Capture prototype', () => {
+  it('groups all existing methods by domain with clear labels', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    const expense = screen.getByRole('region', { name: 'Expense' })
+    const exercise = screen.getByRole('region', { name: 'Exercise' })
+    expect(within(expense).getAllByRole('button').map((button) => button.getAttribute('aria-label')))
+      .toEqual(['Expense Manual', 'Expense Text', 'Expense Receipt'])
+    expect(within(exercise).getAllByRole('button').map((button) => button.getAttribute('aria-label')))
+      .toEqual(['Exercise Manual', 'Exercise Text'])
+  })
+
+  it('returns focus to Capture after Escape', async () => {
+    render(<Harness />)
+    const trigger = screen.getByRole('button', { name: 'Capture' })
+    fireEvent.click(trigger)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('shows pending only while the confirmed write is unresolved, then acknowledges success', async () => {
+    let completeWrite: (() => void) | undefined
+    confirmExerciseDraft.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      completeWrite = resolve
+    }))
+    render(<Harness />)
+    openExerciseReview('跑步1h30')
+
+    const confirm = screen.getByRole('button', { name: 'Confirm exercise' })
+    fireEvent.click(confirm)
+    expect(confirmExerciseDraft).toHaveBeenCalledOnce()
+    const pendingButton = screen.getByRole('button', { name: 'Confirming…' })
+    expect(pendingButton.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(pendingButton)
+    expect(confirmExerciseDraft).toHaveBeenCalledOnce()
+    expect(screen.getByText('Review exercise')).toBeTruthy()
+    expect(screen.queryByText('Exercise saved')).toBeNull()
+
+    completeWrite?.()
+    await waitFor(() => expect(screen.queryByText('Review exercise')).toBeNull())
+    expect(screen.getByText('Exercise saved').getAttribute('role')).toBe('status')
+  })
+
+  it('keeps the reviewed draft and error visible when a confirmed write fails', async () => {
+    confirmExerciseDraft.mockRejectedValueOnce(new Error('write failed'))
+    render(<Harness />)
+    openExerciseReview('羽毛球1.5小时')
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm exercise' }))
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())
+    expect(screen.getByText('Review exercise')).toBeTruthy()
+    expect(screen.getByTestId('draft-count').textContent).toBe('1')
+    expect(screen.getByTestId('draft-data').textContent).toBe('Badminton:5400:text')
+    expect(screen.queryByText('Exercise saved')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Confirm exercise' }).hasAttribute('disabled')).toBe(false)
+  })
+})
 
 describe('Capture discard confirmation', () => {
   it('asks before closing a dirty form', () => {
@@ -121,7 +189,7 @@ describe('Text Capture', () => {
   it('sends a parsed candidate through the existing editable Review and explicit Confirm flow', async () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Text Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Expense Text' }))
     fireEvent.change(screen.getByLabelText('What did you spend?'), {
       target: { value: 'coffee RM6.80' },
     })
@@ -145,7 +213,7 @@ describe('Text Capture', () => {
   it('keeps ambiguous text recoverable and allows manual entry', () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Text Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Expense Text' }))
     fireEvent.change(screen.getByLabelText('What did you spend?'), {
       target: { value: 'lunch 12 30' },
     })
@@ -167,7 +235,7 @@ describe('Receipt Capture', () => {
   it('keeps OCR untrusted through Edit, Review, and explicit Confirm', async () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Receipt Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Expense Receipt' }))
     fireEvent.change(screen.getByLabelText('Choose receipt image'), {
       target: { files: [new File(['image'], 'receipt.png', { type: 'image/png' })] },
     })
@@ -194,7 +262,7 @@ describe('Receipt Capture', () => {
     readReceiptImage.mockResolvedValueOnce({ title: 'SHOP', amountIssue: 'ambiguous' })
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Receipt Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Expense Receipt' }))
     fireEvent.change(screen.getByLabelText('Choose receipt image'), {
       target: { files: [new File(['image'], 'receipt.png', { type: 'image/png' })] },
     })
@@ -213,7 +281,7 @@ describe('Receipt Capture', () => {
   it('releases the selected image when an unconfirmed capture is discarded', async () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Receipt Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Expense Receipt' }))
     fireEvent.change(screen.getByLabelText('Choose receipt image'), {
       target: { files: [new File(['image'], 'receipt.png', { type: 'image/png' })] },
     })
@@ -230,14 +298,17 @@ describe('Exercise text capture', () => {
   it('reviews a compact hour-minute duration without an automatic write', () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Exercise text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise Text' }))
+    const shell = screen.getByRole('dialog')
     fireEvent.change(screen.getByLabelText('What exercise did you do?'), {
       target: { value: '跑步1h30' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
 
+    expect(screen.getByRole('dialog')).toBe(shell)
     expect(screen.getByText('Review exercise')).toBeTruthy()
     expect(screen.getByText('1 hr 30 min')).toBeTruthy()
+    expect(screen.queryByText('5400')).toBeNull()
     expect(screen.getByTestId('draft-data').textContent).toBe('Running:5400:text')
     expect(confirmExerciseDraft).not.toHaveBeenCalled()
   })
@@ -245,7 +316,7 @@ describe('Exercise text capture', () => {
   it('creates a text candidate for Review, keeps Edit normalized, and writes only after Confirm', async () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Exercise text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise Text' }))
     fireEvent.change(screen.getByLabelText('What exercise did you do?'), {
       target: { value: '羽毛球1.5小时' },
     })
@@ -269,12 +340,14 @@ describe('Exercise text capture', () => {
   it('routes incomplete text through editable fields before it can become a draft', () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Exercise text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise Text' }))
+    const shell = screen.getByRole('dialog')
     fireEvent.change(screen.getByLabelText('What exercise did you do?'), {
-      target: { value: '跑步1h75' },
+      target: { value: '跑步' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
 
+    expect(screen.getByRole('dialog')).toBe(shell)
     expect(screen.getByTestId('draft-count').textContent).toBe('0')
     expect((screen.getByLabelText('Activity') as HTMLInputElement).value).toBe('Running')
     expect((screen.getByLabelText('Duration') as HTMLInputElement).value).toBe('')

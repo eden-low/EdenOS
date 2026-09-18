@@ -107,7 +107,7 @@ export function RecordsPage() {
           <p className="mt-3 text-sm text-[var(--text-secondary)] sm:text-base">Your activity history</p>
         </div>
         <CaptureSheet>
-          <Button className="hidden sm:inline-flex">
+          <Button className="press-feedback hidden sm:inline-flex">
             <Plus aria-hidden="true" size={18} />
             Capture
           </Button>
