@@ -3,6 +3,8 @@ import { formatMoney } from '../../lib/format'
 import type { MonthlySpendingSummary } from '../../types/dashboard'
 import type { RecordDomainStatus } from '../../types/records'
 import { Button } from '../ui/button'
+import { useUserSettings } from '../../state/useUserSettings'
+import { MoneySettingsDialog } from './MoneySettingsDialog'
 
 interface SpendingCardProps {
   spending: MonthlySpendingSummary
@@ -12,6 +14,7 @@ interface SpendingCardProps {
 }
 
 export function SpendingCard({ spending, status, error, onRetry }: SpendingCardProps) {
+  const { settings, status: settingsStatus } = useUserSettings()
   return (
     <section aria-label={`${spending.month} spending summary`} className="dashboard-card order-1 col-span-2 bg-[var(--surface-secondary)] p-6 sm:p-7 md:col-span-6 xl:col-span-5 xl:p-8">
       <div className="flex items-start justify-between gap-4">
@@ -50,9 +53,15 @@ export function SpendingCard({ spending, status, error, onRetry }: SpendingCardP
         )}
       </div>
 
-      <div className="mt-7 flex items-center gap-3 border-t border-[var(--border-subtle)] pt-4">
-        <Gauge aria-hidden="true" size={17} className="text-[var(--text-muted)]" />
-        <p className="text-sm font-semibold text-[var(--text-primary)]">Budget not configured</p>
+      <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <Gauge aria-hidden="true" size={17} className="shrink-0 text-[var(--text-muted)]" />
+          <p className="min-w-0 break-all text-sm font-semibold text-[var(--text-primary)]">
+            {settingsStatus === 'loading' ? 'Loading budget…' : settingsStatus === 'error' ? 'Budget unavailable' :
+              settings.monthlyBudgetSen === null ? 'Budget not configured' : `Monthly budget ${formatMoney(settings.monthlyBudgetSen)}`}
+          </p>
+        </div>
+        {settingsStatus === 'loaded' && <MoneySettingsDialog kind="budget" />}
       </div>
     </section>
   )
@@ -62,6 +71,8 @@ export function DailySpendingCards({
   spending,
   status,
 }: Pick<SpendingCardProps, 'spending' | 'status'>) {
+  const { settings, status: settingsStatus } = useUserSettings()
+  const remainingSen = settings.monthlyBudgetSen === null ? null : settings.monthlyBudgetSen - spending.spentSen
   return (
     <>
       <section aria-label="Today's spending" className="dashboard-card order-3 col-span-1 p-5 sm:p-6 md:col-span-3 xl:col-span-3">
@@ -88,13 +99,19 @@ export function DailySpendingCards({
         )}
       </section>
 
-      <section aria-label="Suggested spending today" className="dashboard-card order-4 col-span-1 bg-[var(--surface-secondary)] p-5 sm:p-6 md:col-span-3 xl:order-5 xl:col-span-4">
+      <section aria-label="Monthly budget remaining" className="dashboard-card order-4 col-span-1 bg-[var(--surface-secondary)] p-5 sm:p-6 md:col-span-3 xl:order-5 xl:col-span-4">
         <div className="flex items-center justify-between gap-2">
-          <p className="section-label">Suggested today</p>
+          <p className="section-label">Monthly remaining</p>
           <span className="size-2 rounded-full bg-[var(--text-muted)]" aria-hidden="true" />
         </div>
-        <p className="metric-value mt-6 text-2xl font-semibold text-[var(--text-muted)] sm:text-3xl">—</p>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">Budget not configured</p>
+        <p className="metric-value mt-6 break-all text-2xl font-semibold sm:text-3xl">
+          {status === 'loaded' && settingsStatus === 'loaded' && remainingSen !== null ? formatMoney(remainingSen) : '—'}
+        </p>
+        <p className="mt-1 text-sm text-[var(--text-secondary)]">
+          {settingsStatus === 'loading' ? 'Loading budget' : settingsStatus === 'error' ? 'Budget unavailable' :
+            remainingSen === null ? 'Budget not configured' : status !== 'loaded' ? 'Spending unavailable' :
+              remainingSen < 0 ? 'over monthly budget' : 'of monthly budget'}
+        </p>
       </section>
     </>
   )
