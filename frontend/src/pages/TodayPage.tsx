@@ -49,16 +49,20 @@ export function TodayPage() {
           : 'Recent activity unavailable'
 
   return (
-    <div className="mx-auto w-full max-w-[80rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+    <div className="core-page mx-auto w-full max-w-[80rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
       <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} />
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-5 sm:gap-4 md:grid-cols-6 xl:grid-cols-12">
-        <SavingsGoalCard />
+      <div className="mt-4 grid grid-cols-2 items-stretch gap-3 sm:mt-5 sm:gap-4 md:grid-cols-6 xl:grid-cols-12">
         <SpendingCard
           spending={dashboard.monthlySpending}
           status={expenseStatus}
           error={expenseError}
           onRetry={retryExpenseSubscription}
+        />
+        <RecentActivity
+          items={dashboard.recentActivity}
+          sourceLabel={recentActivitySource}
+          emptyMessage={recentActivityEmptyMessage}
         />
         <DailySpendingCards spending={dashboard.monthlySpending} status={expenseStatus} />
         <ExerciseCard
@@ -67,11 +71,7 @@ export function TodayPage() {
           error={exerciseError}
           onRetry={retryExerciseSubscription}
         />
-        <RecentActivity
-          items={dashboard.recentActivity}
-          sourceLabel={recentActivitySource}
-          emptyMessage={recentActivityEmptyMessage}
-        />
+        <SavingsGoalCard />
       </div>
     </div>
   )

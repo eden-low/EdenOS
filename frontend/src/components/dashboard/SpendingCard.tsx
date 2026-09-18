@@ -13,7 +13,7 @@ interface SpendingCardProps {
 
 export function SpendingCard({ spending, status, error, onRetry }: SpendingCardProps) {
   return (
-    <section aria-label={`${spending.month} spending summary`} className="dashboard-card order-2 col-span-2 min-h-70 bg-[var(--surface-secondary)] p-6 sm:p-7 md:col-span-3 xl:col-span-5 xl:p-8">
+    <section aria-label={`${spending.month} spending summary`} className="dashboard-card order-1 col-span-2 bg-[var(--surface-secondary)] p-6 sm:p-7 md:col-span-6 xl:col-span-5 xl:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="section-label">{spending.month} Spending</p>
@@ -24,7 +24,7 @@ export function SpendingCard({ spending, status, error, onRetry }: SpendingCardP
         </span>
       </div>
 
-      <div className="mt-9 sm:mt-10">
+      <div className="mt-7 sm:mt-8">
         {status === 'loaded' ? (
           <>
             <p className="metric-value text-[clamp(2rem,5vw,3.2rem)] font-semibold leading-none">
@@ -50,7 +50,7 @@ export function SpendingCard({ spending, status, error, onRetry }: SpendingCardP
         )}
       </div>
 
-      <div className="mt-8 flex items-center gap-3 border-t border-[var(--border-subtle)] pt-5">
+      <div className="mt-7 flex items-center gap-3 border-t border-[var(--border-subtle)] pt-4">
         <Gauge aria-hidden="true" size={17} className="text-[var(--text-muted)]" />
         <p className="text-sm font-semibold text-[var(--text-primary)]">Budget not configured</p>
       </div>
@@ -64,21 +64,21 @@ export function DailySpendingCards({
 }: Pick<SpendingCardProps, 'spending' | 'status'>) {
   return (
     <>
-      <section aria-label="Today's spending" className="dashboard-card order-3 col-span-1 min-h-40 p-5 sm:p-6 md:col-span-3 xl:order-5 xl:col-span-3">
+      <section aria-label="Today's spending" className="dashboard-card order-3 col-span-1 p-5 sm:p-6 md:col-span-3 xl:col-span-3">
         <div className="flex items-center justify-between gap-2">
           <p className="section-label">Today</p>
           <span className="size-2 rounded-full bg-[var(--accent-blue)]" aria-hidden="true" />
         </div>
         {status === 'loaded' ? (
           <>
-            <p className="metric-value mt-7 text-2xl font-semibold sm:text-3xl">
+            <p className="metric-value mt-6 text-2xl font-semibold sm:text-3xl">
               {formatMoney(spending.spentTodaySen)}
             </p>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">spent</p>
           </>
         ) : (
           <>
-            <p className="mt-7 text-lg font-semibold text-[var(--text-primary)]">
+            <p className="mt-6 text-lg font-semibold text-[var(--text-primary)]">
               {status === 'loading' ? 'Loading…' : 'Unavailable'}
             </p>
             <p className="mt-1 text-sm text-[var(--text-secondary)]">
@@ -88,12 +88,12 @@ export function DailySpendingCards({
         )}
       </section>
 
-      <section aria-label="Suggested spending today" className="dashboard-card order-3 col-span-1 min-h-40 bg-[var(--surface-secondary)] p-5 sm:p-6 md:col-span-3 xl:order-5 xl:col-span-5">
+      <section aria-label="Suggested spending today" className="dashboard-card order-4 col-span-1 bg-[var(--surface-secondary)] p-5 sm:p-6 md:col-span-3 xl:order-5 xl:col-span-4">
         <div className="flex items-center justify-between gap-2">
           <p className="section-label">Suggested today</p>
           <span className="size-2 rounded-full bg-[var(--text-muted)]" aria-hidden="true" />
         </div>
-        <p className="metric-value mt-7 text-2xl font-semibold text-[var(--text-muted)] sm:text-3xl">—</p>
+        <p className="metric-value mt-6 text-2xl font-semibold text-[var(--text-muted)] sm:text-3xl">—</p>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">Budget not configured</p>
       </section>
     </>

@@ -13,14 +13,14 @@ export function RecentActivity({
   emptyMessage?: string
 }) {
   return (
-    <section aria-label="Recent activity" className="dashboard-card order-5 col-span-2 p-6 md:col-span-6 xl:order-3 xl:col-span-7 xl:p-7">
-      <div className="flex items-center justify-between gap-4">
+    <section aria-label="Recent activity" className="dashboard-card order-2 col-span-2 p-5 sm:p-6 md:col-span-6 xl:col-span-7 xl:p-7">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <p className="section-label">Recent Activity</p>
         <span className="text-xs text-[var(--text-muted)]">{sourceLabel}</span>
       </div>
       <ul className="mt-4 divide-y divide-[var(--border-subtle)]">
         {items.length === 0 && (
-          <li className="rounded-2xl bg-[var(--surface-secondary)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
+          <li className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
             {emptyMessage}
           </li>
         )}
