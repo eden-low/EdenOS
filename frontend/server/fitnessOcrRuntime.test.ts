@@ -38,7 +38,19 @@ describe('fitness extraction server runtime', () => {
     mocked.extract.mockResolvedValueOnce({ activity: 'Running' }).mockResolvedValueOnce(valid)
     expect(await createFitnessOcrRuntime().extract(input)).toEqual(valid)
     expect(mocked.extract).toHaveBeenCalledTimes(2)
-    expect(mocked.extract.mock.calls.map((call) => call[1])).toEqual(['gemini-3.6-flash', 'gemini-2.5-flash'])
+    expect(mocked.extract.mock.calls.map((call) => call[1])).toEqual(['gemini-3.6-flash', 'gemini-3.1-flash-lite'])
+  })
+
+  it('uses the available fitness fallback after a primary 503', async () => {
+    vi.stubEnv('GEMINI_API_KEY', 'server-test-key')
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    mocked.extract.mockRejectedValueOnce({ status: 503 }).mockResolvedValueOnce(valid)
+    try {
+      expect(await createFitnessOcrRuntime().extract(input)).toEqual(valid)
+      expect(mocked.extract.mock.calls.map((call) => call[1])).toEqual([
+        'gemini-3.6-flash', 'gemini-3.1-flash-lite',
+      ])
+    } finally { warning.mockRestore() }
   })
 
   it('keeps readable fields when Gemini returns a relative date', async () => {
