@@ -2,7 +2,8 @@
   "name": "edenos-firebase-tooling",
   "private": true,
   "scripts": {
-    "firebase:deploy:rules": "firebase deploy --only firestore:rules"
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules",
+    "test:rules": "firebase emulators:exec --only firestore \"npm --prefix frontend run test:rules\""
   },
   "devDependencies": {
     "firebase-tools": "15.30.0"

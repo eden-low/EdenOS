@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { InlineError } from '../ui/InlineError'
 import { triggerPressFeedback } from '../ui/pressFeedback'
+import { BodyWeightSettings } from './BodyWeightSettings'
 
 const accountConflictMessage =
   'This Google account is already connected to another EdenOS account. Your guest records are unchanged.'
@@ -81,6 +82,8 @@ export function AccountDialog({ children }: { children: ReactNode }) {
             )}
           </div>
         </div>
+
+        <BodyWeightSettings />
 
         {isConflict ? (
           <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-[var(--border-strong)] bg-[var(--accent-teal-wash)] p-4 text-sm leading-6">

@@ -7,6 +7,7 @@ import { ConnectivityProvider } from './providers/ConnectivityProvider'
 import { PwaProvider } from './pwa/PwaProvider'
 import { FirebaseAuthProvider } from './state/FirebaseAuthProvider'
 import { RecordsProvider } from './state/RecordsContext'
+import { UserSettingsProvider } from './state/UserSettingsProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -15,7 +16,9 @@ createRoot(document.getElementById('root')!).render(
         <OfflineIndicator />
         <FirebaseAuthProvider>
           <RecordsProvider>
-            <App />
+            <UserSettingsProvider>
+              <App />
+            </UserSettingsProvider>
           </RecordsProvider>
         </FirebaseAuthProvider>
       </PwaProvider>

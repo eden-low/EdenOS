@@ -2,6 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFirebaseAuth } from '../../state/useFirebaseAuth'
 import { AccountDialog } from './AccountDialog'
+import { UserSettingsContext } from '../../state/userSettingsContextDefinition'
+import { emptyUserSettings } from '../../domain/userSettings'
 
 vi.mock('../../state/useFirebaseAuth', () => ({ useFirebaseAuth: vi.fn() }))
 
@@ -15,7 +17,10 @@ function renderAccount(isAnonymous = true, email: string | null = null) {
     connectGoogle,
     signOutGoogle,
   } as unknown as ReturnType<typeof useFirebaseAuth>)
-  render(<AccountDialog><button type="button">Open account</button></AccountDialog>)
+  render(<UserSettingsContext.Provider value={{
+    settings: emptyUserSettings, status: 'loaded',
+    saveBodyWeight: vi.fn(async () => undefined), saveMonthlyBudget: vi.fn(async () => undefined), saveSavingsGoal: vi.fn(async () => undefined),
+  }}><AccountDialog><button type="button">Open account</button></AccountDialog></UserSettingsContext.Provider>)
   const trigger = screen.getByRole('button', { name: 'Open account' })
   fireEvent.click(trigger)
   return trigger

@@ -101,6 +101,35 @@ Keep both credentials out of `VITE_*`, Git, and browser storage. Once Firebase A
 
 ## Validation and production build
 
+### Estimated Calories and account settings
+
+Account settings live at `users/{uid}/settings/preferences`. The optional fields are
+`bodyWeightKg` (20–500 kg, one decimal place), `monthlyBudgetSen` (one recurring
+monthly spending limit in integer sen), and `savingsGoalSen` (one target amount in
+integer sen, with no deadline or progress tracking). The document has a server
+`updatedAt` timestamp. The same UID owns settings and records, including for a
+guest account that is later linked to Google.
+
+Estimated Calories are derived from the current weight and Exercise record; kcal
+is never written to Firestore. The formula is `MET × 3.5 × kg / 200 × minutes`.
+The result keeps fractional kcal internally and is rounded to the nearest whole
+kcal for display. Missing weight, invalid duration, and unsupported activities
+show no number. An old Exercise without intensity uses the default below.
+
+MET source: [2024 Adult Compendium of Physical Activities](https://pacompendium.com/adult-compendium/).
+
+| Canonical activity | V1 mapping | Compendium code | MET | Default |
+| --- | --- | --- | ---: | --- |
+| Badminton | Social singles/doubles (Moderate) | [15030](https://pacompendium.com/sports/) | 5.5 | Yes |
+| Badminton | Competitive (Vigorous) | [15020](https://pacompendium.com/sports/) | 7.0 | No |
+| Running | Self-selected pace (Vigorous) | [12145](https://pacompendium.com/running/) | 10.5 | Yes |
+| Gym | General health club exercise (Moderate) | [02060](https://pacompendium.com/conditioning-exercise/) | 5.5 | Yes |
+
+Running pace and Gym workout details are not captured, so V1 uses the general
+Compendium entries instead of offering artificial intensity choices. Budget
+remaining is the configured monthly limit minus actual spending in the current
+month; it can be negative when spending exceeds the limit.
+
 ```bash
 cd frontend
 npm run lint
