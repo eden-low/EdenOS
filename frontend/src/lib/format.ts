@@ -59,12 +59,15 @@ export function parseDurationToSeconds(input: string, allowBareMinutes = false):
   } else {
     const minuteUnit = '(?:分钟|分|minutes?|mins?|m)'
     const hourUnit = '(?:小时|hours?|hrs?|h)'
+    const compactHoursAndMinutes = value.match(/^(\d+)h([0-5]\d)$/i)
     const minuteOnly = value.match(new RegExp(`^(\\d+)\\s*${minuteUnit}$`, 'i'))
     const hoursAndMinutes = value.match(
       new RegExp(`^(\\d+(?:\\.\\d+)?|一|半)\\s*${hourUnit}(?:\\s*(\\d+)\\s*${minuteUnit})?$`, 'i'),
     )
 
-    if (minuteOnly) {
+    if (compactHoursAndMinutes) {
+      minutes = Number(compactHoursAndMinutes[1]) * 60 + Number(compactHoursAndMinutes[2])
+    } else if (minuteOnly) {
       minutes = Number(minuteOnly[1])
     } else if (hoursAndMinutes) {
       const hourValue = hoursAndMinutes[1] === '一'

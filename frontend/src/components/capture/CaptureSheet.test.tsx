@@ -227,6 +227,21 @@ describe('Receipt Capture', () => {
 })
 
 describe('Exercise text capture', () => {
+  it('reviews a compact hour-minute duration without an automatic write', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Exercise text' }))
+    fireEvent.change(screen.getByLabelText('What exercise did you do?'), {
+      target: { value: '跑步1h30' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+
+    expect(screen.getByText('Review exercise')).toBeTruthy()
+    expect(screen.getByText('1 hr 30 min')).toBeTruthy()
+    expect(screen.getByTestId('draft-data').textContent).toBe('Running:5400:text')
+    expect(confirmExerciseDraft).not.toHaveBeenCalled()
+  })
+
   it('creates a text candidate for Review, keeps Edit normalized, and writes only after Confirm', async () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
@@ -256,7 +271,7 @@ describe('Exercise text capture', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
     fireEvent.click(screen.getByRole('button', { name: 'Exercise text' }))
     fireEvent.change(screen.getByLabelText('What exercise did you do?'), {
-      target: { value: '跑步1h30' },
+      target: { value: '跑步1h75' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
 
