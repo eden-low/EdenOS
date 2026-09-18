@@ -325,6 +325,11 @@ button:not(:disabled) {
 }
 
 @media (prefers-contrast: more) {
+  .core-page {
+    --border-subtle: rgba(255, 255, 255, 0.32);
+    --border-strong: rgba(255, 255, 255, 0.55);
+    --text-muted: #bdc7d7;
+  }
   .capture-dialog {
     --border-subtle: rgba(255, 255, 255, 0.32);
     --border-strong: rgba(255, 255, 255, 0.55);

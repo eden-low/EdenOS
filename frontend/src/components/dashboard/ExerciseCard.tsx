@@ -17,7 +17,7 @@ export function ExerciseCard({ exercise, status, error, onRetry }: ExerciseCardP
   const ExerciseIcon = getExerciseActivityIcon(latestActivity?.name ?? '')
 
   return (
-    <section aria-label="Weekly exercise" className="dashboard-card order-4 col-span-2 p-6 md:col-span-3 xl:col-span-5 xl:p-7">
+    <section aria-label="Weekly exercise" className="dashboard-card order-5 col-span-2 p-5 sm:p-6 md:col-span-6 xl:order-4 xl:col-span-5 xl:p-7">
       <div>
         <p className="section-label">This Week</p>
         {status === 'loaded' ? (

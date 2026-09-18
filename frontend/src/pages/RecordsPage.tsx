@@ -98,7 +98,7 @@ export function RecordsPage() {
   const hasRelevantError = relevantStatuses.includes('error')
 
   return (
-    <div className="mx-auto w-full max-w-[72rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+    <div className="core-page mx-auto w-full max-w-[72rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
       <header className="flex items-end justify-between gap-5">
         <div>
           <p className="section-label">Eden OS</p>
@@ -115,19 +115,20 @@ export function RecordsPage() {
         </CaptureSheet>
       </header>
 
-      <div className="mt-8 flex gap-2" role="tablist" aria-label="Record filters">
+      <div className="mt-8 flex gap-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-1.5 sm:inline-flex" role="tablist" aria-label="Record filters">
         {filters.map((item) => {
           const active = filter === item.value
           return (
             <button
               key={item.value}
               type="button"
+              {...triggerPressFeedback}
               role="tab"
               aria-selected={active}
               onClick={() => setFilter(item.value)}
-              className={`min-h-11 rounded-xl px-4 text-sm font-semibold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-[var(--focus)] ${
+              className={`press-feedback min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:flex-none sm:px-4 ${
                 active
-                  ? 'bg-[var(--accent-wash)] text-[var(--accent-soft)]'
+                  ? 'bg-[var(--accent-wash-strong)] text-[var(--accent-soft)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]'
               }`}
             >
@@ -137,7 +138,7 @@ export function RecordsPage() {
         })}
       </div>
 
-      <div className="dashboard-card mt-5 overflow-hidden px-5 py-2 sm:px-7 lg:px-8">
+      <div className="dashboard-card mt-4 overflow-hidden px-4 py-2 sm:px-7 lg:px-8">
         {showExpenseStatus && (
           <DomainStatusNotice
             label="Expense"
@@ -155,8 +156,11 @@ export function RecordsPage() {
           />
         )}
         {groups.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="font-semibold text-[var(--text-primary)]">
+          <div className="mx-auto flex max-w-md flex-col items-center py-14 text-center sm:py-18">
+            <span className="mb-5 grid size-12 place-items-center rounded-2xl border border-[var(--border-strong)] bg-[var(--accent-wash)] text-[var(--accent-soft)]">
+              <ReceiptText aria-hidden="true" size={21} strokeWidth={1.8} />
+            </span>
+            <p className="text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
               {hasRelevantLoading
                 ? 'Loading records'
                 : hasRelevantError
@@ -170,6 +174,14 @@ export function RecordsPage() {
                   ? 'Records from available sources will appear here.'
                   : 'Confirmed activity will appear here.'}
             </p>
+            {!hasRelevantLoading && !hasRelevantError && (
+              <CaptureSheet>
+                <Button {...triggerPressFeedback} className="press-feedback mt-6">
+                  <Plus aria-hidden="true" size={18} />
+                  Capture a record
+                </Button>
+              </CaptureSheet>
+            )}
           </div>
         ) : (
           groups.map((group) => (
@@ -187,9 +199,10 @@ export function RecordsPage() {
                       <button
                         key={expense.id}
                         type="button"
+                        {...triggerPressFeedback}
                         onClick={() => setSelectedExpenseId(expense.id)}
                         aria-label={`Open ${expense.title} expense`}
-                        className="group flex min-h-20 w-full items-center gap-3 rounded-xl py-4 text-left outline-none transition-colors hover:px-3 hover:bg-[var(--surface-secondary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:gap-4"
+                        className="press-feedback group flex min-h-20 w-full items-center gap-3 rounded-xl px-2 py-4 text-left outline-none hover:bg-[var(--surface-secondary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:gap-4 sm:px-3"
                       >
                         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-wash)] text-[var(--accent-soft)]">
                           <ReceiptText aria-hidden="true" size={19} strokeWidth={1.8} />
@@ -200,7 +213,7 @@ export function RecordsPage() {
                             {expenseCategoryLabels[expense.category]}
                           </p>
                         </div>
-                        <div className="ml-auto shrink-0 text-right">
+                        <div className="ml-auto min-w-0 shrink-0 text-right">
                           <p className="font-semibold text-[var(--text-primary)]">{formatMoney(expense.amountSen)}</p>
                           <p className="mt-1 text-xs text-[var(--text-muted)]">
                             {relativeDayLabel(expense.occurredAt, referenceDate)} · {formatTime(expense.occurredAt)}
@@ -216,9 +229,10 @@ export function RecordsPage() {
                     <button
                       key={exercise.id}
                       type="button"
+                      {...triggerPressFeedback}
                       onClick={() => setSelectedExerciseId(exercise.id)}
                       aria-label={`Open ${exercise.activity} exercise`}
-                      className="group flex min-h-20 w-full items-center gap-3 rounded-xl py-4 text-left outline-none transition-colors hover:px-3 hover:bg-[var(--surface-secondary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:gap-4"
+                      className="press-feedback group flex min-h-20 w-full items-center gap-3 rounded-xl px-2 py-4 text-left outline-none hover:bg-[var(--surface-secondary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:gap-4 sm:px-3"
                     >
                       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--accent-teal)]">
                         <ExerciseIcon aria-hidden="true" size={19} strokeWidth={1.8} />
@@ -242,12 +256,12 @@ export function RecordsPage() {
       </div>
 
       <ExpenseRecordDialog
-        key={selectedExpenseId ?? 'closed'}
+        key={`expense-${selectedExpenseId ?? 'closed'}`}
         record={selectedExpense}
         onClose={() => setSelectedExpenseId(null)}
       />
       <ExerciseRecordDialog
-        key={selectedExerciseId ?? 'closed'}
+        key={`exercise-${selectedExerciseId ?? 'closed'}`}
         record={selectedExercise}
         onClose={() => setSelectedExerciseId(null)}
       />
