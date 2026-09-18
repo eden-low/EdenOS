@@ -104,7 +104,7 @@ export function DailySpendingCards({
           <p className="section-label">Monthly remaining</p>
           <span className="size-2 rounded-full bg-[var(--text-muted)]" aria-hidden="true" />
         </div>
-        <p className="metric-value mt-6 break-all text-2xl font-semibold sm:text-3xl">
+        <p className="metric-value mt-6 break-all text-[clamp(1rem,5vw,1.5rem)] font-semibold sm:text-3xl">
           {status === 'loaded' && settingsStatus === 'loaded' && remainingSen !== null ? formatMoney(remainingSen) : '—'}
         </p>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
