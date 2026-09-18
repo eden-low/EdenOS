@@ -1,6 +1,7 @@
 import { CircleAlert, LoaderCircle, Plus, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CaptureSheet } from '../components/capture/CaptureSheet'
+import { triggerPressFeedback } from '../components/ui/pressFeedback'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
 import { ExerciseRecordDialog } from '../components/records/ExerciseRecordDialog'
 import { Button } from '../components/ui/button'
@@ -107,7 +108,7 @@ export function RecordsPage() {
           <p className="mt-3 text-sm text-[var(--text-secondary)] sm:text-base">Your activity history</p>
         </div>
         <CaptureSheet>
-          <Button className="press-feedback hidden sm:inline-flex">
+          <Button {...triggerPressFeedback} className="press-feedback hidden sm:inline-flex">
             <Plus aria-hidden="true" size={18} />
             Capture
           </Button>

@@ -1,6 +1,7 @@
 import { CalendarDays, ClipboardCheck, Layers3, Plus, UserRound } from 'lucide-react'
 import { AccountDialog } from '../account/AccountDialog'
 import { CaptureSheet } from '../capture/CaptureSheet'
+import { triggerPressFeedback } from '../ui/pressFeedback'
 
 export type AppPage = 'today' | 'records' | 'review'
 
@@ -101,6 +102,7 @@ export function MobileNavigation({
         />
         <CaptureSheet>
           <button
+            {...triggerPressFeedback}
             type="button"
             aria-label="Capture something"
             className="press-feedback mx-auto flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-xs font-semibold text-[var(--accent-soft)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]"

@@ -7,6 +7,7 @@ import { useRecords } from '../../state/useRecords'
 import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft } from '../../types/records'
 import type { ReceiptCandidate } from '../../types/receipt'
 import { Button } from '../ui/button'
+import { capturePressFeedback } from '../ui/pressFeedback'
 import {
   Dialog,
   DialogContent,
@@ -198,6 +199,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
+        {...capturePressFeedback}
         variant="capture"
         closeDisabled={isConfirming || discardConfirmationOpen}
         className="sm:w-[min(38rem,calc(100vw-2rem))]"

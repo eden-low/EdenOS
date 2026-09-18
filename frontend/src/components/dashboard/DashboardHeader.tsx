@@ -1,6 +1,7 @@
 import { CalendarDays, Plus } from 'lucide-react'
 import { Button } from '../ui/button'
 import { CaptureSheet } from '../capture/CaptureSheet'
+import { triggerPressFeedback } from '../ui/pressFeedback'
 
 export function DashboardHeader({
   greeting,
@@ -29,7 +30,7 @@ export function DashboardHeader({
         </div>
 
         <CaptureSheet>
-          <Button className="press-feedback self-start sm:self-auto">
+          <Button {...triggerPressFeedback} className="press-feedback self-start sm:self-auto">
             <Plus aria-hidden="true" size={18} strokeWidth={2.2} />
             Capture
           </Button>

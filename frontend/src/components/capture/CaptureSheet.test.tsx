@@ -108,6 +108,22 @@ describe('Capture prototype', () => {
       .toEqual(['Exercise Manual', 'Exercise Text'])
   })
 
+  it('starts press feedback on pointer down and clears it on cancellation or release', () => {
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    const method = screen.getByRole('button', { name: 'Exercise Text' })
+
+    fireEvent.pointerDown(method, { pointerType: 'touch' })
+    expect(method.getAttribute('data-pressed')).toBe('true')
+    fireEvent.pointerCancel(method, { pointerType: 'touch' })
+    expect(method.hasAttribute('data-pressed')).toBe(false)
+    expect(screen.getByRole('region', { name: 'Exercise' })).toBeTruthy()
+
+    fireEvent.pointerDown(method, { pointerType: 'mouse' })
+    fireEvent.pointerUp(method, { pointerType: 'mouse' })
+    expect(method.hasAttribute('data-pressed')).toBe(false)
+  })
+
   it('returns focus to Capture after Escape', async () => {
     render(<Harness />)
     const trigger = screen.getByRole('button', { name: 'Capture' })
