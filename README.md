@@ -130,6 +130,17 @@ Compendium entries instead of offering artificial intensity choices. Budget
 remaining is the configured monthly limit minus actual spending in the current
 month; it can be negative when spending exceeds the limit.
 
+### Daily Quote
+
+Today requests one sentence from Hitokoto's [public V1 sentence API](https://developer.hitokoto.cn/sentence/)
+using literature (`d`), original (`e`), poetry (`i`), and philosophy (`k`), with
+the API's `max_length=40` parameter. The browser caches the selected sentence
+and UUID by its local calendar date. Refreshing or revisiting Today on the same
+date uses that cache; the next local date requests a new sentence. A failed
+request uses the previous cached sentence or a quiet built-in fallback, and
+waits 30 minutes before another attempt. The request times out after 5 seconds.
+This optional content is never stored in Firestore.
+
 ```bash
 cd frontend
 npm run lint
