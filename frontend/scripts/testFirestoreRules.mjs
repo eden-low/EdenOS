@@ -40,6 +40,15 @@ try {
   }
   await assertSucceeds(setDoc(doc(alice, 'users/alice/exercises/old'), exercise))
   await assertSucceeds(setDoc(doc(alice, 'users/alice/exercises/intense'), { ...exercise, intensity: 'vigorous' }))
+  const screenshot = { ...exercise, source: 'fitness_screenshot', metricsSource: 'Apple Fitness',
+    reportedActiveCaloriesKcal: 382, reportedTotalCaloriesKcal: 431,
+    reportedAverageHeartRateBpm: 148, reportedSteps: 6150 }
+  await assertSucceeds(setDoc(doc(alice, 'users/alice/exercises/screenshot'), screenshot))
+  await assertFails(setDoc(doc(bob, 'users/alice/exercises/foreign-screenshot'), screenshot))
+  await assertFails(setDoc(doc(alice, 'users/alice/exercises/bad-calories'), { ...screenshot, reportedActiveCaloriesKcal: -1 }))
+  await assertFails(setDoc(doc(alice, 'users/alice/exercises/bad-heart'), { ...screenshot, reportedAverageHeartRateBpm: 'fast' }))
+  await assertFails(setDoc(doc(alice, 'users/alice/exercises/bad-steps'), { ...screenshot, reportedSteps: 1.5 }))
+  await assertFails(setDoc(doc(alice, 'users/alice/exercises/fake-manual'), { ...screenshot, source: 'manual' }))
   await assertFails(setDoc(doc(alice, 'users/alice/exercises/fake'), { ...exercise, estimatedCalories: 999 }))
   await assertFails(setDoc(doc(bob, 'users/alice/exercises/other'), exercise))
 

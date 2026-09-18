@@ -65,7 +65,9 @@ service cloud.firestore {
           'source',
           'occurredAt',
           'createdAt',
-          'updatedAt'
+          'updatedAt',
+          'metricsSource', 'reportedActiveCaloriesKcal', 'reportedTotalCaloriesKcal',
+          'reportedAverageHeartRateBpm', 'reportedSteps'
         ])
         && data.activity is string
         && data.activity.size() > 0
@@ -78,7 +80,19 @@ service cloud.firestore {
           || (data.distanceMetres is int
             && data.distanceMetres > 0
             && data.distanceMetres <= 9007199254740991))
-        && data.source in ['manual', 'text']
+        && data.source in ['manual', 'text', 'fitness_screenshot']
+        && (!data.keys().hasAny(['metricsSource', 'reportedActiveCaloriesKcal',
+          'reportedTotalCaloriesKcal', 'reportedAverageHeartRateBpm', 'reportedSteps'])
+          || data.source == 'fitness_screenshot')
+        && (!('metricsSource' in data) || data.metricsSource in ['Apple Fitness', 'Apple Health', 'Fitness screenshot'])
+        && (!('reportedActiveCaloriesKcal' in data) || (data.reportedActiveCaloriesKcal is int
+          && data.reportedActiveCaloriesKcal >= 0 && data.reportedActiveCaloriesKcal <= 9007199254740991))
+        && (!('reportedTotalCaloriesKcal' in data) || (data.reportedTotalCaloriesKcal is int
+          && data.reportedTotalCaloriesKcal >= 0 && data.reportedTotalCaloriesKcal <= 9007199254740991))
+        && (!('reportedAverageHeartRateBpm' in data) || (data.reportedAverageHeartRateBpm is int
+          && data.reportedAverageHeartRateBpm > 0 && data.reportedAverageHeartRateBpm <= 9007199254740991))
+        && (!('reportedSteps' in data) || (data.reportedSteps is int
+          && data.reportedSteps >= 0 && data.reportedSteps <= 9007199254740991))
         && data.occurredAt is timestamp
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
