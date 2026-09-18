@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { DashboardHeader } from '../components/dashboard/DashboardHeader'
+import { DailyQuote } from '../components/dashboard/DailyQuote'
 import { ExerciseCard } from '../components/dashboard/ExerciseCard'
 import { RecentActivity } from '../components/dashboard/RecentActivity'
 import { SavingsGoalCard } from '../components/dashboard/SavingsGoalCard'
@@ -51,6 +52,7 @@ export function TodayPage() {
   return (
     <div className="core-page mx-auto w-full max-w-[80rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
       <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} />
+      <DailyQuote referenceDate={referenceDate} />
 
       <div className="mt-4 grid grid-cols-2 items-stretch gap-3 sm:mt-5 sm:gap-4 md:grid-cols-6 xl:grid-cols-12">
         <SpendingCard
