@@ -1,6 +1,8 @@
 import { formatLongDate, formatTime } from '../../lib/date'
 import { formatDistance, formatDuration } from '../../lib/format'
+import { defaultIntensity, intensityOptions, type ExerciseIntensity } from '../../domain/estimatedCalories'
 import type { ExerciseData } from '../../types/records'
+import { EstimatedCalories } from '../exercise/EstimatedCalories'
 import { Button } from '../ui/button'
 import { InlineError } from '../ui/InlineError'
 
@@ -14,6 +16,7 @@ export function ReviewExercise({
   helperText = 'Confirmed exercise becomes a trusted record and updates Today.',
   confirmLabel = 'Confirm exercise',
   confirmingLabel = 'Confirming…',
+  onIntensityChange,
 }: {
   data: ExerciseData
   onEdit: () => void
@@ -24,7 +27,9 @@ export function ReviewExercise({
   helperText?: string
   confirmLabel?: string
   confirmingLabel?: string
+  onIntensityChange?: (intensity: ExerciseIntensity) => void
 }) {
+  const options = intensityOptions(data.activity)
   return (
     <div>
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5 sm:p-6">
@@ -59,6 +64,17 @@ export function ReviewExercise({
             </dd>
           </div>
         </dl>
+        {options.length > 1 && onIntensityChange && (
+          <div className="mt-5">
+            <label htmlFor="exercise-intensity" className="form-label">Intensity</label>
+            <select id="exercise-intensity" className="form-control" value={data.intensity ?? defaultIntensity(data.activity) ?? ''}
+              onChange={(event) => onIntensityChange(event.target.value as ExerciseIntensity)} disabled={isConfirming}>
+              {options.map((option) => <option key={option} value={option}>{option[0].toUpperCase() + option.slice(1)}</option>)}
+            </select>
+            <p className="mt-2 text-xs text-[var(--text-muted)]">Default: Moderate (social play). Vigorous uses competitive play.</p>
+          </div>
+        )}
+        <div className="mt-5 border-t border-[var(--border-subtle)] pt-4"><EstimatedCalories exercise={data} /></div>
       </div>
 
       <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">

@@ -11,6 +11,7 @@ import type { ExerciseData, ExerciseRecord } from '../../types/records'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
 import { InlineError } from '../ui/InlineError'
+import { EstimatedCalories } from '../exercise/EstimatedCalories'
 
 type RecordStep = 'view' | 'edit' | 'review' | 'delete'
 
@@ -136,6 +137,7 @@ export function ExerciseRecordDialog({
                   </dd>
                 </div>
               </dl>
+              <div className="mt-5 border-t border-[var(--border-subtle)] pt-4"><EstimatedCalories exercise={record} /></div>
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -196,6 +198,7 @@ export function ExerciseRecordDialog({
             </DialogDescription>
             <ReviewExercise
               data={pendingData}
+              onIntensityChange={(intensity) => setPendingData({ ...pendingData, intensity })}
               onEdit={() => {
                 setOperationError(null)
                 setStep('edit')

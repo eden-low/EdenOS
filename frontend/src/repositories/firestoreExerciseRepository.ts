@@ -18,6 +18,7 @@ import type { ExerciseRepository } from './exerciseRepository'
 
 const exerciseFields = new Set([
   'activity',
+  'intensity',
   'distanceMetres',
   'durationSeconds',
   'source',
@@ -52,6 +53,7 @@ function mapExerciseDocument(
     !Number.isSafeInteger(data.durationSeconds) ||
     data.durationSeconds <= 0 ||
     !hasValidDistance ||
+    (data.intensity !== undefined && !['light', 'moderate', 'vigorous'].includes(data.intensity)) ||
     (data.source !== 'manual' && data.source !== 'text') ||
     !occurredAt ||
     !createdAt ||
@@ -66,6 +68,7 @@ function mapExerciseDocument(
   return {
     id: snapshot.id,
     activity,
+    ...(data.intensity === undefined ? {} : { intensity: data.intensity }),
     ...(data.distanceMetres === undefined ? {} : { distanceMetres: data.distanceMetres }),
     durationSeconds: data.durationSeconds,
     source: data.source,
@@ -78,6 +81,7 @@ function mapExerciseDocument(
 function exerciseDocumentData(data: ExerciseData) {
   return {
     activity: data.activity.trim(),
+    ...(data.intensity === undefined ? {} : { intensity: data.intensity }),
     ...(data.distanceMetres === undefined ? {} : { distanceMetres: data.distanceMetres }),
     durationSeconds: data.durationSeconds,
     source: data.source,
@@ -135,6 +139,7 @@ export function createFirestoreExerciseRepository(
         transaction.update(exerciseReference, {
           ...exerciseDocumentData(data),
           distanceMetres: data.distanceMetres ?? deleteField(),
+          intensity: data.intensity ?? deleteField(),
           updatedAt: serverTimestamp(),
         })
       })

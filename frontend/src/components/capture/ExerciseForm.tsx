@@ -100,6 +100,7 @@ export function ExerciseForm({
 
     onSubmit({
       activity: trimmedActivity,
+      ...(initialData?.intensity && trimmedActivity === initialData.activity ? { intensity: initialData.intensity } : {}),
       ...(typeof distanceMetres === 'number' ? { distanceMetres } : {}),
       durationSeconds,
       occurredAt,

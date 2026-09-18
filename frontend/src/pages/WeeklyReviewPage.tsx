@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Dumbbell, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { EstimatedCalories } from '../components/exercise/EstimatedCalories'
 import { triggerPressFeedback } from '../components/ui/pressFeedback'
 import { expenseCategoryLabels } from '../domain/expense'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
@@ -192,6 +193,7 @@ export function WeeklyReviewPage() {
                           <p className="mt-1 text-[var(--text-muted)]">
                             {formatDateHeading(session.occurredAt)} · {formatTime(session.occurredAt)}
                           </p>
+                          <EstimatedCalories compact exercise={session} />
                         </div>
                         <p className="text-[var(--text-secondary)]">
                           {formatExerciseMetrics(session.durationSeconds, session.distanceMetres)}

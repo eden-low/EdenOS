@@ -35,6 +35,7 @@ function selectRecentActivity(
         id: exercise.id,
         type: 'exercise' as const,
         title: exercise.activity,
+        intensity: exercise.intensity,
         distanceMetres: exercise.distanceMetres,
         durationSeconds: exercise.durationSeconds,
         occurredAt: relativeDayLabel(exercise.occurredAt, referenceDate),
@@ -86,6 +87,7 @@ export function selectDashboardSummary(
       latestActivity: latestExercise
         ? {
             name: latestExercise.activity,
+            intensity: latestExercise.intensity,
             distanceMetres: latestExercise.distanceMetres,
             durationSeconds: latestExercise.durationSeconds,
           }
