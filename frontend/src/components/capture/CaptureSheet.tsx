@@ -65,7 +65,7 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     if (!open || !stepContent) return
     const content = stepContent
     const measure = () => {
-      const height = content.getBoundingClientRect().height
+      const height = content.offsetHeight
       if (height > 0) setStepHeight(height)
     }
     measure()

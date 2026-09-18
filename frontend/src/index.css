@@ -181,6 +181,7 @@ button:not(:disabled) {
 }
 
 .capture-dialog {
+  --capture-content-max-height: calc(88dvh - 5.25rem - env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   max-height: 88dvh;
@@ -200,11 +201,8 @@ button:not(:disabled) {
 .capture-scroll-region {
   flex: 0 1 auto;
   min-height: 0;
-  max-height: calc(88dvh - 5.25rem - env(safe-area-inset-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scroll-padding-bottom: 8rem;
+  max-height: var(--capture-content-max-height);
+  overflow: hidden;
   transition: height 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -213,7 +211,24 @@ button:not(:disabled) {
 }
 
 .capture-step {
+  display: flex;
+  max-height: var(--capture-content-max-height);
+  min-height: 0;
+  flex-direction: column;
   animation: capture-step-in 130ms ease-out both;
+}
+
+.capture-step > :not(:last-child) {
+  flex: none;
+}
+
+.capture-step > :last-child {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  scroll-padding-bottom: 8rem;
 }
 
 .capture-method {
@@ -285,9 +300,9 @@ button:not(:disabled) {
 }
 
 @media (min-width: 640px) {
+  .capture-dialog { --capture-content-max-height: calc(88dvh - 5rem); }
   .capture-dialog[data-state="open"] { animation-name: capture-desktop-in; }
   .capture-dialog[data-state="closed"] { animation-name: capture-desktop-out; }
-  .capture-scroll-region { max-height: calc(88dvh - 5rem); }
   .capture-success { bottom: 1.5rem; right: 1.5rem; }
 }
 
