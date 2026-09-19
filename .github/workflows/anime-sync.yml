@@ -25,6 +25,9 @@ on:
         description: Probe up to three normalized media URLs per title
         type: boolean
         default: false
+  push:
+    tags:
+      - anime-sync-small-validation-20260919
 
 permissions:
   contents: read
@@ -59,6 +62,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - name: Run bounded Anime sync
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           args=("--mode=$SYNC_MODE" "--limit=$SYNC_LIMIT")
@@ -66,3 +70,25 @@ jobs:
           if [[ "$SYNC_DRY_RUN" == "true" ]]; then args+=("--dry-run"); fi
           if [[ "$SYNC_PROBE_MEDIA" == "true" ]]; then args+=("--probe-media"); fi
           npm run sync:animes -- "${args[@]}"
+      - name: Validate small-sync configuration
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          test "$ANIME_SYNC_PROVIDERS" = "lzi,ffzy"
+          test "$R2_BUCKET" = "edenos-anime"
+          test -n "$EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON"
+          test -n "$R2_ACCOUNT_ID"
+          test -n "$R2_ACCESS_KEY_ID"
+          test -n "$R2_SECRET_ACCESS_KEY"
+      - name: Probe configured providers
+        if: github.event_name == 'push'
+        run: npm run sync:animes -- --probe --providers=lzi,ffzy
+      - name: Dry run 15 items per provider
+        if: github.event_name == 'push'
+        run: npm run sync:animes -- --mode=incremental --dry-run --providers=lzi,ffzy --limit=15
+      - name: Publish small validation sample
+        if: github.event_name == 'push'
+        run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15 --probe-media
+      - name: Verify small-sync idempotency
+        if: github.event_name == 'push'
+        run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15
