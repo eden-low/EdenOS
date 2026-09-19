@@ -31,18 +31,21 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
   const sourceSelectRef = useRef<HTMLSelectElement>(null)
   const latestRef = useRef<{ position: number; duration: number }>({ position: 0, duration: 0 })
   const saved = target ? items.find((item) => item.externalId === target.externalId) : undefined
+  const savedRef = useRef(saved)
+  useEffect(() => { savedRef.current = saved }, [saved])
 
   const load = useCallback(async () => {
     if (!target) return
     setState('loading'); setError(''); setDetail(null)
     try {
       const result = await loadAnimeDetail(target.externalId)
+      const initialSaved = savedRef.current
       setDetail(result)
-      const preferred = saved?.currentEpisode
+      const preferred = initialSaved?.currentEpisode
       setEpisodeNumber(preferred && result.episodes.some((episode) => episode.episodeNumber === preferred) ? preferred : result.episodes[0].episodeNumber)
       setSourceIndex(0)
-      const initialPosition = saved?.positionSeconds ?? 0
-      latestRef.current = { position: initialPosition, duration: saved?.durationSeconds ?? 0 }
+      const initialPosition = initialSaved?.positionSeconds ?? 0
+      latestRef.current = { position: initialPosition, duration: initialSaved?.durationSeconds ?? 0 }
       setResumePosition(initialPosition)
       attemptedSources.current.clear()
       setFailoverState('idle')
@@ -52,7 +55,7 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
         ? t('contentUnavailable') : t('detailsError'))
       setState('error')
     }
-  }, [saved, t, target])
+  }, [t, target])
 
   // Loading is intentionally coupled to the dialog-open target.
   // oxlint-disable-next-line react-hooks/set-state-in-effect
