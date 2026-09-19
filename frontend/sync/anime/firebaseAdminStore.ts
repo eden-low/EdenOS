@@ -9,6 +9,7 @@ export interface ExistingCatalogueRecord {
   title: string
   mediaType?: AnimeMediaType
   region?: AnimeRegion
+  year?: number
 }
 
 interface ServiceAccountConfig {
@@ -132,6 +133,7 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
           title: typeof data.title === 'string' ? data.title : '',
           ...(typeof data.mediaType === 'string' ? { mediaType: data.mediaType as AnimeMediaType } : {}),
           ...(typeof data.region === 'string' ? { region: data.region as AnimeRegion } : {}),
+          ...(typeof data.year === 'number' ? { year: data.year } : {}),
         }
       })
     },
