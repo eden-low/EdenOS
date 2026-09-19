@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { animeFilterKeysForIngestion, normalizeAnimeTitle } from '../../src/domain/anime'
 import type { AnimeMediaType, AnimeRegion, AnimeStatus } from '../../src/types/anime'
-import type { AnimeProviderConfig, MacCmsVodItem, ProviderAnimeRecord, ProviderEpisodeSource } from './types'
+import type { AnimeContentGroup, AnimeProviderConfig, MacCmsVodItem, ProviderAnimeRecord, ProviderEpisodeSource } from './types'
 
 const htmlEntities: Record<string, string> = {
   amp: '&', apos: "'", gt: '>', lt: '<', nbsp: ' ', quot: '"',
@@ -149,7 +149,7 @@ function parseProviderTime(value: unknown): number | undefined {
 export function normalizeProviderAnime(
   item: MacCmsVodItem,
   provider: AnimeProviderConfig,
-  overrides: { mediaType?: AnimeMediaType; region?: AnimeRegion } = {},
+  overrides: { mediaType?: AnimeMediaType; region?: AnimeRegion; contentGroup?: AnimeContentGroup; requiredGenres?: string[] } = {},
 ): { record: ProviderAnimeRecord; unsupported: number } {
   const providerItemId = String(item.vod_id ?? '').trim()
   const title = cleanText(item.vod_name)
@@ -171,6 +171,7 @@ export function normalizeProviderAnime(
     providerDisplayName: provider.displayName,
     providerPriority: provider.priority,
     providerItemId,
+    ...(overrides.contentGroup ? { contentGroup: overrides.contentGroup } : {}),
     title,
     titleNormalized: normalizeAnimeTitle(title),
     alternateTitles: [...new Set(alternateTitles)],
@@ -179,7 +180,7 @@ export function normalizeProviderAnime(
     ...(parseScore(item.vod_score) !== undefined ? { score: parseScore(item.vod_score) } : {}),
     mediaType: overrides.mediaType ?? normalizeMediaType(item),
     ...((overrides.region ?? normalizeRegion(item.vod_area)) ? { region: overrides.region ?? normalizeRegion(item.vod_area) } : {}),
-    genres: normalizeGenres(`${item.vod_class ?? ''} ${item.type_name ?? ''}`),
+    genres: [...new Set([...normalizeGenres(`${item.vod_class ?? ''} ${item.type_name ?? ''}`), ...(overrides.requiredGenres ?? [])])],
     status: normalizeStatus(item.vod_remarks),
     ...(year ? { year } : {}),
     ...(totalEpisodes ? { totalEpisodes } : {}),

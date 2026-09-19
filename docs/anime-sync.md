@@ -44,8 +44,9 @@ npm run sync:animes -- --mode=incremental --providers=providerA,providerB --limi
 ```
 
 Inspect the probe and dry-run summary before the small live command. Do not
-start with an unrestricted full import. The GitHub workflow is manual only and
-defaults to a 20-item dry run.
+start with an unrestricted full import. The GitHub workflow is manual and
+defaults to dry-run mode; set either a small item limit or bounded content
+group targets explicitly.
 
 Other supported commands:
 
@@ -55,20 +56,29 @@ npm run sync:animes -- --from-cache=.cache/anime-sync/raw/RUN_ID --dry-run
 npm run sync:animes -- --retry-failed=.cache/anime-sync/failed/RUN_ID.json --dry-run
 npm run sync:animes -- --probe-media --limit=5 --dry-run
 npm run sync:animes -- --dry-run --cleanup=plan --providers=providerA,providerB --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+npm run sync:animes -- --dry-run --providers=providerA,providerB --content-groups=china_anime:250,east_asia_anime:550,western_anime:150,hong_kong_taiwan_anime:20,overseas_anime:20,animation_movie:10 --concurrency=3
 ```
 
 ## Anime content-quality import
 
-The bounded Anime import discovers each provider's category tree and accepts
-only the exact current categories equivalent to `国产动漫`, `日韩动漫`, and
-`欧美动漫`. Japanese entries must also resolve to Japan; Korean or ambiguous
-East Asian entries are not relabeled as Japanese. The canonical Western region
-is the existing frontend value `europe_us`.
+The bounded media import discovers each provider's category tree and accepts
+only the exact current categories `国产动漫`, `日韩动漫`, `欧美动漫`, `港台动漫`,
+`海外动漫`, and `动画片`. It never guesses numeric type IDs. `日韩动漫` uses
+the detail record's area, preserving Korea as `korea`; an unclear area remains
+`other` rather than being relabeled as Japan. `动画片` is normalized as
+`mediaType=movie` with the `Animation` genre marker. The other five approved
+categories remain `mediaType=anime`.
 
 `--content-targets` caps canonical output after conservative deduplication. Its
 combined total cannot exceed 650. The content policy rejects commentary markers
 from titles, provider categories, and `vod_class`; it never scans descriptions
 for the word `解说`.
+
+`--content-groups` is the broader, resumable import contract. It accepts the
+six stable group keys shown above, caps the combined target at 9,500, and keeps
+the same source maps, canonical IDs, hashes, R2-first publication order, and
+idempotent skips between waves. Use increasing bounded targets rather than one
+unrestricted provider import.
 
 Cleanup must always be planned before it is applied:
 

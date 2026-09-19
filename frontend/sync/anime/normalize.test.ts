@@ -54,4 +54,12 @@ describe('Anime sync normalization', () => {
     expect(animeFilterKeysForIngestion(record)).not.toContain('genre:fantasy')
     expect(animeFilterKeysForIngestion(record)).toContain('genre:action|mediaType:anime|region:japan|status:airing|year:1999')
   })
+
+  it('adds the animation marker and movie filter keys for 动画片 imports', () => {
+    const { record } = normalizeProviderAnime(vodItem({ type_name: '动画片', vod_class: '' }), providerConfig(), {
+      mediaType: 'movie', region: 'europe_us', contentGroup: 'animation_movie', requiredGenres: ['Animation'],
+    })
+    expect(record).toMatchObject({ mediaType: 'movie', region: 'europe_us', genres: ['Animation'], contentGroup: 'animation_movie' })
+    expect(animeFilterKeysForIngestion(record)).toContain('genre:animation|mediaType:movie|region:europe_us|status:airing|year:1999')
+  })
 })

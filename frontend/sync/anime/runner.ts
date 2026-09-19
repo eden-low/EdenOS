@@ -11,6 +11,7 @@ import type { AnimeDetailStore } from './r2Store'
 import type { AnimeSyncStore } from './firebaseAdminStore'
 import type {
   AnimeProviderConfig,
+  AnimeContentGroup,
   AnimeUpstreamProvider,
   CanonicalAnime,
   MacCmsVodItem,
@@ -21,6 +22,7 @@ import type {
   SyncOptions,
   SyncSummary,
 } from './types'
+import type { AnimeMediaType, AnimeRegion } from '../../src/types/anime'
 
 export interface AnimeSyncDependencies {
   providers: AnimeUpstreamProvider[]
@@ -53,6 +55,19 @@ function chunks<T>(items: T[], size: number): T[][] {
   return result
 }
 
+function usesContentPolicy(options: SyncOptions): boolean {
+  return Boolean(options.contentTargets || options.contentGroupTargets)
+}
+
+function targetForPolicy(options: SyncOptions, policy: AnimeCategoryPolicy): number {
+  if (options.contentGroupTargets) return options.contentGroupTargets[policy.group]
+  if (!options.contentTargets) return 0
+  if (policy.group === 'china_anime') return options.contentTargets.china
+  if (policy.group === 'east_asia_anime') return options.contentTargets.japan
+  if (policy.group === 'western_anime') return options.contentTargets.europe_us
+  return 0
+}
+
 async function fetchProvider(
   provider: AnimeUpstreamProvider,
   cache: AnimeRawCache,
@@ -73,14 +88,14 @@ async function fetchProvider(
       return []
     }), pages: 0, policies: [], commentaryRejected: 0, otherRejected: 0 }
   }
-  if (options.contentTargets) {
+  if (usesContentPolicy(options)) {
     const policies = discoverAnimeCategoryPolicies(await provider.fetchCategories())
     const items: MacCmsVodItem[] = []
     let pages = 0
     let commentaryRejected = 0
     let otherRejected = 0
     for (const policy of policies) {
-      const target = options.contentTargets[policy.region]
+      const target = targetForPolicy(options, policy)
       if (!target) continue
       const providerTarget = Math.ceil((target / providerCount) * 1.25) + 2
       let pageNumber = 1
@@ -89,17 +104,17 @@ async function fetchProvider(
       do {
         try {
           const page = await provider.fetchPage(pageNumber, undefined, policy.typeId)
-          await cache.writePage(`${provider.config.id}-${policy.region}`, pageNumber, page.raw)
+          await cache.writePage(`${provider.config.id}-${policy.group}`, pageNumber, page.raw)
           pages += 1
           pageCount = page.pageCount
           for (const item of page.items) {
-            const decision = classifyAnimeContent(item, policies, { allowMissingJapaneseArea: true })
+            const decision = classifyAnimeContent(item, policies)
             if (!decision.accepted) {
               if (decision.reason === 'commentary') commentaryRejected += 1
               else otherRejected += 1
               continue
             }
-            if (decision.region !== policy.region || item.vod_id === undefined || item.vod_id === null) continue
+            if (decision.group !== policy.group || item.vod_id === undefined || item.vod_id === null) continue
             accepted.set(String(item.vod_id), item)
             if (accepted.size >= providerTarget) break
           }
@@ -188,18 +203,41 @@ function writeTimestamp(canonical: CanonicalAnime, previous: { updatedAtMs: numb
   return canonical.providerUpdatedAt ?? now
 }
 
-function selectContentTargets(canonicals: CanonicalAnime[], targets: Record<AnimeImportRegion, number> | undefined): CanonicalAnime[] {
-  if (!targets) return canonicals
+function selectContentTargets(
+  canonicals: CanonicalAnime[],
+  targets: Record<AnimeImportRegion, number> | undefined,
+  groupTargets: Record<AnimeContentGroup, number> | undefined,
+): CanonicalAnime[] {
+  if (!targets && !groupTargets) return canonicals
   const counts: Record<AnimeImportRegion, number> = { japan: 0, china: 0, europe_us: 0 }
+  const groupCounts = new Map<AnimeContentGroup, number>()
   return [...canonicals]
     .sort((left, right) => (right.providerUpdatedAt ?? 0) - (left.providerUpdatedAt ?? 0) || left.externalId.localeCompare(right.externalId))
     .filter((canonical) => {
+      if (groupTargets) {
+        const group = canonical.records[0]?.contentGroup
+        if (!group || (groupCounts.get(group) ?? 0) >= groupTargets[group]) return false
+        groupCounts.set(group, (groupCounts.get(group) ?? 0) + 1)
+        return true
+      }
       const region = canonical.index.region
       if (region !== 'japan' && region !== 'china' && region !== 'europe_us') return false
-      if (counts[region] >= targets[region]) return false
+      if (!targets || counts[region] >= targets[region]) return false
       counts[region] += 1
       return true
     })
+}
+
+function regionCounts(canonicals: CanonicalAnime[]): Record<AnimeRegion, number> {
+  const counts: Record<AnimeRegion, number> = { japan: 0, china: 0, europe_us: 0, korea: 0, hong_kong_taiwan: 0, other: 0 }
+  for (const canonical of canonicals) counts[canonical.index.region ?? 'other'] += 1
+  return counts
+}
+
+function mediaTypeCounts(canonicals: CanonicalAnime[]): Record<AnimeMediaType, number> {
+  const counts: Record<AnimeMediaType, number> = { anime: 0, movie: 0, tv_series: 0, documentary: 0 }
+  for (const canonical of canonicals) counts[canonical.index.mediaType] += 1
+  return counts
 }
 
 export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSyncDependencies): Promise<AnimeSyncResult> {
@@ -215,7 +253,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     : await Promise.all(providers.map((provider) => provider.probe()))
   if (options.probeOnly) {
     return {
-      summary: { runId: id, mode: options.mode, providers: providers.map((provider) => provider.config.id), fetched: 0, normalized: 0, canonicalTitles: 0, mergedDuplicates: 0, r2Uploaded: 0, r2Skipped: 0, firestoreUpserted: 0, firestoreSkipped: 0, providerFailures: probes.filter((probe) => !probe.reachable).length, itemFailures: 0, ambiguousMatches: 0, unsupportedPlaybackUrls: 0, elapsedMs: (dependencies.now?.() ?? Date.now()) - started, contentAccepted: { japan: 0, china: 0, europe_us: 0 }, commentaryRejected: 0, otherRejected: 0, providerStats: Object.fromEntries(providers.map((provider) => [provider.config.id, provider.stats])) },
+      summary: { runId: id, mode: options.mode, providers: providers.map((provider) => provider.config.id), fetched: 0, normalized: 0, canonicalTitles: 0, mergedDuplicates: 0, r2Uploaded: 0, r2Skipped: 0, firestoreUpserted: 0, firestoreSkipped: 0, providerFailures: probes.filter((probe) => !probe.reachable).length, itemFailures: 0, ambiguousMatches: 0, unsupportedPlaybackUrls: 0, elapsedMs: (dependencies.now?.() ?? Date.now()) - started, contentAccepted: { japan: 0, china: 0, europe_us: 0, korea: 0, hong_kong_taiwan: 0, other: 0 }, mediaTypeAccepted: { anime: 0, movie: 0, tv_series: 0, documentary: 0 }, commentaryRejected: 0, otherRejected: 0, providerStats: Object.fromEntries(providers.map((provider) => [provider.config.id, provider.stats])) },
       failures,
       canonicals: [],
       probes,
@@ -230,7 +268,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   for (const provider of providers) {
     const beforeFailures = failures.length
     const cachedItems = cached.get(provider.config.id) ?? []
-    const cachedPolicies = options.contentTargets ? discoverAnimeCategoryPolicies(cachedItems.flatMap((item) => item.type_id === undefined || item.type_id === null || !item.type_name ? [] : [{ id: String(item.type_id), name: String(item.type_name) }])) : []
+    const cachedPolicies = usesContentPolicy(options) ? discoverAnimeCategoryPolicies(cachedItems.flatMap((item) => item.type_id === undefined || item.type_id === null || !item.type_name ? [] : [{ id: String(item.type_id), name: String(item.type_name) }])) : []
     const fetched = options.fromCache
       ? { items: cachedItems, pages: 0, policies: cachedPolicies, commentaryRejected: 0, otherRejected: 0 }
       : await fetchProvider(provider, cache, options, failures, providers.length)
@@ -247,13 +285,18 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   for (const provider of providers) {
     for (const item of rawByProvider.get(provider.config.id) ?? []) {
       try {
-        const decision = options.contentTargets ? classifyAnimeContent(item, policiesByProvider.get(provider.config.id) ?? []) : null
+        const decision = usesContentPolicy(options) ? classifyAnimeContent(item, policiesByProvider.get(provider.config.id) ?? []) : null
         if (decision && !decision.accepted) {
           if (decision.reason === 'commentary') commentaryRejected += 1
           else otherRejected += 1
           continue
         }
-        const result = normalizeProviderAnime(item, provider.config, decision?.accepted ? { mediaType: 'anime', region: decision.region } : {})
+        const result = normalizeProviderAnime(item, provider.config, decision?.accepted ? {
+          mediaType: decision.mediaType,
+          region: decision.region,
+          contentGroup: decision.group,
+          requiredGenres: decision.requiredGenres,
+        } : {})
         normalized.push(result.record)
         unsupportedPlaybackUrls += result.unsupported
       } catch (error) {
@@ -267,17 +310,21 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   const externalIds = [...identity.groups.keys()]
   const states = dependencies.store ? await dependencies.store.getStates(externalIds) : new Map()
   const mergedCanonicals: CanonicalAnime[] = []
-  for (const [externalId, records] of identity.groups) {
-    try {
-      const prior = dependencies.detailStore ? await dependencies.detailStore.get(externalId) : null
-      const matching = identity.mappings.find((mapping) => mapping.canonicalExternalId === externalId)
-      const canonical = mergeCanonicalAnime(externalId, records, matching?.matchedBy ?? 'deterministic-new', prior ?? undefined)
-      mergedCanonicals.push(canonical)
-    } catch (error) {
-      failures.push({ provider: records[0].providerId, canonicalExternalId: externalId, stage: 'normalize', errorCode: 'canonical-output', message: safeMessage(error) })
+  const mergeJobs = [...identity.groups.entries()]
+  const mergeResults = await mapConcurrent(mergeJobs, Math.min(3, options.concurrency), async ([externalId, records]) => {
+    const prior = dependencies.detailStore && states.has(externalId) ? await dependencies.detailStore.get(externalId) : null
+    const matching = identity.mappings.find((mapping) => mapping.canonicalExternalId === externalId)
+    return mergeCanonicalAnime(externalId, records, matching?.matchedBy ?? 'deterministic-new', prior ?? undefined)
+  })
+  for (let index = 0; index < mergeResults.length; index += 1) {
+    const result = mergeResults[index]
+    if (result.status === 'fulfilled') mergedCanonicals.push(result.value)
+    else {
+      const [externalId, records] = mergeJobs[index]
+      failures.push({ provider: records[0].providerId, canonicalExternalId: externalId, stage: 'normalize', errorCode: 'canonical-output', message: safeMessage(result.reason) })
     }
   }
-  const canonicals = selectContentTargets(mergedCanonicals, options.contentTargets)
+  const canonicals = selectContentTargets(mergedCanonicals, options.contentTargets, options.contentGroupTargets)
 
   if (!options.dryRun && (!dependencies.store || !dependencies.detailStore)) {
     throw new Error('Live sync requires Firebase Admin and R2 write configuration')
@@ -286,7 +333,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   let r2Uploaded = 0
   let r2Skipped = 0
   let remainingMediaProbes = 10
-  for (const canonical of canonicals) {
+  const preparationResults = await mapConcurrent(canonicals, Math.min(3, options.concurrency), async (canonical) => {
     const indexHash = contentHash(canonical.index)
     const detailHash = contentHash(canonical.detail)
     const previous = states.get(canonical.externalId)
@@ -295,10 +342,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     let r2Changed = detailChanged
     if (!detailChanged && dependencies.detailStore) {
       try { r2Changed = !(await dependencies.detailStore.exists(canonical.externalId)) }
-      catch (error) {
-        failures.push({ provider: canonical.records[0].providerId, canonicalExternalId: canonical.externalId, stage: 'r2', errorCode: 'r2-head', message: safeMessage(error) })
-        continue
-      }
+      catch (error) { throw new Error(`r2-head: ${safeMessage(error)}`) }
     }
     if (options.probeMedia) {
       const sample = canonical.detail.episodes.flatMap((episode) => episode.sources).slice(0, Math.min(3, remainingMediaProbes))
@@ -311,14 +355,31 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     if (r2Changed) {
       if (!options.dryRun) {
         try { await dependencies.detailStore!.put(canonical.detail) }
-        catch (error) {
-          failures.push({ provider: canonical.records[0].providerId, canonicalExternalId: canonical.externalId, stage: 'r2', errorCode: 'r2-put', message: safeMessage(error) })
-          continue
-        }
+        catch (error) { throw new Error(`r2-put: ${safeMessage(error)}`) }
       }
-      r2Uploaded += 1
-    } else r2Skipped += 1
-    prepared.push({ canonical, indexHash, detailHash, updatedAtMs: writeTimestamp(canonical, previous, indexChanged || detailChanged, started), r2Changed, indexChanged })
+    }
+    return {
+      write: { canonical, indexHash, detailHash, updatedAtMs: writeTimestamp(canonical, previous, indexChanged || detailChanged, started), r2Changed, indexChanged },
+      r2Changed,
+    }
+  })
+  for (let index = 0; index < preparationResults.length; index += 1) {
+    const result = preparationResults[index]
+    if (result.status === 'fulfilled') {
+      prepared.push(result.value.write)
+      if (result.value.r2Changed) r2Uploaded += 1
+      else r2Skipped += 1
+    } else {
+      const canonical = canonicals[index]
+      const message = safeMessage(result.reason)
+      failures.push({
+        provider: canonical.records[0].providerId,
+        canonicalExternalId: canonical.externalId,
+        stage: 'r2',
+        errorCode: message.startsWith('r2-head:') ? 'r2-head' : 'r2-put',
+        message,
+      })
+    }
   }
   const successfulIds = new Set(prepared.map((write) => write.canonical.externalId))
   const successfulMappings = identity.mappings.filter((mapping) => {
@@ -345,11 +406,8 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     ambiguousMatches: identity.ambiguousMatches,
     unsupportedPlaybackUrls,
     elapsedMs: (dependencies.now?.() ?? Date.now()) - started,
-    contentAccepted: {
-      japan: canonicals.filter((canonical) => canonical.index.region === 'japan').length,
-      china: canonicals.filter((canonical) => canonical.index.region === 'china').length,
-      europe_us: canonicals.filter((canonical) => canonical.index.region === 'europe_us').length,
-    },
+    contentAccepted: regionCounts(canonicals),
+    mediaTypeAccepted: mediaTypeCounts(canonicals),
     commentaryRejected,
     otherRejected,
     providerStats: Object.fromEntries(providers.map((provider) => [provider.config.id, { ...provider.stats }])),

@@ -33,9 +33,7 @@ export function classifyExistingCatalogue(
     const titleCommentary = isCommentaryItem({ vod_name: record.title })
     const decisions = sourceDecisions.get(record.externalId) ?? []
     if (decisions.some((decision) => decision === null)) return { externalId: record.externalId, title: record.title, action: 'keep', reason: 'unverified-source' }
-    const accepted = record.mediaType === 'anime' &&
-      (record.region === 'japan' || record.region === 'china' || record.region === 'europe_us') &&
-      decisions.some((decision) => decision?.accepted && decision.region === record.region)
+    const accepted = decisions.some((decision) => decision?.accepted && decision.region === record.region && decision.mediaType === record.mediaType)
     if (accepted) return { externalId: record.externalId, title: record.title, action: 'keep', reason: 'accepted-anime' }
     const commentary = titleCommentary || decisions.some((decision) => decision !== null && !decision.accepted && decision.reason === 'commentary')
     return { externalId: record.externalId, title: record.title, action: 'remove', reason: commentary ? 'commentary' : 'other-non-anime' }

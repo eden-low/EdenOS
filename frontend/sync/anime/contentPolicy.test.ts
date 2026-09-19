@@ -1,22 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { animeContentTargets, classifyAnimeContent, discoverAnimeCategoryPolicies, isCommentaryItem } from './contentPolicy'
+import { animeContentGroupTargets, animeContentTargets, classifyAnimeContent, discoverAnimeCategoryPolicies, isCommentaryItem } from './contentPolicy'
 import { vodItem } from './testFixtures'
 
 const categories = discoverAnimeCategoryPolicies([
   { id: '29', parentId: '4', name: '国产动漫' },
   { id: '30', parentId: '4', name: '日韩动漫' },
   { id: '31', parentId: '4', name: '欧美动漫' },
+  { id: '32', parentId: '4', name: '港台动漫' },
+  { id: '33', parentId: '4', name: '海外动漫' },
+  { id: '49', parentId: '1', name: '动画片' },
   { id: '4', parentId: '0', name: '动漫片' },
 ])
 
 describe('Anime content policy', () => {
-  it('discovers only the three exact provider categories', () => {
+  it('discovers only the six approved provider categories', () => {
     expect(categories).toEqual(expect.arrayContaining([
-      expect.objectContaining({ typeId: '29', region: 'china' }),
-      expect.objectContaining({ typeId: '30', region: 'japan' }),
-      expect.objectContaining({ typeId: '31', region: 'europe_us' }),
+      expect.objectContaining({ typeId: '29', fallbackRegion: 'china' }),
+      expect.objectContaining({ typeId: '30', fallbackRegion: 'other' }),
+      expect.objectContaining({ typeId: '31', fallbackRegion: 'europe_us' }),
+      expect.objectContaining({ typeId: '32', group: 'hong_kong_taiwan_anime' }),
+      expect.objectContaining({ typeId: '33', group: 'overseas_anime' }),
+      expect.objectContaining({ typeId: '49', mediaType: 'movie' }),
     ]))
-    expect(categories).toHaveLength(3)
+    expect(categories).toHaveLength(6)
   })
 
   it.each(['电影解说', '影视解说', '动漫解说', '动画解说'])('rejects %s category markers', (marker) => {
@@ -45,14 +51,22 @@ describe('Anime content policy', () => {
     expect(classifyAnimeContent(vodItem({ type_id: 31, type_name: '欧美动漫', vod_area: '美国' }), categories)).toMatchObject({ accepted: true, region: 'europe_us' })
   })
 
-  it('rejects Korea and ambiguous 日韩 entries from the Japanese target', () => {
-    expect(classifyAnimeContent(vodItem({ type_id: 30, type_name: '日韩动漫', vod_area: '韩国' }), categories)).toMatchObject({ accepted: false, reason: 'region-not-allowed' })
-    expect(classifyAnimeContent(vodItem({ type_id: 30, type_name: '日韩动漫', vod_area: '日韩' }), categories)).toMatchObject({ accepted: false, reason: 'region-not-allowed' })
+  it('includes Korean and ambiguous 日韩 entries without labelling them Japanese', () => {
+    expect(classifyAnimeContent(vodItem({ type_id: 30, type_name: '日韩动漫', vod_area: '韩国' }), categories)).toMatchObject({ accepted: true, region: 'korea' })
+    expect(classifyAnimeContent(vodItem({ type_id: 30, type_name: '日韩动漫', vod_area: '日韩' }), categories)).toMatchObject({ accepted: true, region: 'other' })
+  })
+
+  it('normalizes Hong Kong/Taiwan, overseas Anime, and animation movies', () => {
+    expect(classifyAnimeContent(vodItem({ type_id: 32, type_name: '港台动漫', vod_area: '' }), categories)).toMatchObject({ accepted: true, region: 'hong_kong_taiwan', mediaType: 'anime' })
+    expect(classifyAnimeContent(vodItem({ type_id: 33, type_name: '海外动漫', vod_area: '' }), categories)).toMatchObject({ accepted: true, region: 'other', mediaType: 'anime' })
+    expect(classifyAnimeContent(vodItem({ type_id: 49, type_name: '动画片', vod_area: '美国' }), categories)).toMatchObject({ accepted: true, region: 'europe_us', mediaType: 'movie', requiredGenres: ['Animation'] })
   })
 
   it('rejects generic Anime category labels and parses bounded targets', () => {
     expect(classifyAnimeContent(vodItem({ type_id: 4, type_name: '动漫片', vod_area: '日本' }), categories)).toMatchObject({ accepted: false, reason: 'category-not-allowed' })
     expect(animeContentTargets('japan:300,china:200,europe_us:100')).toEqual({ japan: 300, china: 200, europe_us: 100 })
     expect(() => animeContentTargets('japan:500,china:200,europe_us:100')).toThrow('650')
+    expect(animeContentGroupTargets('china_anime:2200,east_asia_anime:5000,western_anime:1400,hong_kong_taiwan_anime:100,overseas_anime:200,animation_movie:100')).toMatchObject({ east_asia_anime: 5000, animation_movie: 100 })
+    expect(() => animeContentGroupTargets('east_asia_anime:9501')).toThrow('9500')
   })
 })

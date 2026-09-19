@@ -174,4 +174,30 @@ describe('Anime sync runner', () => {
     expect(result.canonicals[0].index).toMatchObject({ title: 'Real Anime', mediaType: 'anime', region: 'japan' })
     expect(result.summary).toMatchObject({ contentAccepted: { japan: 1, china: 0, europe_us: 0 }, commentaryRejected: 1 })
   })
+
+  it('applies broad content groups without treating Korean Anime as Japanese', async () => {
+    const korean = vodItem({ vod_id: 'korean-1', vod_name: 'Korean Anime', type_id: 30, type_name: '日韩动漫', vod_area: '韩国' })
+    const movie = vodItem({ vod_id: 'movie-1', vod_name: 'Animation Movie', type_id: 49, type_name: '动画片', vod_area: '美国', vod_class: '动画' })
+    const items = new Map([[String(korean.vod_id), korean], [String(movie.vod_id), movie]])
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input))
+      if (url.searchParams.get('ac') === 'detail') {
+        return new Response(JSON.stringify(envelope((url.searchParams.get('ids') ?? '').split(',').flatMap((id) => items.get(id) ?? []))))
+      }
+      const category = url.searchParams.get('t')
+      const list = category === '30' ? [korean] : category === '49' ? [movie] : [korean, movie]
+      return new Response(JSON.stringify(envelope(list, { class: [
+        { type_id: 30, type_pid: 4, type_name: '日韩动漫' },
+        { type_id: 49, type_pid: 1, type_name: '动画片' },
+      ] })))
+    })
+    const contentProvider = createMacCmsProvider(providerConfig(), { fetcher })
+    const contentGroupTargets = { china_anime: 0, east_asia_anime: 1, western_anime: 0, hong_kong_taiwan_anime: 0, overseas_anime: 0, animation_movie: 1 } as const
+    const result = await runAnimeSync({ ...options, contentGroupTargets }, { providers: [contentProvider], cacheRoot: await temporaryDirectory() })
+    expect(result.canonicals.map((canonical) => canonical.index)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ title: 'Korean Anime', mediaType: 'anime', region: 'korea' }),
+      expect.objectContaining({ title: 'Animation Movie', mediaType: 'movie', region: 'europe_us', genres: expect.arrayContaining(['Animation']) }),
+    ]))
+    expect(result.summary).toMatchObject({ contentAccepted: { korea: 1, europe_us: 1 }, mediaTypeAccepted: { anime: 1, movie: 1 } })
+  })
 })

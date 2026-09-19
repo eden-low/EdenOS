@@ -16,7 +16,11 @@ on:
         description: Small per-provider validation limit
         required: false
         type: string
-        default: "20"
+        default: ""
+      content_groups:
+        description: Optional bounded group targets (for example china_anime:250,east_asia_anime:550)
+        required: false
+        type: string
       dry_run:
         description: Perform no Firestore, R2, or source-map writes
         type: boolean
@@ -36,7 +40,7 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: frontend
@@ -52,6 +56,7 @@ jobs:
       SYNC_MODE: ${{ inputs.mode }}
       SYNC_PROVIDERS: ${{ inputs.providers }}
       SYNC_LIMIT: ${{ inputs.limit }}
+      SYNC_CONTENT_GROUPS: ${{ inputs.content_groups }}
       SYNC_DRY_RUN: ${{ inputs.dry_run }}
       SYNC_PROBE_MEDIA: ${{ inputs.probe_media }}
     steps:
@@ -112,8 +117,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
-          args=("--mode=$SYNC_MODE" "--limit=$SYNC_LIMIT")
+          args=("--mode=$SYNC_MODE" "--concurrency=3")
           if [[ -n "$SYNC_PROVIDERS" ]]; then args+=("--providers=$SYNC_PROVIDERS"); fi
+          if [[ -n "$SYNC_LIMIT" ]]; then args+=("--limit=$SYNC_LIMIT"); fi
+          if [[ -n "$SYNC_CONTENT_GROUPS" ]]; then args+=("--content-groups=$SYNC_CONTENT_GROUPS"); fi
           if [[ "$SYNC_DRY_RUN" == "true" ]]; then args+=("--dry-run"); fi
           if [[ "$SYNC_PROBE_MEDIA" == "true" ]]; then args+=("--probe-media"); fi
           npm run sync:animes -- "${args[@]}"

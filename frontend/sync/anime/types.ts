@@ -2,6 +2,7 @@ import type { AnimeDetail, AnimeMediaType, AnimeRegion, AnimeStatus, AnimeSummar
 
 export type AnimeSyncMode = 'full' | 'incremental'
 export type PlaybackFormat = 'hls' | 'mp4'
+export type AnimeContentGroup = 'china_anime' | 'east_asia_anime' | 'western_anime' | 'hong_kong_taiwan_anime' | 'overseas_anime' | 'animation_movie'
 
 export interface AnimeProviderConfig {
   id: string
@@ -100,6 +101,7 @@ export interface ProviderAnimeRecord {
   providerDisplayName: string
   providerPriority: number
   providerItemId: string
+  contentGroup?: AnimeContentGroup
   title: string
   titleNormalized: string
   alternateTitles: string[]
@@ -164,6 +166,7 @@ export interface SyncOptions {
   probeMedia: boolean
   concurrency: number
   contentTargets?: Record<'japan' | 'china' | 'europe_us', number>
+  contentGroupTargets?: Record<AnimeContentGroup, number>
   cleanup: 'none' | 'plan' | 'apply'
 }
 
@@ -184,7 +187,8 @@ export interface SyncSummary {
   ambiguousMatches: number
   unsupportedPlaybackUrls: number
   elapsedMs: number
-  contentAccepted: Record<'japan' | 'china' | 'europe_us', number>
+  contentAccepted: Record<AnimeRegion, number>
+  mediaTypeAccepted: Record<AnimeMediaType, number>
   commentaryRejected: number
   otherRejected: number
   providerStats: Record<string, ProviderRuntimeStats>

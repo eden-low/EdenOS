@@ -1,5 +1,5 @@
 import { isValidExternalId } from '../../src/domain/anime'
-import { animeContentTargets } from './contentPolicy'
+import { animeContentGroupTargets, animeContentTargets } from './contentPolicy'
 import type { AnimeProviderConfig, SyncOptions } from './types'
 
 const defaultTimeoutMs = 10_000
@@ -71,8 +71,10 @@ export function parseSyncOptions(arguments_: string[]): SyncOptions {
   const limit = limitArgument ? Number(valueAfterEquals(limitArgument)) : undefined
   const concurrency = concurrencyArgument ? Number(valueAfterEquals(concurrencyArgument)) : 4
   const targetsArgument = arguments_.find((item) => item.startsWith('--content-targets='))
+  const groupTargetsArgument = arguments_.find((item) => item.startsWith('--content-groups='))
   const cleanupArgument = arguments_.find((item) => item.startsWith('--cleanup='))
   const cleanup = cleanupArgument ? valueAfterEquals(cleanupArgument) : 'none'
+  if (targetsArgument && groupTargetsArgument) throw new Error('Use either --content-targets or --content-groups, not both')
   if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) throw new Error('--limit must be a positive integer')
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 10) throw new Error('--concurrency must be between 1 and 10')
   if (cleanup !== 'none' && cleanup !== 'plan' && cleanup !== 'apply') throw new Error('--cleanup must be none, plan, or apply')
@@ -87,6 +89,7 @@ export function parseSyncOptions(arguments_: string[]): SyncOptions {
     probeMedia: arguments_.includes('--probe-media'),
     concurrency,
     ...(targetsArgument ? { contentTargets: animeContentTargets(valueAfterEquals(targetsArgument)) } : {}),
+    ...(groupTargetsArgument ? { contentGroupTargets: animeContentGroupTargets(valueAfterEquals(groupTargetsArgument)) } : {}),
     cleanup,
   }
 }

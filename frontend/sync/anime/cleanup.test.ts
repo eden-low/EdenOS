@@ -4,6 +4,17 @@ import type { AnimeContentDecision } from './contentPolicy'
 import type { AnimeSyncStore, ExistingCatalogueRecord } from './firebaseAdminStore'
 import type { AnimeDetailStore } from './r2Store'
 
+function accepted(region: 'japan' | 'europe_us', group: 'east_asia_anime' | 'western_anime'): AnimeContentDecision {
+  return {
+    accepted: true,
+    region,
+    mediaType: 'anime',
+    group,
+    requiredGenres: [],
+    category: { typeId: group === 'east_asia_anime' ? '30' : '31', typeName: group === 'east_asia_anime' ? '日韩动漫' : '欧美动漫', group, mediaType: 'anime', fallbackRegion: region, requiredGenres: [] },
+  }
+}
+
 const records: ExistingCatalogueRecord[] = [
   { externalId: 'japanese', title: 'Frieren', mediaType: 'anime', region: 'japan', year: 2023 },
   { externalId: 'commentary', title: '某电影【电影解说】', mediaType: 'anime', region: 'china' },
@@ -13,7 +24,7 @@ const records: ExistingCatalogueRecord[] = [
 describe('Anime cleanup', () => {
   it('keeps only catalogue records backed by accepted source categories', () => {
     const decisions = new Map([
-      ['japanese', [{ accepted: true as const, region: 'japan' as const, category: { typeId: '30', typeName: '日韩动漫', region: 'japan' as const } }]],
+      ['japanese', [accepted('japan', 'east_asia_anime')]],
       ['commentary', [{ accepted: false as const, reason: 'commentary' as const }]],
       ['movie', [{ accepted: false as const, reason: 'category-not-allowed' as const }]],
     ])
@@ -38,7 +49,7 @@ describe('Anime cleanup', () => {
     ]
     const decisions = new Map<string, Array<AnimeContentDecision | null>>()
     for (const externalId of ['anime-a', 'anime-b', 'anime-c']) decisions.set(externalId, [
-      { accepted: true, region: 'europe_us', category: { typeId: '31', typeName: '欧美动漫', region: 'europe_us' } },
+      accepted('europe_us', 'western_anime'),
     ])
     expect(classifyExistingCatalogue(duplicateRecords, decisions)).toEqual([
       expect.objectContaining({ externalId: 'anime-a', action: 'keep' }),

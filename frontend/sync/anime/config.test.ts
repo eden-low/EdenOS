@@ -32,4 +32,11 @@ describe('Anime sync configuration', () => {
   it('rejects unconfigured requested providers', () => {
     expect(() => selectProviderConfigs([], ['missing'])).toThrow('not configured')
   })
+
+  it('parses broad catalogue group targets and prevents mixed target modes', () => {
+    expect(parseSyncOptions(['--content-groups=china_anime:250,east_asia_anime:550,western_anime:150,hong_kong_taiwan_anime:20,overseas_anime:20,animation_movie:10'])).toMatchObject({
+      contentGroupTargets: { china_anime: 250, east_asia_anime: 550, western_anime: 150, hong_kong_taiwan_anime: 20, overseas_anime: 20, animation_movie: 10 },
+    })
+    expect(() => parseSyncOptions(['--content-targets=japan:1', '--content-groups=east_asia_anime:1'])).toThrow('either')
+  })
 })

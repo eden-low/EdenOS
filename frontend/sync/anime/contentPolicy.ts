@@ -1,36 +1,54 @@
 import { normalizeAnimeTitle } from '../../src/domain/anime'
-import type { AnimeRegion } from '../../src/types/anime'
+import type { AnimeMediaType, AnimeRegion } from '../../src/types/anime'
 import { cleanText, normalizeRegion } from './normalize'
-import type { MacCmsVodItem, ProviderCategory } from './types'
+import type { AnimeContentGroup, MacCmsVodItem, ProviderCategory } from './types'
 
 export type AnimeImportRegion = Extract<AnimeRegion, 'japan' | 'china' | 'europe_us'>
 
 export interface AnimeCategoryPolicy {
   typeId: string
   typeName: string
-  region: AnimeImportRegion
+  group: AnimeContentGroup
+  mediaType: AnimeMediaType
+  fallbackRegion: AnimeRegion
+  requiredGenres: string[]
 }
 
-export type AnimeContentRejection =
-  | 'commentary'
-  | 'category-not-allowed'
-  | 'region-not-allowed'
-  | 'missing-title'
+export type AnimeContentRejection = 'commentary' | 'category-not-allowed' | 'missing-title'
 
 export type AnimeContentDecision =
-  | { accepted: true; region: AnimeImportRegion; category: AnimeCategoryPolicy }
+  | {
+    accepted: true
+    region: AnimeRegion
+    mediaType: AnimeMediaType
+    group: AnimeContentGroup
+    requiredGenres: string[]
+    category: AnimeCategoryPolicy
+  }
   | { accepted: false; reason: AnimeContentRejection }
 
-const categoryRegions = new Map<string, AnimeImportRegion>([
-  ['国产动漫', 'china'],
-  ['日韩动漫', 'japan'],
-  ['欧美动漫', 'europe_us'],
+export const animeContentGroups: AnimeContentGroup[] = [
+  'china_anime',
+  'east_asia_anime',
+  'western_anime',
+  'hong_kong_taiwan_anime',
+  'overseas_anime',
+  'animation_movie',
+]
+
+const categoryPolicies = new Map<string, Omit<AnimeCategoryPolicy, 'typeId' | 'typeName'>>([
+  ['国产动漫', { group: 'china_anime', mediaType: 'anime', fallbackRegion: 'china', requiredGenres: [] }],
+  ['日韩动漫', { group: 'east_asia_anime', mediaType: 'anime', fallbackRegion: 'other', requiredGenres: [] }],
+  ['欧美动漫', { group: 'western_anime', mediaType: 'anime', fallbackRegion: 'europe_us', requiredGenres: [] }],
+  ['港台动漫', { group: 'hong_kong_taiwan_anime', mediaType: 'anime', fallbackRegion: 'hong_kong_taiwan', requiredGenres: [] }],
+  ['海外动漫', { group: 'overseas_anime', mediaType: 'anime', fallbackRegion: 'other', requiredGenres: [] }],
+  ['动画片', { group: 'animation_movie', mediaType: 'movie', fallbackRegion: 'other', requiredGenres: ['Animation'] }],
 ])
 
 function policyText(value: unknown): string {
   return cleanText(value).normalize('NFKC')
-    .replace(/[【〔［]/g, '[')
-    .replace(/[】〕］]/g, ']')
+    .replace(/[【〖［]/g, '[')
+    .replace(/[】〗］]/g, ']')
     .replace(/[（]/g, '(')
     .replace(/[）]/g, ')')
     .replace(/\s+/g, ' ')
@@ -51,14 +69,14 @@ export function discoverAnimeCategoryPolicies(categories: ProviderCategory[]): A
   const policies: AnimeCategoryPolicy[] = []
   for (const category of categories) {
     const typeName = policyText(category.name)
-    const region = categoryRegions.get(typeName)
-    if (!region) continue
-    policies.push({ typeId: String(category.id), typeName, region })
+    const policy = categoryPolicies.get(typeName)
+    if (!policy) continue
+    policies.push({ typeId: String(category.id), typeName, ...policy })
   }
-  return policies.sort((left, right) => left.region.localeCompare(right.region) || left.typeId.localeCompare(right.typeId))
+  return policies.sort((left, right) => animeContentGroups.indexOf(left.group) - animeContentGroups.indexOf(right.group) || left.typeId.localeCompare(right.typeId))
 }
 
-export function classifyAnimeContent(item: MacCmsVodItem, policies: AnimeCategoryPolicy[], options: { allowMissingJapaneseArea?: boolean } = {}): AnimeContentDecision {
+export function classifyAnimeContent(item: MacCmsVodItem, policies: AnimeCategoryPolicy[]): AnimeContentDecision {
   const title = policyText(item.vod_name)
   if (!title || !normalizeAnimeTitle(title)) return { accepted: false, reason: 'missing-title' }
   if (isCommentaryItem(item)) return { accepted: false, reason: 'commentary' }
@@ -67,10 +85,14 @@ export function classifyAnimeContent(item: MacCmsVodItem, policies: AnimeCategor
   const category = policies.find((policy) => policy.typeId === itemTypeId && policy.typeName === itemTypeName)
   if (!category) return { accepted: false, reason: 'category-not-allowed' }
   const sourceRegion = normalizeRegion(item.vod_area)
-  if (category.region === 'japan' && sourceRegion !== 'japan' && !(options.allowMissingJapaneseArea && sourceRegion === undefined)) return { accepted: false, reason: 'region-not-allowed' }
-  if (category.region === 'china' && sourceRegion && sourceRegion !== 'china' && sourceRegion !== 'other') return { accepted: false, reason: 'region-not-allowed' }
-  if (category.region === 'europe_us' && sourceRegion && sourceRegion !== 'europe_us' && sourceRegion !== 'other') return { accepted: false, reason: 'region-not-allowed' }
-  return { accepted: true, region: category.region, category }
+  return {
+    accepted: true,
+    region: sourceRegion ?? category.fallbackRegion,
+    mediaType: category.mediaType,
+    group: category.group,
+    requiredGenres: category.requiredGenres,
+    category,
+  }
 }
 
 export function animeContentTargets(value: string | undefined): Record<AnimeImportRegion, number> | undefined {
@@ -80,7 +102,7 @@ export function animeContentTargets(value: string | undefined): Record<AnimeImpo
     const [rawRegion, rawCount] = entry.split(':')
     const region = rawRegion?.trim() as AnimeImportRegion
     const count = Number(rawCount)
-    if (!categoryRegionsHasRegion(region) || !Number.isInteger(count) || count < 0 || count > 650) {
+    if (!isLegacyRegion(region) || !Number.isInteger(count) || count < 0 || count > 650) {
       throw new Error('--content-targets must use japan:N,china:N,europe_us:N with counts from 0 to 650')
     }
     result[region] = count
@@ -89,6 +111,22 @@ export function animeContentTargets(value: string | undefined): Record<AnimeImpo
   return result
 }
 
-function categoryRegionsHasRegion(value: string): value is AnimeImportRegion {
+export function animeContentGroupTargets(value: string | undefined): Record<AnimeContentGroup, number> | undefined {
+  if (!value?.trim()) return undefined
+  const result = Object.fromEntries(animeContentGroups.map((group) => [group, 0])) as Record<AnimeContentGroup, number>
+  for (const entry of value.split(',')) {
+    const [rawGroup, rawCount] = entry.split(':')
+    const group = rawGroup?.trim() as AnimeContentGroup
+    const count = Number(rawCount)
+    if (!animeContentGroups.includes(group) || !Number.isInteger(count) || count < 0 || count > 9_500) {
+      throw new Error(`--content-groups must use ${animeContentGroups.join('|')}:N with counts from 0 to 9500`)
+    }
+    result[group] = count
+  }
+  if (Object.values(result).reduce((sum, count) => sum + count, 0) > 9_500) throw new Error('Anime content group target total must not exceed 9500')
+  return result
+}
+
+function isLegacyRegion(value: string): value is AnimeImportRegion {
   return value === 'japan' || value === 'china' || value === 'europe_us'
 }
