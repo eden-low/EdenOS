@@ -1,0 +1,78 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { animeSummary } from '../test/animeFixtures'
+
+const mock = vi.hoisted(() => ({ getDocs: vi.fn(), getCountFromServer: vi.fn() }))
+
+vi.mock('firebase/firestore', () => ({
+  collection: (...parts: unknown[]) => ({ kind: 'collection', parts }),
+  query: (reference: unknown, ...constraints: unknown[]) => ({ reference, constraints }),
+  where: (...args: unknown[]) => ({ kind: 'where', args }),
+  orderBy: (...args: unknown[]) => ({ kind: 'orderBy', args }),
+  startAt: (...args: unknown[]) => ({ kind: 'startAt', args }),
+  endAt: (...args: unknown[]) => ({ kind: 'endAt', args }),
+  startAfter: (...args: unknown[]) => ({ kind: 'startAfter', args }),
+  limit: (...args: unknown[]) => ({ kind: 'limit', args }),
+  getDocs: mock.getDocs,
+  getCountFromServer: mock.getCountFromServer,
+}))
+
+import { createFirestoreAnimeRepository } from './firestoreAnimeRepository'
+
+function snapshot(index: number) {
+  const anime = animeSummary({ externalId: `anime-${index}`, title: `Anime ${index}`, titleNormalized: `anime ${index}` })
+  return { id: anime.externalId, data: () => ({ ...anime, updatedAt: { toMillis: () => anime.updatedAt } }) }
+}
+
+describe('Firestore Anime repository', () => {
+  beforeEach(() => { mock.getDocs.mockReset(); mock.getCountFromServer.mockReset() })
+
+  it('requests exactly 24 items ordered by updatedAt descending and returns the count', async () => {
+    mock.getDocs.mockResolvedValue({ docs: Array.from({ length: 24 }, (_, index) => snapshot(index)) })
+    mock.getCountFromServer.mockResolvedValue({ data: () => ({ count: 30 }) })
+    const repository = createFirestoreAnimeRepository({} as never)
+    const page = await repository.fetchPage({ search: '', filters: {} })
+    expect(page.items).toHaveLength(24)
+    expect(page.total).toBe(30)
+    expect(page.hasMore).toBe(true)
+    const request = mock.getDocs.mock.calls[0][0]
+    expect(request.constraints).toContainEqual({ kind: 'orderBy', args: ['updatedAt', 'desc'] })
+    expect(request.constraints).toContainEqual({ kind: 'limit', args: [24] })
+  })
+
+  it('uses one combined filter key and resets pagination when no cursor is supplied', async () => {
+    mock.getDocs.mockResolvedValue({ docs: [] }); mock.getCountFromServer.mockResolvedValue({ data: () => ({ count: 0 }) })
+    const repository = createFirestoreAnimeRepository({} as never)
+    await repository.fetchPage({ search: '', filters: { mediaType: 'anime', genre: 'Fantasy', status: 'completed' } })
+    const constraints = mock.getDocs.mock.calls[0][0].constraints
+    expect(constraints).toContainEqual({ kind: 'where', args: ['filterKeys', 'array-contains', 'genre:fantasy|mediaType:anime|status:completed'] })
+    expect(constraints.some((item: { kind: string }) => item.kind === 'startAfter')).toBe(false)
+  })
+
+  it('uses cursor pagination and stops after the loaded total', async () => {
+    mock.getDocs.mockResolvedValue({ docs: Array.from({ length: 24 }, (_, index) => snapshot(index + 24)) })
+    mock.getCountFromServer.mockResolvedValue({ data: () => ({ count: 48 }) })
+    const repository = createFirestoreAnimeRepository({} as never)
+    const page = await repository.fetchPage({ search: '', filters: {}, cursor: { id: 'cursor' }, loadedCount: 24 })
+    expect(page.hasMore).toBe(false)
+    expect(mock.getDocs.mock.calls[0][0].constraints).toContainEqual({ kind: 'startAfter', args: [{ id: 'cursor' }] })
+  })
+
+  it('performs normalized prefix search without downloading the catalogue', async () => {
+    mock.getDocs.mockResolvedValue({ docs: [snapshot(1)] }); mock.getCountFromServer.mockResolvedValue({ data: () => ({ count: 1 }) })
+    const repository = createFirestoreAnimeRepository({} as never)
+    await repository.fetchPage({ search: '  ANIME ', filters: {} })
+    const constraints = mock.getDocs.mock.calls[0][0].constraints
+    expect(constraints).toContainEqual({ kind: 'orderBy', args: ['titleNormalized', 'asc'] })
+    expect(constraints).toContainEqual({ kind: 'startAt', args: ['anime'] })
+    expect(constraints).toContainEqual({ kind: 'endAt', args: ['anime\uf8ff'] })
+  })
+
+  it('manual title search is bounded and empty search makes no request', async () => {
+    mock.getDocs.mockResolvedValue({ docs: [snapshot(1)] })
+    const repository = createFirestoreAnimeRepository({} as never)
+    await expect(repository.searchTitles('')).resolves.toEqual([])
+    expect(mock.getDocs).not.toHaveBeenCalled()
+    await repository.searchTitles('Sample', 8)
+    expect(mock.getDocs.mock.calls[0][0].constraints).toContainEqual({ kind: 'limit', args: [8] })
+  })
+})

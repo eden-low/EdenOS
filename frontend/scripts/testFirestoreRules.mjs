@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing'
-import { doc, getDoc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore'
 
 const rules = readFileSync(new URL('../../firestore.rules', import.meta.url), 'utf8')
 const environment = await initializeTestEnvironment({ projectId: 'demo-edenos-rules', firestore: { rules } })
@@ -11,6 +11,7 @@ try {
   const anotherAliceDevice = environment.authenticatedContext('alice').firestore()
   const bob = environment.authenticatedContext('bob').firestore()
   const guest = environment.unauthenticatedContext().firestore()
+  const anonymousUser = environment.authenticatedContext('anonymous-user', { firebase: { sign_in_provider: 'anonymous' } }).firestore()
   const path = 'users/alice/settings/preferences'
   const own = doc(alice, path)
 
@@ -58,7 +59,36 @@ try {
   }
   await assertSucceeds(setDoc(doc(alice, 'users/alice/expenses/lunch'), expense))
   await assertFails(setDoc(doc(bob, 'users/alice/expenses/other'), expense))
-  process.stdout.write('Firestore ownership and settings rules passed.\n')
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'animes/sample-anime'), {
+      externalId: 'sample-anime', title: 'Sample Anime', titleNormalized: 'sample anime',
+      coverUrl: 'https://media.example/cover.jpg', mediaType: 'anime', genres: ['Fantasy'],
+      status: 'completed', updatedAt: Timestamp.now(), filterKeys: ['mediaType:anime'],
+    })
+  })
+  await assertSucceeds(getDoc(doc(alice, 'animes/sample-anime')))
+  await assertSucceeds(getDocs(collection(anonymousUser, 'animes')))
+  await assertFails(getDoc(doc(guest, 'animes/sample-anime')))
+  await assertFails(setDoc(doc(alice, 'animes/client-write'), { title: 'Unsafe' }))
+
+  const progress = {
+    externalId: 'sample-anime', animeId: 'sample-anime', currentEpisode: 2,
+    positionSeconds: 120.5, durationSeconds: 1440, watchedEpisodes: [1],
+    trackingStatus: 'watching', updatedAt: serverTimestamp(), title: 'Sample Anime',
+    coverUrl: 'https://media.example/cover.jpg', totalEpisodes: 12,
+  }
+  const progressPath = 'users/alice/animeWatchProgress/sample-anime'
+  await assertSucceeds(setDoc(doc(alice, progressPath), progress))
+  await assertSucceeds(getDoc(doc(alice, progressPath)))
+  await assertFails(getDoc(doc(bob, progressPath)))
+  await assertFails(setDoc(doc(bob, progressPath), progress))
+  await assertFails(setDoc(doc(alice, progressPath), { ...progress, positionSeconds: -1 }))
+  await assertFails(setDoc(doc(alice, progressPath), { ...progress, watchedEpisodes: ['episode-1'] }))
+  await assertFails(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 1.5 }))
+  await assertFails(setDoc(doc(alice, 'users/alice/animeWatchProgress/wrong-id'), progress))
+  await assertSucceeds(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 3, updatedAt: serverTimestamp() }))
+  process.stdout.write('Firestore ownership, catalogue, progress, and settings rules passed.\n')
 } finally {
   await environment.cleanup()
 }

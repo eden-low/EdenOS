@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "animes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "filterKeys", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "animes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "filterKeys", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "titleNormalized", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -98,6 +98,53 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function isValidAnimeProgress(data, progressId) {
+      return data.keys().hasAll([
+          'externalId', 'animeId', 'currentEpisode', 'positionSeconds',
+          'durationSeconds', 'watchedEpisodes', 'trackingStatus', 'updatedAt', 'title'
+        ])
+        && data.keys().hasOnly([
+          'externalId', 'animeId', 'currentEpisode', 'positionSeconds',
+          'durationSeconds', 'watchedEpisodes', 'trackingStatus', 'updatedAt', 'title',
+          'coverUrl', 'totalEpisodes'
+        ])
+        && data.externalId is string
+        && data.externalId == progressId
+        && data.externalId.size() > 0
+        && data.externalId.size() <= 128
+        && data.animeId == data.externalId
+        && data.currentEpisode is int
+        && data.currentEpisode > 0
+        && data.currentEpisode <= 100000
+        && data.positionSeconds is number
+        && data.positionSeconds >= 0
+        && data.positionSeconds <= 604800
+        && data.durationSeconds is number
+        && data.durationSeconds >= 0
+        && data.durationSeconds <= 604800
+        && data.watchedEpisodes is list
+        && data.watchedEpisodes.size() <= 1000
+        && (data.watchedEpisodes.size() == 0
+          || (data.watchedEpisodes[0] is int
+            && data.watchedEpisodes[0] > 0
+            && data.watchedEpisodes[data.watchedEpisodes.size() - 1] is int
+            && data.watchedEpisodes[data.watchedEpisodes.size() - 1] > 0))
+        && data.trackingStatus in ['watching', 'completed']
+        && data.updatedAt is timestamp
+        && data.updatedAt == request.time
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 240
+        && (!('coverUrl' in data) || (data.coverUrl is string && data.coverUrl.size() <= 2048))
+        && (!('totalEpisodes' in data) || (data.totalEpisodes is int
+          && data.totalEpisodes > 0 && data.totalEpisodes <= 100000));
+    }
+
+    match /animes/{animeId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if false;
+    }
+
     match /users/{userId}/expenses/{expenseId} {
       allow get, list: if isOwner(userId);
       allow create: if isOwner(userId)
@@ -144,6 +191,13 @@ service cloud.firestore {
           || (request.resource.data.savingsGoalSen is int
             && request.resource.data.savingsGoalSen > 0
             && request.resource.data.savingsGoalSen <= 9007199254740991));
+    }
+
+    match /users/{userId}/animeWatchProgress/{progressId} {
+      allow get, list: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && isValidAnimeProgress(request.resource.data, progressId);
+      allow delete: if isOwner(userId);
     }
 
     match /{document=**} {
