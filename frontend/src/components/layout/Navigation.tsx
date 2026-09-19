@@ -111,7 +111,7 @@ export function MobileNavigation({
             <span className="grid size-10 place-items-center rounded-2xl bg-[var(--accent-primary)] text-white shadow-[var(--accent-shadow)]">
               <Plus aria-hidden="true" size={21} strokeWidth={2.2} />
             </span>
-            <span>Capture</span>
+            <span className="max-[350px]:sr-only">Capture</span>
           </button>
         </CaptureSheet>
         <MobileNavItem
@@ -133,7 +133,7 @@ export function MobileNavigation({
             className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-xs font-medium text-[var(--text-muted)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
           >
             <UserRound aria-hidden="true" size={19} strokeWidth={1.7} />
-            Account
+            <span className="max-[350px]:sr-only">Account</span>
           </button>
         </AccountDialog>
       </div>
@@ -157,6 +157,7 @@ function MobileNavItem({
   return (
     <button
       type="button"
+      aria-label={label}
       disabled={disabled}
       aria-current={active ? 'page' : undefined}
       aria-disabled={disabled}
@@ -166,7 +167,7 @@ function MobileNavItem({
       }`}
     >
       <Icon aria-hidden="true" size={19} strokeWidth={active ? 2.2 : 1.7} />
-      {label}
+      <span className="max-[350px]:sr-only">{label}</span>
     </button>
   )
 }
