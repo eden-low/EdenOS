@@ -61,6 +61,17 @@ describe('AnimeVideoPlayer', () => {
     expect(onSourceFailure).toHaveBeenCalledWith('media-error')
   })
 
+  it('ignores media errors caused while the source is being cleaned up', () => {
+    const onSourceFailure = vi.fn()
+    const { unmount } = render(<AnimeVideoPlayer {...baseProps} onSourceFailure={onSourceFailure} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
+    const load = vi.mocked(HTMLMediaElement.prototype.load)
+    load.mockImplementation(function (this: HTMLMediaElement) { this.dispatchEvent(new Event('error')) })
+    load.mockClear()
+    unmount()
+    expect(load).toHaveBeenCalled()
+    expect(onSourceFailure).not.toHaveBeenCalled()
+  })
+
   it('uses one hls.js recovery before reporting a repeated fatal error', async () => {
     const onSourceFailure = vi.fn()
     vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('')
