@@ -14,7 +14,7 @@ export function AnimeCard({ anime, onOpen }: { anime: AnimeSummary; onOpen: (ani
       aria-label={`Open ${anime.title}`}
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-[var(--surface-secondary)]">
-        {imageFailed ? (
+        {imageFailed || !anime.coverUrl ? (
           <span className="grid size-full place-items-center text-[var(--text-muted)]"><Film aria-hidden="true" size={30} /></span>
         ) : (
           <img src={anime.coverUrl} alt={`${anime.title} cover`} loading="lazy" className="size-full object-cover" onError={() => setImageFailed(true)} />

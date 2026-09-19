@@ -71,6 +71,13 @@ try {
   await assertSucceeds(getDocs(collection(anonymousUser, 'animes')))
   await assertFails(getDoc(doc(guest, 'animes/sample-anime')))
   await assertFails(setDoc(doc(alice, 'animes/client-write'), { title: 'Unsafe' }))
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'animeSyncSourceMap/provider-item'), { provider: 'provider', providerItemId: '1', canonicalExternalId: 'sample-anime' })
+    await setDoc(doc(context.firestore(), 'animeSyncState/sample-anime'), { indexHash: 'index', detailHash: 'detail', updatedAt: Timestamp.now() })
+  })
+  await assertFails(getDoc(doc(alice, 'animeSyncSourceMap/provider-item')))
+  await assertFails(getDoc(doc(anonymousUser, 'animeSyncState/sample-anime')))
+  await assertFails(setDoc(doc(alice, 'animeSyncSourceMap/client-write'), { provider: 'unsafe' }))
 
   const progress = {
     externalId: 'sample-anime', animeId: 'sample-anime', currentEpisode: 2,

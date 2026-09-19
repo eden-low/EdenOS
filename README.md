@@ -122,6 +122,12 @@ load only after a title opens and are cached in memory for the browser session.
 Watch progress is local-only for anonymous guests. Google-connected users also
 sync owner-scoped progress at `users/{uid}/animeWatchProgress/{externalId}`.
 
+Catalogue population is handled by the server-only, multi-provider Anime sync
+pipeline. It writes raw replayable responses before normalization, merges exact
+canonical identities and episodes, uploads R2 details before publishing cards,
+and skips unchanged hashes. See [Anime content sync V1](docs/anime-sync.md) for
+provider configuration, dry runs, bounded first-run steps, and recovery.
+
 For Netlify, add the same six variables under **Site configuration > Environment variables**. Do not commit real Firebase configuration to this repository.
 
 ### Receipt extraction configuration

@@ -1,0 +1,66 @@
+name: Anime content sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        type: choice
+        options: [incremental, full]
+        default: incremental
+      providers:
+        description: Optional comma-separated provider IDs
+        required: false
+        type: string
+      limit:
+        description: Small per-provider validation limit
+        required: false
+        type: string
+        default: "20"
+      dry_run:
+        description: Perform no Firestore, R2, or source-map writes
+        type: boolean
+        default: true
+      probe_media:
+        description: Probe up to three normalized media URLs per title
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      ANIME_SYNC_PROVIDER_CONFIG_JSON: ${{ secrets.ANIME_SYNC_PROVIDER_CONFIG_JSON }}
+      EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      SYNC_MODE: ${{ inputs.mode }}
+      SYNC_PROVIDERS: ${{ inputs.providers }}
+      SYNC_LIMIT: ${{ inputs.limit }}
+      SYNC_DRY_RUN: ${{ inputs.dry_run }}
+      SYNC_PROBE_MEDIA: ${{ inputs.probe_media }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Run bounded Anime sync
+        shell: bash
+        run: |
+          args=("--mode=$SYNC_MODE" "--limit=$SYNC_LIMIT")
+          if [[ -n "$SYNC_PROVIDERS" ]]; then args+=("--providers=$SYNC_PROVIDERS"); fi
+          if [[ "$SYNC_DRY_RUN" == "true" ]]; then args+=("--dry-run"); fi
+          if [[ "$SYNC_PROBE_MEDIA" == "true" ]]; then args+=("--probe-media"); fi
+          npm run sync:animes -- "${args[@]}"

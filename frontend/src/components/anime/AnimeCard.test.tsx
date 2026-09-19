@@ -16,4 +16,10 @@ describe('AnimeCard', () => {
     fireEvent.error(screen.getByAltText('Sample Anime cover'))
     expect(screen.queryByAltText('Sample Anime cover')).toBeNull()
   })
+
+  it('renders a stable poster fallback when a provider has no cover', () => {
+    const anime = animeSummary({ coverUrl: '' })
+    const { container } = render(<AnimeCard anime={anime} onOpen={vi.fn()} />)
+    expect(container.querySelector('img')).toBeNull()
+  })
 })

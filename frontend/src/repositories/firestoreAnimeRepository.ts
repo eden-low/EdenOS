@@ -39,7 +39,7 @@ export function decodeAnimeSummary(snapshot: QueryDocumentSnapshot<DocumentData>
   if (!isValidExternalId(externalId) || externalId !== snapshot.id ||
       typeof data.title !== 'string' || !data.title.trim() ||
       typeof data.titleNormalized !== 'string' || !data.titleNormalized.trim() ||
-      typeof data.coverUrl !== 'string' || !data.coverUrl.trim() ||
+      typeof data.coverUrl !== 'string' ||
       !isAnimeMediaType(data.mediaType) || !isAnimeStatus(data.status) ||
       !Array.isArray(data.genres) || !data.genres.every((genre: unknown) => typeof genre === 'string' && !!genre.trim()) ||
       !Array.isArray(data.filterKeys) || !data.filterKeys.every((key: unknown) => typeof key === 'string') ||

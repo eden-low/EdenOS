@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "firebase:deploy:rules": "firebase deploy --only firestore:rules",
+    "sync:animes": "npm --prefix frontend run sync:animes --",
     "test:rules": "firebase emulators:exec --only firestore \"npm --prefix frontend run test:rules\""
   },
   "devDependencies": {
