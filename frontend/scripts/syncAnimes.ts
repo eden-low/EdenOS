@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   if (options.cleanup !== 'none') {
     if (!store) throw new Error('Cleanup planning requires Firebase Admin configuration')
     const plan = await planAnimeCleanup(store, providers, options.concurrency)
-    console.log(`Cleanup existing/keep/remove/commentary/other: ${plan.total}/${plan.keep}/${plan.remove}/${plan.commentary}/${plan.otherNonAnime}`)
+    console.log(`Cleanup existing/keep/remove/commentary/other/duplicate: ${plan.total}/${plan.keep}/${plan.remove}/${plan.commentary}/${plan.otherNonAnime}/${plan.duplicateCanonical}`)
     for (const item of plan.classifications) console.log(`Cleanup ${item.action.toUpperCase()}: ${item.externalId} | ${item.reason} | ${item.title}`)
     console.log(`Cleanup source mappings: ${plan.removeMappingDocumentIds.length}`)
     console.log(`Orphaned progress externalIds: ${plan.orphanedProgressExternalIds.length ? plan.orphanedProgressExternalIds.join(', ') : 'none'}`)

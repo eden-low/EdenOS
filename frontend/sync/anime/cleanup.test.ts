@@ -4,7 +4,7 @@ import type { AnimeSyncStore, ExistingCatalogueRecord } from './firebaseAdminSto
 import type { AnimeDetailStore } from './r2Store'
 
 const records: ExistingCatalogueRecord[] = [
-  { externalId: 'japanese', title: 'Frieren', mediaType: 'anime', region: 'japan' },
+  { externalId: 'japanese', title: 'Frieren', mediaType: 'anime', region: 'japan', year: 2023 },
   { externalId: 'commentary', title: '某电影【电影解说】', mediaType: 'anime', region: 'china' },
   { externalId: 'movie', title: 'Ordinary Movie', mediaType: 'movie', region: 'europe_us' },
 ]
@@ -29,6 +29,21 @@ describe('Anime cleanup', () => {
     ])
   })
 
+  it('removes only the later canonical ID for an exact accepted duplicate', () => {
+    const duplicateRecords: ExistingCatalogueRecord[] = [
+      { externalId: 'anime-a', title: 'Same Title', mediaType: 'anime', region: 'europe_us', year: 2026 },
+      { externalId: 'anime-b', title: 'Same Title', mediaType: 'anime', region: 'europe_us', year: 2026 },
+      { externalId: 'anime-c', title: 'Same Title', mediaType: 'anime', region: 'europe_us', year: 2025 },
+    ]
+    const accepted = (externalId: string) => [externalId, [{ accepted: true as const, region: 'europe_us' as const, category: { typeId: '31', typeName: '欧美动漫', region: 'europe_us' as const } }]] as const
+    const decisions = new Map([accepted('anime-a'), accepted('anime-b'), accepted('anime-c')])
+    expect(classifyExistingCatalogue(duplicateRecords, decisions)).toEqual([
+      expect.objectContaining({ externalId: 'anime-a', action: 'keep' }),
+      expect.objectContaining({ externalId: 'anime-b', action: 'remove', reason: 'duplicate-canonical' }),
+      expect.objectContaining({ externalId: 'anime-c', action: 'keep' }),
+    ])
+  })
+
   it('deletes only catalogue, R2, and internal sync metadata while leaving progress untouched', async () => {
     const events: string[] = []
     const store = {
@@ -36,7 +51,7 @@ describe('Anime cleanup', () => {
       deleteInternalMetadata: vi.fn(async () => { events.push('metadata') }),
     } as unknown as AnimeSyncStore
     const detailStore = { remove: vi.fn(async () => { events.push('r2') }) } as unknown as AnimeDetailStore
-    await applyAnimeCleanup({ classifications: [], removeExternalIds: ['bad'], removeMappingDocumentIds: ['map'], orphanedProgressExternalIds: ['bad'], total: 1, keep: 0, remove: 1, commentary: 1, otherNonAnime: 0 }, store, detailStore)
+    await applyAnimeCleanup({ classifications: [], removeExternalIds: ['bad'], removeMappingDocumentIds: ['map'], orphanedProgressExternalIds: ['bad'], total: 1, keep: 0, remove: 1, commentary: 1, otherNonAnime: 0, duplicateCanonical: 0 }, store, detailStore)
     expect(events).toEqual(['catalogue', 'r2', 'metadata'])
     expect(store.deleteCatalogue).toHaveBeenCalledWith(['bad'])
     expect(store.deleteInternalMetadata).toHaveBeenCalledWith(['bad'], ['map'])

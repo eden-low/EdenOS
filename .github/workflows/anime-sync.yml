@@ -156,6 +156,9 @@ jobs:
             anime-content-quality-wave2-v*|anime-content-quality-idempotency-v*)
               npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
               ;;
+            anime-content-quality-final-v*)
+              npm run sync:animes -- --mode=incremental --cleanup=apply --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+              ;;
             *)
               echo "Unrecognized bounded content-quality tag"
               exit 1

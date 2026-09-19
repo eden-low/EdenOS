@@ -1,5 +1,6 @@
 import { mapConcurrent } from './http'
 import { classifyAnimeContent, discoverAnimeCategoryPolicies, isCommentaryItem, type AnimeContentDecision } from './contentPolicy'
+import { normalizeAnimeTitle } from '../../src/domain/anime'
 import type { AnimeSyncStore, ExistingCatalogueRecord } from './firebaseAdminStore'
 import type { AnimeDetailStore } from './r2Store'
 import type { AnimeUpstreamProvider } from './types'
@@ -8,7 +9,7 @@ export interface CleanupClassification {
   externalId: string
   title: string
   action: 'keep' | 'remove'
-  reason: 'accepted-anime' | 'unverified-source' | 'commentary' | 'other-non-anime'
+  reason: 'accepted-anime' | 'unverified-source' | 'commentary' | 'other-non-anime' | 'duplicate-canonical'
 }
 
 export interface AnimeCleanupPlan {
@@ -21,13 +22,14 @@ export interface AnimeCleanupPlan {
   remove: number
   commentary: number
   otherNonAnime: number
+  duplicateCanonical: number
 }
 
 export function classifyExistingCatalogue(
   records: ExistingCatalogueRecord[],
   sourceDecisions: Map<string, Array<AnimeContentDecision | null>>,
 ): CleanupClassification[] {
-  return records.map((record) => {
+  const classifications = records.map((record) => {
     const titleCommentary = isCommentaryItem({ vod_name: record.title })
     const decisions = sourceDecisions.get(record.externalId) ?? []
     if (decisions.some((decision) => decision === null)) return { externalId: record.externalId, title: record.title, action: 'keep', reason: 'unverified-source' }
@@ -38,6 +40,24 @@ export function classifyExistingCatalogue(
     const commentary = titleCommentary || decisions.some((decision) => decision !== null && !decision.accepted && decision.reason === 'commentary')
     return { externalId: record.externalId, title: record.title, action: 'remove', reason: commentary ? 'commentary' : 'other-non-anime' }
   })
+  const acceptedByIdentity = new Map<string, CleanupClassification[]>()
+  for (const classification of classifications) {
+    if (classification.action !== 'keep' || classification.reason !== 'accepted-anime') continue
+    const record = records.find((candidate) => candidate.externalId === classification.externalId)
+    if (!record?.year || !record.mediaType || !record.region) continue
+    const key = `${normalizeAnimeTitle(record.title)}|${record.year}|${record.mediaType}|${record.region}`
+    acceptedByIdentity.set(key, [...(acceptedByIdentity.get(key) ?? []), classification])
+  }
+  for (const duplicates of acceptedByIdentity.values()) {
+    if (duplicates.length < 2) continue
+    const survivor = [...duplicates].sort((left, right) => left.externalId.localeCompare(right.externalId))[0]
+    for (const duplicate of duplicates) {
+      if (duplicate.externalId === survivor.externalId) continue
+      duplicate.action = 'remove'
+      duplicate.reason = 'duplicate-canonical'
+    }
+  }
+  return classifications
 }
 
 export async function planAnimeCleanup(
@@ -89,6 +109,7 @@ export async function planAnimeCleanup(
     remove: removeExternalIds.length,
     commentary: classifications.filter((item) => item.reason === 'commentary').length,
     otherNonAnime: classifications.filter((item) => item.reason === 'other-non-anime').length,
+    duplicateCanonical: classifications.filter((item) => item.reason === 'duplicate-canonical').length,
   }
 }
 
