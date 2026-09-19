@@ -24,6 +24,11 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
   const [error, setError] = useState('')
   const [episodeNumber, setEpisodeNumber] = useState(1)
   const [sourceIndex, setSourceIndex] = useState(0)
+  const [sourceAttempt, setSourceAttempt] = useState(0)
+  const [resumePosition, setResumePosition] = useState(0)
+  const [failoverState, setFailoverState] = useState<'idle' | 'trying' | 'exhausted'>('idle')
+  const attemptedSources = useRef(new Set<number>())
+  const sourceSelectRef = useRef<HTMLSelectElement>(null)
   const latestRef = useRef<{ position: number; duration: number }>({ position: 0, duration: 0 })
   const saved = target ? items.find((item) => item.externalId === target.externalId) : undefined
 
@@ -36,6 +41,11 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
       const preferred = saved?.currentEpisode
       setEpisodeNumber(preferred && result.episodes.some((episode) => episode.episodeNumber === preferred) ? preferred : result.episodes[0].episodeNumber)
       setSourceIndex(0)
+      const initialPosition = saved?.positionSeconds ?? 0
+      latestRef.current = { position: initialPosition, duration: saved?.durationSeconds ?? 0 }
+      setResumePosition(initialPosition)
+      attemptedSources.current.clear()
+      setFailoverState('idle')
       setState('idle')
     } catch (cause) {
       setError(cause instanceof AnimeDetailError && cause.code === 'not-configured'
@@ -71,12 +81,45 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
   const selectEpisode = useCallback((nextEpisode: number) => {
     persist(latestRef.current.position, latestRef.current.duration, true)
     latestRef.current = { position: 0, duration: 0 }
-    setEpisodeNumber(nextEpisode); setSourceIndex(0)
+    setEpisodeNumber(nextEpisode); setSourceIndex(0); setResumePosition(0); attemptedSources.current.clear(); setFailoverState('idle'); setSourceAttempt((value) => value + 1)
   }, [persist])
   const episodeIndex = detail?.episodes.findIndex((item) => item.episodeNumber === episodeNumber) ?? -1
   const previous = useCallback(() => { if (detail && episodeIndex > 0) selectEpisode(detail.episodes[episodeIndex - 1].episodeNumber) }, [detail, episodeIndex, selectEpisode])
   const next = useCallback(() => { if (detail && episodeIndex >= 0 && episodeIndex < detail.episodes.length - 1) selectEpisode(detail.episodes[episodeIndex + 1].episodeNumber) }, [detail, episodeIndex, selectEpisode])
   const watchedEpisodes = useMemo(() => saved?.watchedEpisodes ?? [], [saved?.watchedEpisodes])
+
+  const handleSourceFailure = useCallback(() => {
+    if (!episode || !target) return
+    persist(latestRef.current.position, latestRef.current.duration, true)
+    setResumePosition(latestRef.current.position)
+    void flushProgress(target.externalId)
+    attemptedSources.current.add(sourceIndex)
+    let nextSource = -1
+    for (let offset = 1; offset <= episode.sources.length; offset += 1) {
+      const candidate = (sourceIndex + offset) % episode.sources.length
+      if (!attemptedSources.current.has(candidate)) { nextSource = candidate; break }
+    }
+    if (nextSource < 0) { setFailoverState('exhausted'); return }
+    setFailoverState('trying')
+    setSourceIndex(nextSource)
+    setSourceAttempt((value) => value + 1)
+  }, [episode, flushProgress, persist, sourceIndex, target])
+
+  const selectSource = useCallback((nextSource: number) => {
+    persist(latestRef.current.position, latestRef.current.duration, true)
+    setResumePosition(latestRef.current.position)
+    attemptedSources.current.delete(nextSource)
+    setFailoverState('idle')
+    setSourceIndex(nextSource)
+    setSourceAttempt((value) => value + 1)
+  }, [persist])
+
+  const retryAllSources = useCallback(() => {
+    attemptedSources.current.clear()
+    setFailoverState('idle')
+    setSourceIndex(0)
+    setSourceAttempt((value) => value + 1)
+  }, [])
 
   function close() {
     if (target) { persist(latestRef.current.position, latestRef.current.duration, true); void flushProgress(target.externalId) }
@@ -92,11 +135,14 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
         {state === 'error' && <div role="alert" className="mt-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5"><p>{error}</p><Button type="button" variant="secondary" className="mt-4" onClick={() => { invalidateAnimeDetail(target.externalId); void load() }}>{t('retry')}</Button></div>}
         {detail && episode && source && <div className="mt-5 grid min-h-0 gap-5 lg:grid-cols-[minmax(0,1fr)_15rem]">
           <div className="min-w-0">
-            <AnimeVideoPlayer source={source} resumeAt={saved?.currentEpisode === episodeNumber ? saved.positionSeconds : 0} onProgress={(position, duration) => persist(position, duration)} onPause={(position, duration) => persist(position, duration, true)} onPrevious={previous} onNext={next} />
+            <AnimeVideoPlayer key={`${episodeNumber}-${sourceIndex}-${sourceAttempt}`} source={source} resumeAt={resumePosition} onProgress={(position, duration) => persist(position, duration)} onPause={(position, duration) => persist(position, duration, true)} onPrevious={previous} onNext={next} onReady={() => setFailoverState('idle')} onSourceFailure={handleSourceFailure} />
+            {failoverState === 'trying' && <p role="status" className="mt-3 text-sm text-[var(--text-secondary)]">{t('sourceFailover')}</p>}
+            {failoverState === 'exhausted' && <div role="alert" className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4"><p className="text-sm">{t('allSourcesFailed')}</p><div className="mt-3 flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={retryAllSources}>{t('retryAllSources')}</Button>{episode.sources.length > 1 && <Button type="button" variant="ghost" onClick={() => sourceSelectRef.current?.focus()}>{t('chooseSource')}</Button>}</div></div>}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Button type="button" variant="secondary" onClick={previous} disabled={episodeIndex <= 0}>{t('previous')}</Button>
               <Button type="button" variant="secondary" onClick={next} disabled={episodeIndex >= detail.episodes.length - 1}>{t('next')}</Button>
-              {episode.sources.length > 1 && <select aria-label={t('playbackSource')} className="form-control ml-auto w-auto" value={sourceIndex} onChange={(event) => { persist(latestRef.current.position, latestRef.current.duration, true); setSourceIndex(Number(event.target.value)) }}>
+              <span className="text-xs text-[var(--text-muted)]">{t('activeSource')}: {source.label}</span>
+              {episode.sources.length > 1 && <select ref={sourceSelectRef} aria-label={t('playbackSource')} className="form-control ml-auto w-auto" value={sourceIndex} onChange={(event) => selectSource(Number(event.target.value))}>
                 {episode.sources.map((item, index) => <option value={index} key={`${item.label}-${index}`}>{item.label}</option>)}
               </select>}
             </div>

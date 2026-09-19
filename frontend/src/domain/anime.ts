@@ -14,6 +14,7 @@ export const animeSearchDebounceMs = 300
 export const animeProgressWriteIntervalMs = 10_000
 export const animeWatchedThreshold = 0.9
 export const animeEpisodeSegmentSize = 50
+export const animeSourceStartupTimeoutMs = 5_000
 
 export function normalizeAnimeTitle(value: string): string {
   return value.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ')

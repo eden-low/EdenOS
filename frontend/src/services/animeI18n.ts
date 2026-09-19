@@ -20,6 +20,8 @@ const copy = {
     mediaFailed: 'The media could not be decoded or loaded.', cloudFailed: 'Cloud watch progress is temporarily unavailable.',
     searchCatalogue: 'Search catalogue', chooseCatalogue: 'Choose an existing catalogue title and its current episode.',
     searchFailed: 'Search is temporarily unavailable.', current: 'Current', playerAndEpisodes: 'Player and episodes',
+    sourceFailover: 'Source unavailable. Trying another source…', allSourcesFailed: 'Playback is temporarily unavailable for this episode.',
+    retryAllSources: 'Retry all', chooseSource: 'Choose source', activeSource: 'Active source',
   },
   zh: {
     anime: '动漫', tracking: '追踪', watching: '观看中', completed: '已完成',
@@ -40,6 +42,8 @@ const copy = {
     mediaFailed: '媒体无法解码或加载。', cloudFailed: '云端观看进度暂时不可用。',
     searchCatalogue: '搜索目录', chooseCatalogue: '从目录选择作品并输入当前集数。',
     searchFailed: '搜索暂时不可用。', current: '当前', playerAndEpisodes: '播放器与剧集',
+    sourceFailover: '播放源不可用，正在尝试其他播放源…', allSourcesFailed: '本集暂时无法播放。',
+    retryAllSources: '重试全部', chooseSource: '选择播放源', activeSource: '当前播放源',
   },
 } as const
 
