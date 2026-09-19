@@ -19,6 +19,7 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
   const t = useAnimeText()
   const videoRef = useRef<HTMLVideoElement>(null)
   const failedRef = useRef(false)
+  const activeRef = useRef(false)
   const callbacksRef = useRef({ onReady, onSourceFailure })
   const [error, setError] = useState<string | null>(null)
   useEffect(() => { callbacksRef.current = { onReady, onSourceFailure } }, [onReady, onSourceFailure])
@@ -26,6 +27,7 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
+    activeRef.current = true
     let cancelled = false
     let destroy: (() => void) | undefined
     let recoveredFatalError = false
@@ -84,6 +86,7 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
     video.addEventListener('playing', markReady)
     void attach()
     return () => {
+      activeRef.current = false
       cancelled = true
       clearTimeout(startupTimer)
       video.removeEventListener('loadedmetadata', markReady)
@@ -128,7 +131,7 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
       onTimeUpdate={(event) => onProgress(event.currentTarget.currentTime, event.currentTarget.duration || 0)}
       onPause={(event) => onPause(event.currentTarget.currentTime, event.currentTarget.duration || 0)}
       onError={() => {
-        if (failedRef.current) return
+        if (!activeRef.current || failedRef.current) return
         failedRef.current = true
         setError(t('mediaFailed'))
         callbacksRef.current.onSourceFailure('media-error')
