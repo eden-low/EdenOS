@@ -73,6 +73,30 @@ body {
     var(--background);
 }
 
+.anime-player-dialog {
+  display: flex;
+  width: min(96rem, calc(100vw - 1rem));
+  max-height: 94dvh;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.anime-episode-drawer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  max-height: min(52dvh, 28rem);
+  overflow-y: auto;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.2);
+}
+
+@media (min-width: 640px) {
+  .anime-player-dialog {
+    width: min(96rem, calc(100vw - 2rem));
+    max-width: none;
+  }
+}
+
 #root {
   min-height: 100vh;
   min-height: 100dvh;

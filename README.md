@@ -81,9 +81,46 @@ VITE_FIREBASE_PROJECT_ID=
 VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
+VITE_ANIME_DETAILS_BASE_URL=
 ```
 
 `frontend/.env.local` is ignored by Git. Restart the Vite development server after changing it. EdenOS validates every required variable at startup and shows a configuration message instead of silently selecting a project. Configuration values are never logged by the app.
+
+### Anime media library configuration
+
+Anime catalogue cards are read from `animes/{externalId}` in Firestore. These
+documents contain only searchable list metadata and a precomputed `filterKeys`
+array; ordinary clients cannot write them. Heavy detail and authorized playback
+data remain outside Firestore at the public, read-only object path
+`anime-details/{externalId}.json`. Configure its HTTPS origin with
+`VITE_ANIME_DETAILS_BASE_URL`. This value is a public object origin and must not
+contain an R2 access key, secret, token, or signed credential.
+
+The versioned detail object contract is:
+
+```json
+{
+  "schemaVersion": 1,
+  "externalId": "stable-safe-id",
+  "title": "Title",
+  "description": "Optional description",
+  "episodes": [
+    {
+      "episodeNumber": 1,
+      "title": "Optional episode title",
+      "durationSeconds": 1440,
+      "sources": [
+        { "label": "Primary", "url": "https://media.example/episode.m3u8", "format": "hls" }
+      ]
+    }
+  ]
+}
+```
+
+Only HTTPS/HTTP `hls` and `mp4` sources pass client validation. Detail objects
+load only after a title opens and are cached in memory for the browser session.
+Watch progress is local-only for anonymous guests. Google-connected users also
+sync owner-scoped progress at `users/{uid}/animeWatchProgress/{externalId}`.
 
 For Netlify, add the same six variables under **Site configuration > Environment variables**. Do not commit real Firebase configuration to this repository.
 

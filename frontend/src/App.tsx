@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import {
   DesktopNavigation,
   MobileNavigation,
@@ -8,6 +8,8 @@ import { RecordsPage } from './pages/RecordsPage'
 import { TodayPage } from './pages/TodayPage'
 import { WeeklyReviewPage } from './pages/WeeklyReviewPage'
 import { PwaUpdatePrompt } from './pwa/PwaUpdatePrompt'
+
+const AnimePage = lazy(() => import('./pages/AnimePage').then((module) => ({ default: module.AnimePage })))
 
 function App() {
   const [activePage, setActivePage] = useState<AppPage>('today')
@@ -21,6 +23,10 @@ function App() {
           <TodayPage />
         ) : activePage === 'records' ? (
           <RecordsPage />
+        ) : activePage === 'anime' ? (
+          <Suspense fallback={<div className="mx-auto max-w-[92rem] px-4 py-8 text-sm text-[var(--text-muted)]">Opening Anime…</div>}>
+            <AnimePage />
+          </Suspense>
         ) : (
           <WeeklyReviewPage />
         )}
