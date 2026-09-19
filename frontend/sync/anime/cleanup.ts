@@ -29,7 +29,7 @@ export function classifyExistingCatalogue(
   records: ExistingCatalogueRecord[],
   sourceDecisions: Map<string, Array<AnimeContentDecision | null>>,
 ): CleanupClassification[] {
-  const classifications = records.map((record) => {
+  const classifications: CleanupClassification[] = records.map((record): CleanupClassification => {
     const titleCommentary = isCommentaryItem({ vod_name: record.title })
     const decisions = sourceDecisions.get(record.externalId) ?? []
     if (decisions.some((decision) => decision === null)) return { externalId: record.externalId, title: record.title, action: 'keep', reason: 'unverified-source' }
