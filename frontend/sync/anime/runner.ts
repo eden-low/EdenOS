@@ -293,7 +293,13 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     const detailChanged = previous?.detailHash !== detailHash
     const indexChanged = previous?.indexHash !== indexHash
     let r2Changed = detailChanged
-    if (!detailChanged && dependencies.detailStore) r2Changed = !(await dependencies.detailStore.exists(canonical.externalId))
+    if (!detailChanged && dependencies.detailStore) {
+      try { r2Changed = !(await dependencies.detailStore.exists(canonical.externalId)) }
+      catch (error) {
+        failures.push({ provider: canonical.records[0].providerId, canonicalExternalId: canonical.externalId, stage: 'r2', errorCode: 'r2-head', message: safeMessage(error) })
+        continue
+      }
+    }
     if (options.probeMedia) {
       const sample = canonical.detail.episodes.flatMap((episode) => episode.sources).slice(0, Math.min(3, remainingMediaProbes))
       remainingMediaProbes -= sample.length

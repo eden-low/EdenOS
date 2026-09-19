@@ -94,6 +94,20 @@ describe('Anime sync runner', () => {
     expect(publish).not.toHaveBeenCalled()
   })
 
+  it('records a transient R2 existence-check failure without aborting the run', async () => {
+    const first = await runAnimeSync(options, { providers: [provider()], cacheRoot: await temporaryDirectory() })
+    const canonical = first.canonicals[0]
+    const states = new Map([[canonical.externalId, { externalId: canonical.externalId, indexHash: contentHash(canonical.index), detailHash: contentHash(canonical.detail), updatedAtMs: 1_700_000_000_000 }]])
+    const mapping: SourceMapping = { provider: 'provider-a', providerItemId: '101', canonicalExternalId: canonical.externalId, matchedBy: 'deterministic-new' }
+    const { store, publish } = memoryStore(states, [], new Map([[sourceMappingId('provider-a', '101'), mapping]]))
+    const { detailStore } = memoryR2([], new Map([[canonical.externalId, canonical.detail]]))
+    detailStore.exists = vi.fn(async () => { throw new Error('fetch failed') })
+    const result = await runAnimeSync({ ...options, dryRun: false }, { providers: [provider()], cacheRoot: await temporaryDirectory(), store, detailStore })
+    expect(result.failures).toEqual(expect.arrayContaining([expect.objectContaining({ stage: 'r2', errorCode: 'r2-head', canonicalExternalId: canonical.externalId })]))
+    expect(result.summary.itemFailures).toBe(1)
+    expect(publish).not.toHaveBeenCalled()
+  })
+
   it('publishes the catalogue metadata after a detail-only change', async () => {
     const first = await runAnimeSync(options, { providers: [provider()], cacheRoot: await temporaryDirectory() })
     const canonical = first.canonicals[0]
