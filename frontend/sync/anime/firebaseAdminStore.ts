@@ -144,15 +144,13 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
       })
     },
     async findProgressExternalIds(externalIds) {
+      const requested = new Set(externalIds)
       const found = new Set<string>()
-      for (let index = 0; index < externalIds.length; index += 30) {
-        const ids = externalIds.slice(index, index + 30)
-        if (!ids.length) continue
-        const snapshot = await firestore.collectionGroup('animeWatchProgress').where('externalId', 'in', ids).get()
-        for (const document of snapshot.docs) {
-          const externalId = document.data().externalId
-          if (typeof externalId === 'string') found.add(externalId)
-        }
+      if (!requested.size) return []
+      const snapshot = await firestore.collectionGroup('animeWatchProgress').get()
+      for (const document of snapshot.docs) {
+        const externalId = document.data().externalId
+        if (typeof externalId === 'string' && requested.has(externalId)) found.add(externalId)
       }
       return [...found].sort()
     },

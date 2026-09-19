@@ -144,7 +144,7 @@ jobs:
         shell: bash
         run: |
           case "$GITHUB_REF_NAME" in
-            anime-content-quality-dry-run-v1)
+            anime-content-quality-dry-run-v*)
               npm run sync:animes -- --mode=incremental --dry-run --cleanup=plan --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
               ;;
             anime-content-quality-wave0-v1)
