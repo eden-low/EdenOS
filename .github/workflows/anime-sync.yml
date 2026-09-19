@@ -147,13 +147,13 @@ jobs:
             anime-content-quality-dry-run-v*)
               npm run sync:animes -- --mode=incremental --dry-run --cleanup=plan --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
               ;;
-            anime-content-quality-wave0-v1)
+            anime-content-quality-wave0-v*)
               npm run sync:animes -- --mode=incremental --cleanup=apply --providers=lzi,ffzy --content-targets=japan:20,china:15,europe_us:10 --concurrency=3 --probe-media
               ;;
-            anime-content-quality-wave1-v1)
+            anime-content-quality-wave1-v*)
               npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --content-targets=japan:100,china:60,europe_us:30 --concurrency=3
               ;;
-            anime-content-quality-wave2-v1|anime-content-quality-idempotency-v1)
+            anime-content-quality-wave2-v*|anime-content-quality-idempotency-v*)
               npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
               ;;
             *)

@@ -27,8 +27,16 @@ describe('Anime content policy', () => {
     expect(isCommentaryItem(vodItem({ vod_name: title, vod_class: '动作' }))).toBe(true)
   })
 
+  it.each(['侠盗猎车手6:加长版深度实机赏析', '影片赏析:某作品', '某作品剧情解析'])('rejects commentary and analysis title marker %s', (title) => {
+    expect(isCommentaryItem(vodItem({ vod_name: title, vod_class: '动画' }))).toBe(true)
+  })
+
   it('does not reject a legitimate title because its description contains 解说', () => {
     expect(isCommentaryItem(vodItem({ vod_name: '葬送的芙莉莲', vod_class: '奇幻', vod_content: '角色解说内容' }))).toBe(false)
+  })
+
+  it('does not reject a legitimate Anime whose title contains similar ordinary words', () => {
+    expect(isCommentaryItem(vodItem({ vod_name: '名侦探柯南国语版', vod_class: '动作,推理' }))).toBe(false)
   })
 
   it('normalizes Japanese, Chinese, and Western Anime into existing regions', () => {

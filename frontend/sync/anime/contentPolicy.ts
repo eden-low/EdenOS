@@ -43,7 +43,8 @@ export function isCommentaryItem(item: Pick<MacCmsVodItem, 'vod_name' | 'vod_cla
   const title = policyText(item.vod_name)
   if (!title) return false
   return /(?:^|[[(])(?:电影|影视|动漫|动画)?解说(?:[\])]|$)/.test(title) ||
-    /(?:\[?(?:电影|影视|动漫|动画)解说\]?|解说)$/.test(title)
+    /(?:\[?(?:电影|影视|动漫|动画)解说\]?|解说)$/.test(title) ||
+    /(?:深度)?实机赏析|(?:电影|影视|动漫|动画|影片|深度)赏析|(?:电影|影视|动漫|动画|剧情)解析/.test(title)
 }
 
 export function discoverAnimeCategoryPolicies(categories: ProviderCategory[]): AnimeCategoryPolicy[] {
