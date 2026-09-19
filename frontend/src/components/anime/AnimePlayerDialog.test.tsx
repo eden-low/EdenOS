@@ -34,6 +34,14 @@ describe('AnimePlayerDialog', () => {
     expect(mock.save).toHaveBeenLastCalledWith(expect.objectContaining({ watchedEpisodes: [1], trackingStatus: 'watching' }), { immediate: false })
   })
 
+  it('does not reload details when progress updates during playback', async () => {
+    const { rerender } = render(<AnimePlayerDialog target={target} onClose={vi.fn()} />)
+    await screen.findByTestId('video')
+    mock.items = [{ externalId: 'sample-anime', currentEpisode: 1, positionSeconds: 10, watchedEpisodes: [], trackingStatus: 'watching' }]
+    rerender(<AnimePlayerDialog target={target} onClose={vi.fn()} />)
+    expect(mock.load).toHaveBeenCalledOnce()
+  })
+
   it('flushes immediately on pause and episode change and supports previous/next', async () => {
     render(<AnimePlayerDialog target={target} onClose={vi.fn()} />); await screen.findByTestId('video')
     fireEvent.click(screen.getByRole('button', { name: 'pause' }))
