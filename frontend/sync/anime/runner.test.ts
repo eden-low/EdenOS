@@ -88,6 +88,20 @@ describe('Anime sync runner', () => {
     expect(publish).not.toHaveBeenCalled()
   })
 
+  it('publishes the catalogue metadata after a detail-only change', async () => {
+    const first = await runAnimeSync(options, { providers: [provider()], cacheRoot: await temporaryDirectory() })
+    const canonical = first.canonicals[0]
+    const states = new Map([[canonical.externalId, { externalId: canonical.externalId, indexHash: contentHash(canonical.index), detailHash: 'previous-detail-hash', updatedAtMs: 1_700_000_000_000 }]])
+    const existing = new Map([[canonical.externalId, canonical.detail]])
+    const mapping: SourceMapping = { provider: 'provider-a', providerItemId: '101', canonicalExternalId: canonical.externalId, matchedBy: 'deterministic-new' }
+    const { store, publish } = memoryStore(states, [], new Map([[sourceMappingId('provider-a', '101'), mapping]]))
+    const { detailStore, put } = memoryR2([], existing)
+    const result = await runAnimeSync({ ...options, dryRun: false }, { providers: [provider()], cacheRoot: await temporaryDirectory(), store, detailStore })
+    expect(result.summary).toMatchObject({ r2Uploaded: 1, firestoreUpserted: 1, firestoreSkipped: 0 })
+    expect(put).toHaveBeenCalledOnce()
+    expect(publish).toHaveBeenCalledWith([expect.objectContaining({ indexChanged: false, r2Changed: true })], [])
+  })
+
   it('continues when another provider fails', async () => {
     const failed = createMacCmsProvider(providerConfig({ id: 'failed', baseUrl: new URL('https://failed.example') }), { fetcher: async () => new Response('{}', { status: 503 }), sleep: async () => undefined })
     const result = await runAnimeSync(options, { providers: [failed, provider()], cacheRoot: await temporaryDirectory() })

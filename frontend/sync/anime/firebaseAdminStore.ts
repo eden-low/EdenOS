@@ -85,7 +85,7 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
     async publish(writes, mappings) {
       const operations: Array<(batch: FirebaseFirestore.WriteBatch) => void> = []
       for (const write of writes) {
-        if (write.indexChanged) operations.push((batch) => batch.set(firestore.doc(`animes/${write.canonical.externalId}`), cataloguePayload(write.canonical, write), { merge: true }))
+        if (write.indexChanged || write.r2Changed) operations.push((batch) => batch.set(firestore.doc(`animes/${write.canonical.externalId}`), cataloguePayload(write.canonical, write), { merge: true }))
         if (write.indexChanged || write.r2Changed) operations.push((batch) => batch.set(firestore.doc(`animeSyncState/${write.canonical.externalId}`), {
           indexHash: write.indexHash,
           detailHash: write.detailHash,
