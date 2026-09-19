@@ -30,4 +30,12 @@ describe('R2 Anime detail store', () => {
     await expect(store.get('one-piece')).resolves.toEqual(detail)
     await expect(store.exists('missing')).resolves.toBe(false)
   })
+
+  it('deletes only the fixed Anime detail object path', async () => {
+    const fetcher = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(async () => new Response(null, { status: 204 }))
+    const store = createR2AnimeDetailStore(config, { fetcher, now: () => new Date('2026-09-19T00:00:00Z') })
+    await store.remove('one-piece')
+    expect(String(fetcher.mock.calls[0]![0])).toBe('https://account.r2.cloudflarestorage.com/anime/anime-details/one-piece.json')
+    expect(fetcher.mock.calls[0]![1]?.method).toBe('DELETE')
+  })
 })

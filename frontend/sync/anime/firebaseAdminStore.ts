@@ -1,7 +1,15 @@
 import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { FieldValue, Timestamp, getFirestore, type Firestore } from 'firebase-admin/firestore'
 import { sourceMappingId } from './identity'
+import type { AnimeMediaType, AnimeRegion } from '../../src/types/anime'
 import type { CanonicalAnime, PreparedCanonicalWrite, SourceMapping, SyncState } from './types'
+
+export interface ExistingCatalogueRecord {
+  externalId: string
+  title: string
+  mediaType?: AnimeMediaType
+  region?: AnimeRegion
+}
 
 interface ServiceAccountConfig {
   project_id: string
@@ -13,6 +21,11 @@ export interface AnimeSyncStore {
   getSourceMappings(keys: Array<{ provider: string; providerItemId: string }>): Promise<Map<string, SourceMapping>>
   getStates(externalIds: string[]): Promise<Map<string, SyncState>>
   publish(writes: PreparedCanonicalWrite[], mappings: SourceMapping[]): Promise<void>
+  listCatalogue(): Promise<ExistingCatalogueRecord[]>
+  listAllSourceMappings(): Promise<Array<{ documentId: string; mapping: SourceMapping }>>
+  findProgressExternalIds(externalIds: string[]): Promise<string[]>
+  deleteCatalogue(externalIds: string[]): Promise<void>
+  deleteInternalMetadata(externalIds: string[], mappingDocumentIds: string[]): Promise<void>
 }
 
 function readServiceAccount(env: NodeJS.ProcessEnv): ServiceAccountConfig | null {
@@ -56,6 +69,13 @@ function cataloguePayload(canonical: CanonicalAnime, write: PreparedCanonicalWri
 }
 
 export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
+  async function commitDeletes(paths: string[]): Promise<void> {
+    for (let index = 0; index < paths.length; index += 200) {
+      const batch = firestore.batch()
+      for (const path of paths.slice(index, index + 200)) batch.delete(firestore.doc(path))
+      await batch.commit()
+    }
+  }
   return {
     async getSourceMappings(keys) {
       const ids = keys.map((key) => sourceMappingId(key.provider, key.providerItemId))
@@ -102,6 +122,48 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
         for (const operation of operations.slice(index, index + 200)) operation(batch)
         await batch.commit()
       }
+    },
+    async listCatalogue() {
+      const snapshot = await firestore.collection('animes').get()
+      return snapshot.docs.map((document) => {
+        const data = document.data()
+        return {
+          externalId: document.id,
+          title: typeof data.title === 'string' ? data.title : '',
+          ...(typeof data.mediaType === 'string' ? { mediaType: data.mediaType as AnimeMediaType } : {}),
+          ...(typeof data.region === 'string' ? { region: data.region as AnimeRegion } : {}),
+        }
+      })
+    },
+    async listAllSourceMappings() {
+      const snapshot = await firestore.collection('animeSyncSourceMap').get()
+      return snapshot.docs.flatMap((document) => {
+        const data = document.data()
+        if (typeof data.provider !== 'string' || typeof data.providerItemId !== 'string' || typeof data.canonicalExternalId !== 'string') return []
+        return [{ documentId: document.id, mapping: { provider: data.provider, providerItemId: data.providerItemId, canonicalExternalId: data.canonicalExternalId, matchedBy: data.matchedBy } }]
+      })
+    },
+    async findProgressExternalIds(externalIds) {
+      const found = new Set<string>()
+      for (let index = 0; index < externalIds.length; index += 30) {
+        const ids = externalIds.slice(index, index + 30)
+        if (!ids.length) continue
+        const snapshot = await firestore.collectionGroup('animeWatchProgress').where('externalId', 'in', ids).get()
+        for (const document of snapshot.docs) {
+          const externalId = document.data().externalId
+          if (typeof externalId === 'string') found.add(externalId)
+        }
+      }
+      return [...found].sort()
+    },
+    async deleteCatalogue(externalIds) {
+      await commitDeletes(externalIds.map((externalId) => `animes/${externalId}`))
+    },
+    async deleteInternalMetadata(externalIds, mappingDocumentIds) {
+      await commitDeletes([
+        ...externalIds.map((externalId) => `animeSyncState/${externalId}`),
+        ...mappingDocumentIds.map((documentId) => `animeSyncSourceMap/${documentId}`),
+      ])
     },
   }
 }

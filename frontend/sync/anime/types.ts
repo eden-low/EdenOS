@@ -23,6 +23,18 @@ export interface ProviderProbeResult {
   message: string
 }
 
+export interface ProviderCategory {
+  id: string
+  parentId?: string
+  name: string
+}
+
+export interface ProviderRuntimeStats {
+  requests: number
+  retries: number
+  failures: number
+}
+
 export interface ProviderPage {
   page: number
   pageCount: number
@@ -37,11 +49,19 @@ export interface ProviderDetail {
   raw: unknown
 }
 
+export interface ProviderDetailBatch {
+  items: MacCmsVodItem[]
+  raw: unknown
+}
+
 export interface AnimeUpstreamProvider {
   readonly config: AnimeProviderConfig
+  readonly stats: ProviderRuntimeStats
   probe(): Promise<ProviderProbeResult>
-  fetchPage(page: number, search?: string): Promise<ProviderPage>
+  fetchCategories(): Promise<ProviderCategory[]>
+  fetchPage(page: number, search?: string, categoryId?: string): Promise<ProviderPage>
   fetchDetail(providerItemId: string): Promise<ProviderDetail>
+  fetchDetails(providerItemIds: string[]): Promise<ProviderDetailBatch>
 }
 
 export interface MacCmsVodItem {
@@ -143,6 +163,8 @@ export interface SyncOptions {
   probeOnly: boolean
   probeMedia: boolean
   concurrency: number
+  contentTargets?: Record<'japan' | 'china' | 'europe_us', number>
+  cleanup: 'none' | 'plan' | 'apply'
 }
 
 export interface SyncSummary {
@@ -162,6 +184,10 @@ export interface SyncSummary {
   ambiguousMatches: number
   unsupportedPlaybackUrls: number
   elapsedMs: number
+  contentAccepted: Record<'japan' | 'china' | 'europe_us', number>
+  commentaryRejected: number
+  otherRejected: number
+  providerStats: Record<string, ProviderRuntimeStats>
 }
 
 export interface ExistingCanonical {

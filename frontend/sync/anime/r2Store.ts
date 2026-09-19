@@ -7,6 +7,7 @@ export interface AnimeDetailStore {
   get(externalId: string): Promise<AnimeDetail | null>
   exists(externalId: string): Promise<boolean>
   put(detail: AnimeDetail): Promise<void>
+  remove(externalId: string): Promise<void>
 }
 
 export interface R2Configuration {
@@ -42,7 +43,7 @@ function encodedPath(config: R2Configuration, externalId: string): string {
   return `/${[config.bucket, ...key.split('/')].map(encodeURIComponent).join('/')}`
 }
 
-function signedHeaders(config: R2Configuration, method: 'GET' | 'HEAD' | 'PUT', externalId: string, body: string, now: Date): { url: URL; headers: Headers } {
+function signedHeaders(config: R2Configuration, method: 'GET' | 'HEAD' | 'PUT' | 'DELETE', externalId: string, body: string, now: Date): { url: URL; headers: Headers } {
   const host = `${config.accountId}.r2.cloudflarestorage.com`
   const url = new URL(`https://${host}${encodedPath(config, externalId)}`)
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '')
@@ -69,7 +70,7 @@ function signedHeaders(config: R2Configuration, method: 'GET' | 'HEAD' | 'PUT', 
 export function createR2AnimeDetailStore(config: R2Configuration, options: R2StoreOptions = {}): AnimeDetailStore {
   const fetcher = options.fetcher ?? fetch
   const now = options.now ?? (() => new Date())
-  async function request(method: 'GET' | 'HEAD' | 'PUT', externalId: string, body = ''): Promise<Response> {
+  async function request(method: 'GET' | 'HEAD' | 'PUT' | 'DELETE', externalId: string, body = ''): Promise<Response> {
     const signed = signedHeaders(config, method, externalId, body, now())
     if (method === 'PUT') {
       signed.headers.set('Content-Type', 'application/json; charset=utf-8')
@@ -94,6 +95,10 @@ export function createR2AnimeDetailStore(config: R2Configuration, options: R2Sto
     async put(detail) {
       const response = await request('PUT', detail.externalId, `${stableJson(detail)}\n`)
       if (!response.ok) throw new Error(`R2 PUT returned HTTP ${response.status}`)
+    },
+    async remove(externalId) {
+      const response = await request('DELETE', externalId)
+      if (!response.ok && response.status !== 404) throw new Error(`R2 DELETE returned HTTP ${response.status}`)
     },
   }
 }

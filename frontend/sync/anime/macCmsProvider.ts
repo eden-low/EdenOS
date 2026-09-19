@@ -1,5 +1,5 @@
 import { fetchJson, type ResilientFetchOptions } from './http'
-import type { AnimeProviderConfig, AnimeUpstreamProvider, MacCmsVodItem, ProviderDetail, ProviderProbeResult } from './types'
+import type { AnimeProviderConfig, AnimeUpstreamProvider, MacCmsVodItem, ProviderCategory, ProviderDetail, ProviderProbeResult } from './types'
 
 interface MacCmsEnvelope {
   code?: unknown
@@ -9,6 +9,7 @@ interface MacCmsEnvelope {
   limit?: unknown
   total?: unknown
   list?: unknown
+  class?: unknown
 }
 
 function integer(value: unknown, fallback: number): number {
@@ -22,6 +23,21 @@ export function parseMacCmsEnvelope(input: unknown): { envelope: MacCmsEnvelope;
   if (!Array.isArray(envelope.list)) throw new Error('MacCMS response has no list array')
   const items = envelope.list.filter((item): item is MacCmsVodItem => Boolean(item && typeof item === 'object'))
   return { envelope, items }
+}
+
+export function parseMacCmsCategories(input: unknown): ProviderCategory[] {
+  if (!input || typeof input !== 'object') return []
+  const categories = (input as MacCmsEnvelope).class
+  if (!Array.isArray(categories)) return []
+  return categories.flatMap((raw: unknown) => {
+    if (!raw || typeof raw !== 'object') return []
+    const value = raw as Record<string, unknown>
+    const id = String(value.type_id ?? '').trim()
+    const name = String(value.type_name ?? '').trim()
+    if (!id || !name) return []
+    const parentId = String(value.type_pid ?? '').trim()
+    return [{ id, name, ...(parentId ? { parentId } : {}) }]
+  })
 }
 
 function endpoint(config: AnimeProviderConfig, action: 'list' | 'detail', parameters: Record<string, string>): URL {
@@ -39,18 +55,31 @@ function endpoint(config: AnimeProviderConfig, action: 'list' | 'detail', parame
 }
 
 export function createMacCmsProvider(config: AnimeProviderConfig, overrides: Partial<ResilientFetchOptions> = {}): AnimeUpstreamProvider {
+  const stats = { requests: 0, retries: 0, failures: 0 }
   const requestOptions: ResilientFetchOptions = {
     timeoutMs: config.timeoutMs,
     maxRetries: config.maxRetries,
+    onAttempt: () => { stats.requests += 1 },
+    onRetry: () => { stats.retries += 1 },
     ...overrides,
+  }
+  async function request(url: URL): Promise<unknown> {
+    try { return await fetchJson(url, requestOptions) }
+    catch (error) { stats.failures += 1; throw error }
   }
   return {
     config,
-    async fetchPage(page, search) {
-      const raw = await fetchJson(endpoint(config, 'list', {
+    stats,
+    async fetchCategories() {
+      const raw = await request(endpoint(config, 'list', { pg: '1' }))
+      return parseMacCmsCategories(raw)
+    },
+    async fetchPage(page, search, categoryId) {
+      const raw = await request(endpoint(config, 'list', {
         pg: String(page),
         ...(search ? { wd: search } : {}),
-      }), requestOptions)
+        ...(categoryId ? { t: categoryId } : {}),
+      }))
       const { envelope, items } = parseMacCmsEnvelope(raw)
       return {
         page: integer(envelope.page, page),
@@ -62,11 +91,17 @@ export function createMacCmsProvider(config: AnimeProviderConfig, overrides: Par
       }
     },
     async fetchDetail(providerItemId) {
-      const raw = await fetchJson(endpoint(config, 'detail', { ids: providerItemId }), requestOptions)
+      const raw = await request(endpoint(config, 'detail', { ids: providerItemId }))
       const { items } = parseMacCmsEnvelope(raw)
       const item = items.find((candidate) => String(candidate.vod_id ?? '') === providerItemId) ?? items[0]
       if (!item) throw new Error(`MacCMS detail missing item ${providerItemId}`)
       return { item, raw }
+    },
+    async fetchDetails(providerItemIds) {
+      if (!providerItemIds.length || providerItemIds.length > 20) throw new Error('MacCMS detail batch requires 1 to 20 IDs')
+      const raw = await request(endpoint(config, 'detail', { ids: providerItemIds.join(',') }))
+      const { items } = parseMacCmsEnvelope(raw)
+      return { items, raw }
     },
     async probe(): Promise<ProviderProbeResult> {
       try {

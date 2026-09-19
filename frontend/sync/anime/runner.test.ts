@@ -13,7 +13,7 @@ import type { AnimeSyncStore } from './firebaseAdminStore'
 import type { PreparedCanonicalWrite, SourceMapping, SyncOptions, SyncState } from './types'
 
 const directories: string[] = []
-const options: SyncOptions = { mode: 'incremental', dryRun: true, probeOnly: false, probeMedia: false, concurrency: 3 }
+const options: SyncOptions = { mode: 'incremental', dryRun: true, probeOnly: false, probeMedia: false, concurrency: 3, cleanup: 'none' }
 
 async function temporaryDirectory() {
   const directory = await mkdtemp(path.join(tmpdir(), 'edenos-anime-sync-'))
@@ -36,6 +36,11 @@ function memoryStore(states = new Map<string, SyncState>(), events: string[] = [
     getSourceMappings: async () => mappings,
     getStates: async () => states,
     publish,
+    listCatalogue: async () => [],
+    listAllSourceMappings: async () => [],
+    findProgressExternalIds: async () => [],
+    deleteCatalogue: async () => undefined,
+    deleteInternalMetadata: async () => undefined,
   }
   return { store, publish }
 }
@@ -46,6 +51,7 @@ function memoryR2(events: string[] = [], existing = new Map()) {
     get: async (id) => existing.get(id) ?? null,
     exists: async (id) => existing.has(id),
     put,
+    remove: async (id) => { existing.delete(id) },
   }
   return { detailStore, put }
 }
@@ -130,9 +136,28 @@ describe('Anime sync runner', () => {
       get: async () => null,
       exists: async () => false,
       put: async () => { throw new Error('R2 unavailable') },
+      remove: async () => undefined,
     }
     const result = await runAnimeSync({ ...options, dryRun: false }, { providers: [provider()], cacheRoot: await temporaryDirectory(), store, detailStore })
     expect(result.failures).toEqual(expect.arrayContaining([expect.objectContaining({ stage: 'r2' })]))
     expect(publish).not.toHaveBeenCalled()
+  })
+
+  it('applies category targets and rejects commentary before canonical publication', async () => {
+    const good = vodItem({ vod_id: 'anime-1', vod_name: 'Real Anime', type_id: 30, type_name: '日韩动漫', vod_area: '日本' })
+    const commentary = vodItem({ vod_id: 'commentary-1', vod_name: 'Movie【电影解说】', type_id: 30, type_name: '日韩动漫', vod_area: '日本' })
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input))
+      if (url.searchParams.get('ac') === 'detail') {
+        const id = url.searchParams.get('ids')
+        return new Response(JSON.stringify(envelope([id === 'anime-1' ? good : commentary])))
+      }
+      return new Response(JSON.stringify(envelope([good, commentary], { class: [{ type_id: 30, type_pid: 4, type_name: '日韩动漫' }] })))
+    })
+    const contentProvider = createMacCmsProvider(providerConfig(), { fetcher })
+    const result = await runAnimeSync({ ...options, contentTargets: { japan: 1, china: 0, europe_us: 0 } }, { providers: [contentProvider], cacheRoot: await temporaryDirectory() })
+    expect(result.canonicals).toHaveLength(1)
+    expect(result.canonicals[0].index).toMatchObject({ title: 'Real Anime', mediaType: 'anime', region: 'japan' })
+    expect(result.summary).toMatchObject({ contentAccepted: { japan: 1, china: 0, europe_us: 0 }, commentaryRejected: 1 })
   })
 })

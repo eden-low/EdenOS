@@ -27,11 +27,37 @@ describe('MacCMS provider', () => {
     expect(Object.fromEntries(url.searchParams)).toMatchObject({ ac: 'list', pg: '2', wd: 'One Piece' })
   })
 
+  it('discovers provider category IDs and sends category filters from returned metadata', async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL) => response(envelope([], { class: [
+      { type_id: 29, type_pid: 4, type_name: '国产动漫' },
+      { type_id: 30, type_pid: 4, type_name: '日韩动漫' },
+    ] })))
+    const provider = createMacCmsProvider(providerConfig(), { fetcher })
+    expect(await provider.fetchCategories()).toEqual([
+      { id: '29', parentId: '4', name: '国产动漫' },
+      { id: '30', parentId: '4', name: '日韩动漫' },
+    ])
+    await provider.fetchPage(2, undefined, '30')
+    const url = new URL(String(fetcher.mock.calls[1][0]))
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ ac: 'list', pg: '2', t: '30' })
+  })
+
   it('reads detail by id and probes playback fields', async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => response(envelope([vodItem({ vod_id: new URL(String(input)).searchParams.get('ids') ?? '101' })])))
     const provider = createMacCmsProvider(providerConfig(), { fetcher })
     expect((await provider.fetchDetail('101')).item.vod_name).toBe('One Piece')
     await expect(provider.probe()).resolves.toMatchObject({ reachable: true, validJson: true, hasPagination: true, hasDetail: true, hasPlayback: true, incrementalSupported: false })
+  })
+
+  it('uses the verified comma-separated MacCMS detail batch contract', async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const ids = new URL(String(input)).searchParams.get('ids')?.split(',') ?? []
+      return response(envelope(ids.map((id) => vodItem({ vod_id: id }))))
+    })
+    const provider = createMacCmsProvider(providerConfig(), { fetcher })
+    const result = await provider.fetchDetails(['101', '102', '103'])
+    expect(result.items.map((item) => String(item.vod_id))).toEqual(['101', '102', '103'])
+    expect(new URL(String(fetcher.mock.calls[0][0])).searchParams.get('ids')).toBe('101,102,103')
   })
 
   it('retries retryable responses with bounded exponential backoff', async () => {

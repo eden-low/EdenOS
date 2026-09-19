@@ -16,6 +16,8 @@ export interface ResilientFetchOptions {
   fetcher?: typeof fetch
   sleep?: (milliseconds: number) => Promise<void>
   random?: () => number
+  onAttempt?: (attempt: number) => void
+  onRetry?: (nextAttempt: number) => void
 }
 
 function defaultSleep(milliseconds: number): Promise<void> {
@@ -28,6 +30,7 @@ export async function fetchJson(url: URL, options: ResilientFetchOptions): Promi
   const random = options.random ?? Math.random
   let lastError: unknown
   for (let attempt = 0; attempt <= options.maxRetries; attempt += 1) {
+    options.onAttempt?.(attempt)
     try {
       const response = await fetcher(url, {
         headers: { Accept: 'application/json' },
@@ -58,6 +61,7 @@ export async function fetchJson(url: URL, options: ResilientFetchOptions): Promi
       if (attempt === options.maxRetries) break
     }
     const delay = 250 * (2 ** attempt) + Math.floor(random() * 125)
+    options.onRetry?.(attempt + 1)
     await sleep(delay)
   }
   if (lastError instanceof ProviderHttpError) throw lastError
