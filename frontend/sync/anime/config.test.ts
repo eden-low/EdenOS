@@ -23,8 +23,9 @@ describe('Anime sync configuration', () => {
   })
 
   it('parses safe CLI modes, limits, replay, and probes', () => {
-    expect(parseSyncOptions(['--mode=full', '--dry-run', '--providers=a,b', '--limit=50', '--from-cache=.cache/run', '--probe-media'])).toMatchObject({
+    expect(parseSyncOptions(['--mode=full', '--dry-run', '--providers=a,b', '--limit=50', '--from-cache=.cache/run', '--probe-media', '--content-targets=japan:30,china:20,europe_us:10', '--cleanup=plan'])).toMatchObject({
       mode: 'full', dryRun: true, providerIds: ['a', 'b'], limit: 50, fromCache: '.cache/run', probeMedia: true,
+      contentTargets: { japan: 30, china: 20, europe_us: 10 }, cleanup: 'plan',
     })
   })
 

@@ -1,4 +1,5 @@
 import { isValidExternalId } from '../../src/domain/anime'
+import { animeContentTargets } from './contentPolicy'
 import type { AnimeProviderConfig, SyncOptions } from './types'
 
 const defaultTimeoutMs = 10_000
@@ -69,8 +70,12 @@ export function parseSyncOptions(arguments_: string[]): SyncOptions {
   const concurrencyArgument = arguments_.find((item) => item.startsWith('--concurrency='))
   const limit = limitArgument ? Number(valueAfterEquals(limitArgument)) : undefined
   const concurrency = concurrencyArgument ? Number(valueAfterEquals(concurrencyArgument)) : 4
+  const targetsArgument = arguments_.find((item) => item.startsWith('--content-targets='))
+  const cleanupArgument = arguments_.find((item) => item.startsWith('--cleanup='))
+  const cleanup = cleanupArgument ? valueAfterEquals(cleanupArgument) : 'none'
   if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) throw new Error('--limit must be a positive integer')
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 10) throw new Error('--concurrency must be between 1 and 10')
+  if (cleanup !== 'none' && cleanup !== 'plan' && cleanup !== 'apply') throw new Error('--cleanup must be none, plan, or apply')
   return {
     mode: modeValue,
     dryRun: arguments_.includes('--dry-run'),
@@ -81,6 +86,8 @@ export function parseSyncOptions(arguments_: string[]): SyncOptions {
     probeOnly: arguments_.includes('--probe'),
     probeMedia: arguments_.includes('--probe-media'),
     concurrency,
+    ...(targetsArgument ? { contentTargets: animeContentTargets(valueAfterEquals(targetsArgument)) } : {}),
+    cleanup,
   }
 }
 

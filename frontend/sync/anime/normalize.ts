@@ -146,7 +146,11 @@ function parseProviderTime(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
-export function normalizeProviderAnime(item: MacCmsVodItem, provider: AnimeProviderConfig): { record: ProviderAnimeRecord; unsupported: number } {
+export function normalizeProviderAnime(
+  item: MacCmsVodItem,
+  provider: AnimeProviderConfig,
+  overrides: { mediaType?: AnimeMediaType; region?: AnimeRegion } = {},
+): { record: ProviderAnimeRecord; unsupported: number } {
   const providerItemId = String(item.vod_id ?? '').trim()
   const title = cleanText(item.vod_name)
   if (!providerItemId || !title) throw new Error('Provider item requires vod_id and vod_name')
@@ -173,8 +177,8 @@ export function normalizeProviderAnime(item: MacCmsVodItem, provider: AnimeProvi
     sharedExternalIds,
     coverUrl: cleanText(item.vod_pic),
     ...(parseScore(item.vod_score) !== undefined ? { score: parseScore(item.vod_score) } : {}),
-    mediaType: normalizeMediaType(item),
-    ...(normalizeRegion(item.vod_area) ? { region: normalizeRegion(item.vod_area) } : {}),
+    mediaType: overrides.mediaType ?? normalizeMediaType(item),
+    ...((overrides.region ?? normalizeRegion(item.vod_area)) ? { region: overrides.region ?? normalizeRegion(item.vod_area) } : {}),
     genres: normalizeGenres(`${item.vod_class ?? ''} ${item.type_name ?? ''}`),
     status: normalizeStatus(item.vod_remarks),
     ...(year ? { year } : {}),
