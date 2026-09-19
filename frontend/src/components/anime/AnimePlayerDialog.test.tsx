@@ -15,7 +15,7 @@ import { AnimePlayerDialog } from './AnimePlayerDialog'
 const target = { externalId: 'sample-anime', title: 'Sample Anime', coverUrl: 'https://media.example/cover.jpg', totalEpisodes: 2 }
 
 describe('AnimePlayerDialog', () => {
-  beforeEach(() => { mock.load.mockReset(); mock.invalidate.mockReset(); mock.save.mockReset(); mock.flush.mockReset(); mock.items = []; mock.load.mockResolvedValue(animeDetail()) })
+  beforeEach(() => { mock.load.mockReset(); mock.invalidate.mockReset(); mock.save.mockReset(); mock.flush.mockReset(); mock.items = []; mock.load.mockResolvedValue(animeDetail()); vi.spyOn(console, 'warn').mockImplementation(() => undefined) })
 
   it('does not fetch detail until a title opens and restores the saved position', async () => {
     const { rerender } = render(<AnimePlayerDialog target={null} onClose={vi.fn()} />)
@@ -134,6 +134,7 @@ describe('AnimePlayerDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
     await waitFor(() => expect(mock.load).toHaveBeenCalledTimes(2))
     expect(mock.invalidate).toHaveBeenCalledWith('sample-anime')
+    expect(console.warn).toHaveBeenCalledWith('Anime detail load failed.', { externalId: 'sample-anime', code: 'unknown' })
   })
 
   it('keeps catalogue-only details useful without a direct playback source', async () => {

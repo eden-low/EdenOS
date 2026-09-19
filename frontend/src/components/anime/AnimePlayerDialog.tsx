@@ -51,6 +51,8 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
       setFailoverState('idle')
       setState('idle')
     } catch (cause) {
+      const code = cause instanceof AnimeDetailError ? cause.code : 'unknown'
+      console.warn('Anime detail load failed.', { externalId: target.externalId, code })
       setError(cause instanceof AnimeDetailError && cause.code === 'not-configured'
         ? t('contentUnavailable') : t('detailsError'))
       setState('error')

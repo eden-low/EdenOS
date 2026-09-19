@@ -15,6 +15,7 @@ export class AnimeDetailError extends Error {
 
 const detailCache = new Map<string, AnimeDetail>()
 const inFlight = new Map<string, Promise<AnimeDetail>>()
+const detailFetchAttempts = 2
 
 function configuredBaseUrl(): URL | null {
   const raw = import.meta.env.VITE_ANIME_DETAILS_BASE_URL
@@ -41,20 +42,27 @@ export async function loadAnimeDetail(
 
   const promise = (async () => {
     const objectUrl = new URL(`anime-details/${encodeURIComponent(externalId)}.json`, base.href.endsWith('/') ? base : `${base.href}/`)
-    let response: Response
-    try {
-      response = await fetcher(objectUrl, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8_000) })
-    } catch {
-      throw new AnimeDetailError('network')
+    for (let attempt = 1; attempt <= detailFetchAttempts; attempt += 1) {
+      let response: Response
+      try {
+        response = await fetcher(objectUrl, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8_000) })
+      } catch {
+        if (attempt < detailFetchAttempts) continue
+        throw new AnimeDetailError('network')
+      }
+      if (response.status === 404) throw new AnimeDetailError('not-found')
+      if (!response.ok) {
+        if (response.status >= 500 && attempt < detailFetchAttempts) continue
+        throw new AnimeDetailError('network')
+      }
+      let json: unknown
+      try { json = await response.json() } catch { throw new AnimeDetailError('malformed') }
+      const detail = parseAnimeDetail(json, externalId)
+      if (!detail) throw new AnimeDetailError('malformed')
+      detailCache.set(externalId, detail)
+      return detail
     }
-    if (response.status === 404) throw new AnimeDetailError('not-found')
-    if (!response.ok) throw new AnimeDetailError('network')
-    let json: unknown
-    try { json = await response.json() } catch { throw new AnimeDetailError('malformed') }
-    const detail = parseAnimeDetail(json, externalId)
-    if (!detail) throw new AnimeDetailError('malformed')
-    detailCache.set(externalId, detail)
-    return detail
+    throw new AnimeDetailError('network')
   })()
   inFlight.set(externalId, promise)
   try { return await promise } finally { inFlight.delete(externalId) }

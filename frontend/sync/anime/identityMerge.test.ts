@@ -75,6 +75,7 @@ describe('canonical identity and merge', () => {
 
   it('never places playback URLs in the Firestore index', () => {
     const canonical = mergeCanonicalAnime('one-piece', [record()], 'deterministic-new')
+    expect(canonical.index.externalId).toBe(canonical.detail.externalId)
     expect(JSON.stringify(canonical.index)).not.toContain('.m3u8')
     expect(JSON.stringify(canonical.detail)).toContain('.m3u8')
   })
