@@ -13,7 +13,7 @@ const progress = { externalId: 'sample-anime', animeId: 'sample-anime', currentE
 
 function Harness() {
   const value = useAnimeProgress()
-  return <><pre data-testid="items">{JSON.stringify(value.items)}</pre><button onClick={() => value.saveProgress(progress)}>save</button><button onClick={() => value.saveProgress(progress, { immediate: true })}>save now</button></>
+  return <><pre data-testid="items">{JSON.stringify(value.items)}</pre><span data-testid="cloud-error">{value.cloudError}</span><button onClick={() => value.saveProgress(progress)}>save</button><button onClick={() => value.saveProgress(progress, { immediate: true })}>save now</button></>
 }
 
 describe('AnimeProgressProvider', () => {
@@ -41,6 +41,19 @@ describe('AnimeProgressProvider', () => {
     act(() => mock.observer?.next([{ ...progress, currentEpisode: 4, updatedAt: 300 }]))
     await waitFor(() => expect(screen.getByTestId('items').textContent).toContain('"currentEpisode":4'))
     expect(localStorage.getItem(animeProgressStorageKey)).toContain('"currentEpisode":4')
+  })
+
+  it('handles a failed reconciliation write without an unhandled rejection', async () => {
+    localStorage.setItem(animeProgressStorageKey, JSON.stringify({
+      version: 1,
+      items: [{ ...progress, currentEpisode: 1_063_306 }],
+    }))
+    mock.save.mockRejectedValue(new Error('Missing or insufficient permissions.'))
+    render(<AnimeProgressProvider><Harness /></AnimeProgressProvider>)
+    act(() => mock.observer?.next([]))
+    await waitFor(() => expect(screen.getByTestId('cloud-error').textContent)
+      .toBe('Cloud watch progress is temporarily unavailable.'))
+    expect(mock.save).toHaveBeenCalledWith(expect.objectContaining({ currentEpisode: 1_063_306 }))
   })
 
   it('throttles cloud writes to ten seconds and supports immediate flush', async () => {

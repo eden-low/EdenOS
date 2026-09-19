@@ -30,4 +30,10 @@ describe('Firestore Anime progress repository', () => {
     expect(payload.updatedAt).toEqual({ server: true })
     expect(JSON.stringify(payload)).not.toContain('m3u8')
   })
+  it('preserves deterministic fallback episode numbers in the outgoing payload', async () => {
+    mock.setDoc.mockResolvedValue(undefined)
+    const repository = createFirestoreAnimeProgressRepository({} as never, 'owner')
+    await repository.save({ ...progress, currentEpisode: 1_063_306 })
+    expect(mock.setDoc.mock.calls[0][1]).toEqual(expect.objectContaining({ currentEpisode: 1_063_306 }))
+  })
 })
