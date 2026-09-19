@@ -38,6 +38,12 @@ function compatible(left: ProviderAnimeRecord, right: ProviderAnimeRecord): bool
   return [...titleSet(left)].some((title) => rightTitles.has(title))
 }
 
+function exactPrimaryTitleCompatible(left: ProviderAnimeRecord, right: ProviderAnimeRecord): boolean {
+  if (left.mediaType !== right.mediaType) return false
+  if (left.year && right.year && left.year !== right.year) return false
+  return left.titleNormalized === right.titleNormalized
+}
+
 export function resolveCanonicalIdentity(records: ProviderAnimeRecord[], existingMappings: Map<string, SourceMapping> = new Map()): IdentityResolution {
   const groups = new Map<string, ProviderAnimeRecord[]>()
   const mappings: SourceMapping[] = []
@@ -54,7 +60,10 @@ export function resolveCanonicalIdentity(records: ProviderAnimeRecord[], existin
       externalId = sharedId(record)!
       matchedBy = 'shared-id'
     } else {
-      const candidates = [...groups.entries()].filter(([, members]) => members.some((member) => compatible(record, member)))
+      const exactCandidates = [...groups.entries()].filter(([, members]) => members.some((member) => exactPrimaryTitleCompatible(record, member)))
+      const candidates = exactCandidates.length > 0
+        ? exactCandidates
+        : [...groups.entries()].filter(([, members]) => members.some((member) => compatible(record, member)))
       if (candidates.length === 1) {
         externalId = candidates[0][0]
         matchedBy = 'exact-title'
