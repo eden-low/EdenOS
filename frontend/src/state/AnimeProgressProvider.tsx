@@ -26,8 +26,10 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     reconciledRef.current = false
     if (isAnonymous) return
-    return repository.subscribe({
+    let active = true
+    const unsubscribe = repository.subscribe({
       next(cloudItems) {
+        if (!active) return
         setCloudError(null)
         if (!reconciledRef.current) {
           reconciledRef.current = true
@@ -37,7 +39,11 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
             const local = localItems.find((item) => item.externalId === externalId)
             const cloud = cloudItems.find((item) => item.externalId === externalId)
             const winner = newerProgress(local, cloud)
-            if (winner && local && (!cloud || local.updatedAt > cloud.updatedAt)) void repository.save(winner)
+            if (winner && local && (!cloud || local.updatedAt > cloud.updatedAt)) {
+              void repository.save(winner).catch(() => {
+                if (active) setCloudError('Cloud watch progress is temporarily unavailable.')
+              })
+            }
             return winner ? [winner] : []
           }).sort((a, b) => b.updatedAt - a.updatedAt)
           writeLocalAnimeProgress(localStorage, merged)
@@ -53,8 +59,12 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
           return sorted
         })
       },
-      error() { setCloudError('Cloud watch progress is temporarily unavailable.') },
+      error() { if (active) setCloudError('Cloud watch progress is temporarily unavailable.') },
     })
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [isAnonymous, repository])
 
   const flushProgress = useCallback(async (externalId?: string) => {
@@ -92,14 +102,16 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const timers = timersRef.current
+    const pending = pendingRef.current
     function handleVisibility() { if (document.visibilityState === 'hidden') void flushProgress() }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility)
       for (const timer of timers.values()) clearTimeout(timer)
-      void flushProgress()
+      timers.clear()
+      pending.clear()
     }
-  }, [flushProgress])
+  }, [flushProgress, uid])
 
   const value = useMemo(() => ({ items, cloudError, saveProgress, flushProgress }), [items, cloudError, saveProgress, flushProgress])
   return <AnimeProgressContext.Provider value={value}>{children}</AnimeProgressContext.Provider>

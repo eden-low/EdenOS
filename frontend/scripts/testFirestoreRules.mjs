@@ -93,6 +93,8 @@ try {
   await assertFails(setDoc(doc(alice, progressPath), { ...progress, positionSeconds: -1 }))
   await assertFails(setDoc(doc(alice, progressPath), { ...progress, watchedEpisodes: ['episode-1'] }))
   await assertFails(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 1.5 }))
+  await assertSucceeds(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 1063306, updatedAt: serverTimestamp() }))
+  await assertFails(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 3000000, updatedAt: serverTimestamp() }))
   await assertFails(setDoc(doc(alice, 'users/alice/animeWatchProgress/wrong-id'), progress))
   await assertSucceeds(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 3, updatedAt: serverTimestamp() }))
   process.stdout.write('Firestore ownership, catalogue, progress, and settings rules passed.\n')

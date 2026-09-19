@@ -115,7 +115,9 @@ service cloud.firestore {
         && data.animeId == data.externalId
         && data.currentEpisode is int
         && data.currentEpisode > 0
-        && data.currentEpisode <= 100000
+        // Non-numeric upstream episode labels use a deterministic synthetic
+        // number in the 1,000,000+ range so progress can identify them.
+        && data.currentEpisode <= 2999999
         && data.positionSeconds is number
         && data.positionSeconds >= 0
         && data.positionSeconds <= 604800
