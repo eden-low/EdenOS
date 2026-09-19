@@ -27,7 +27,7 @@ on:
         default: false
   push:
     tags:
-      - anime-sync-small-validation-20260919
+      - anime-sync-small-validation-20260919-v2
 
 permissions:
   contents: read
@@ -44,6 +44,7 @@ jobs:
       ANIME_PROVIDER_LZI_BASE_URL: ${{ vars.ANIME_PROVIDER_LZI_BASE_URL }}
       ANIME_PROVIDER_FFZY_BASE_URL: ${{ vars.ANIME_PROVIDER_FFZY_BASE_URL }}
       EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON }}
+      LEGACY_FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -61,6 +62,31 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: Check Firebase Admin read access
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { cert, deleteApp, initializeApp } from 'firebase-admin/app'
+          import { getFirestore } from 'firebase-admin/firestore'
+          async function check(label, value) {
+            if (!value) { console.log(`${label}: missing`); return false }
+            try {
+              const data = JSON.parse(value)
+              const app = initializeApp({ credential: cert({ projectId: data.project_id, clientEmail: data.client_email, privateKey: data.private_key }) }, `anime-sync-${label}`)
+              try { await getFirestore(app).doc('animeSyncState/__access-check__').get(); console.log(`${label}: read-ok`); return true }
+              finally { await deleteApp(app) }
+            } catch (error) {
+              console.log(`${label}: ${typeof error === 'object' && error && 'code' in error ? error.code : 'failed'}`)
+              return false
+            }
+          }
+          const configured = await check('configured-admin', process.env.EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON)
+          const established = await check('established-admin', process.env.LEGACY_FIREBASE_SERVICE_ACCOUNT_JSON)
+          console.log(`same-project: ${JSON.parse(process.env.EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON).project_id === JSON.parse(process.env.LEGACY_FIREBASE_SERVICE_ACCOUNT_JSON).project_id}`)
+          if (!established) process.exit(1)
+          if (!configured) console.log('Using the established Admin credential for this bounded validation run.')
+          NODE
       - name: Run bounded Anime sync
         if: github.event_name == 'workflow_dispatch'
         shell: bash
@@ -85,10 +111,16 @@ jobs:
         run: npm run sync:animes -- --probe --providers=lzi,ffzy
       - name: Dry run 15 items per provider
         if: github.event_name == 'push'
+        env:
+          EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: npm run sync:animes -- --mode=incremental --dry-run --providers=lzi,ffzy --limit=15
       - name: Publish small validation sample
         if: github.event_name == 'push'
+        env:
+          EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15 --probe-media
       - name: Verify small-sync idempotency
         if: github.event_name == 'push'
+        env:
+          EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15
