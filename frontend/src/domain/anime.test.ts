@@ -42,6 +42,11 @@ describe('Anime domain', () => {
     expect(parseAnimeDetail(duplicate, 'sample-anime')?.episodes).toHaveLength(1)
   })
 
+  it('accepts catalogue-only details with no direct playback episodes', () => {
+    expect(parseAnimeDetail({ schemaVersion: 1, externalId: 'catalogue-only', title: 'Catalogue Only', episodes: [] }, 'catalogue-only'))
+      .toEqual({ schemaVersion: 1, externalId: 'catalogue-only', title: 'Catalogue Only', episodes: [] })
+  })
+
   it('deduplicates watched episodes and validates progress', () => {
     const progress = normalizeAnimeProgress({ externalId: 'sample-anime', animeId: 'sample-anime', currentEpisode: 2, positionSeconds: 2, durationSeconds: 10, watchedEpisodes: [2, 1, 2], trackingStatus: 'watching', updatedAt: 10, title: 'Sample' })
     expect(progress.watchedEpisodes).toEqual([1, 2])
