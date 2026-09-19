@@ -135,4 +135,12 @@ describe('AnimePlayerDialog', () => {
     await waitFor(() => expect(mock.load).toHaveBeenCalledTimes(2))
     expect(mock.invalidate).toHaveBeenCalledWith('sample-anime')
   })
+
+  it('keeps catalogue-only details useful without a direct playback source', async () => {
+    mock.load.mockResolvedValue({ schemaVersion: 1, externalId: 'sample-anime', title: 'Sample Anime', description: 'Metadata remains available.', episodes: [] })
+    render(<AnimePlayerDialog target={target} onClose={vi.fn()} />)
+    expect(await screen.findByText('No direct playback source is currently available for this title.')).not.toBeNull()
+    expect(screen.getByText('Metadata remains available.')).not.toBeNull()
+    expect(screen.queryByTestId('video')).toBeNull()
+  })
 })

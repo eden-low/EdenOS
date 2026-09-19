@@ -42,7 +42,7 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
       const initialSaved = savedRef.current
       setDetail(result)
       const preferred = initialSaved?.currentEpisode
-      setEpisodeNumber(preferred && result.episodes.some((episode) => episode.episodeNumber === preferred) ? preferred : result.episodes[0].episodeNumber)
+      setEpisodeNumber(preferred && result.episodes.some((episode) => episode.episodeNumber === preferred) ? preferred : (result.episodes[0]?.episodeNumber ?? 1))
       setSourceIndex(0)
       const initialPosition = initialSaved?.positionSeconds ?? 0
       latestRef.current = { position: initialPosition, duration: initialSaved?.durationSeconds ?? 0 }
@@ -136,6 +136,7 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
         <DialogDescription className="mt-1 text-sm text-[var(--text-secondary)]">{t('onlinePlayer')}</DialogDescription>
         {state === 'loading' && <div aria-label="Loading Anime details" className="mt-6 aspect-video animate-pulse rounded-xl bg-[var(--surface-secondary)]" />}
         {state === 'error' && <div role="alert" className="mt-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5"><p>{error}</p><Button type="button" variant="secondary" className="mt-4" onClick={() => { invalidateAnimeDetail(target.externalId); void load() }}>{t('retry')}</Button></div>}
+        {detail && detail.episodes.length === 0 && <div className="mt-6 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5"><p className="text-sm text-[var(--text-secondary)]">{t('noPlayback')}</p>{detail.description && <p className="mt-4 line-clamp-6 text-sm leading-6 text-[var(--text-secondary)]">{detail.description}</p>}</div>}
         {detail && episode && source && <div className="mt-5 grid min-h-0 gap-5 lg:grid-cols-[minmax(0,1fr)_15rem]">
           <div className="min-w-0">
             <AnimeVideoPlayer key={`${episodeNumber}-${sourceIndex}-${sourceAttempt}`} source={source} resumeAt={resumePosition} onProgress={(position, duration) => persist(position, duration)} onPause={(position, duration) => persist(position, duration, true)} onPrevious={previous} onNext={next} onReady={() => setFailoverState('idle')} onSourceFailure={handleSourceFailure} />

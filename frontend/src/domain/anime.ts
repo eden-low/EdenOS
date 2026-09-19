@@ -75,7 +75,7 @@ export function parseAnimeDetail(input: unknown, expectedExternalId?: string): A
     }]
   }).sort((a, b) => a.episodeNumber - b.episodeNumber)
 
-  if (episodes.length === 0) return null
+  if (data.episodes.length > 0 && episodes.length === 0) return null
   return {
     schemaVersion: 1,
     externalId: data.externalId,
