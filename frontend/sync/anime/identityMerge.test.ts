@@ -45,6 +45,20 @@ describe('canonical identity and merge', () => {
     expect(resolution.ambiguousMatches).toBe(1)
   })
 
+  it('prefers one exact primary-title match over a competing alternate-title match', () => {
+    const exact = record('provider-a', 1)
+    const alternate = record('provider-b', 2, { vod_id: '202', vod_name: 'Different Series', vod_en: 'One Piece' })
+    const mappings = new Map<string, SourceMapping>([
+      [sourceMappingId(exact.providerId, exact.providerItemId), { provider: exact.providerId, providerItemId: exact.providerItemId, canonicalExternalId: 'one-piece', matchedBy: 'source-map' }],
+      [sourceMappingId(alternate.providerId, alternate.providerItemId), { provider: alternate.providerId, providerItemId: alternate.providerItemId, canonicalExternalId: 'different-series', matchedBy: 'source-map' }],
+    ])
+    const incoming = record('provider-c', 3, { vod_id: '303' })
+    const resolution = resolveCanonicalIdentity([exact, alternate, incoming], mappings)
+    expect(resolution.groups.get('one-piece')).toHaveLength(2)
+    expect(resolution.groups.get('different-series')).toHaveLength(1)
+    expect(resolution.ambiguousMatches).toBe(0)
+  })
+
   it('merges the same episode into deterministic provider-priority sources', () => {
     const a = record()
     const b = record('provider-b', 2, { vod_id: '202', vod_play_from: 'line-b', vod_play_url: '1$https://b.example/1.m3u8' })
