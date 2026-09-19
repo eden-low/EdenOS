@@ -25,7 +25,14 @@ export function parseMacCmsEnvelope(input: unknown): { envelope: MacCmsEnvelope;
 }
 
 function endpoint(config: AnimeProviderConfig, action: 'list' | 'detail', parameters: Record<string, string>): URL {
-  const url = new URL('api.php/provide/vod/', config.baseUrl.href.endsWith('/') ? config.baseUrl : `${config.baseUrl.href}/`)
+  const configured = new URL(config.baseUrl)
+  const normalizedPath = configured.pathname.replace(/\/+$/, '')
+  const url = /\/api\.php\/provide\/vod$/i.test(normalizedPath)
+    ? new URL(configured)
+    : new URL('api.php/provide/vod/', configured.href.endsWith('/') ? configured : `${configured.href}/`)
+  url.pathname = `${url.pathname.replace(/\/+$/, '')}/`
+  url.search = ''
+  url.hash = ''
   url.searchParams.set('ac', action)
   for (const [key, value] of Object.entries(parameters)) url.searchParams.set(key, value)
   return url

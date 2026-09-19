@@ -8,6 +8,15 @@ function response(body: unknown, status = 200): Response {
 }
 
 describe('MacCMS provider', () => {
+  it('uses a configured V10 provider endpoint without duplicating its path', async () => {
+    const fetcher = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(async () => new Response(JSON.stringify(envelope([])), { status: 200 }))
+    const provider = createMacCmsProvider(providerConfig({ baseUrl: new URL('https://provider.example/api.php/provide/vod/') }), { fetcher })
+    await provider.fetchPage(1)
+    const requested = new URL(String(fetcher.mock.calls[0]![0]))
+    expect(requested.pathname).toBe('/api.php/provide/vod/')
+    expect(requested.searchParams.get('ac')).toBe('list')
+  })
+
   it('reads standard list pagination and encodes search', async () => {
     const fetcher = vi.fn(async (_input: RequestInfo | URL) => response(envelope([vodItem()], { page: 2, pagecount: 4, total: 61 })))
     const provider = createMacCmsProvider(providerConfig(), { fetcher })
