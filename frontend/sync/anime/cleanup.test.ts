@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { applyAnimeCleanup, classifyExistingCatalogue } from './cleanup'
+import type { AnimeContentDecision } from './contentPolicy'
 import type { AnimeSyncStore, ExistingCatalogueRecord } from './firebaseAdminStore'
 import type { AnimeDetailStore } from './r2Store'
 
@@ -35,8 +36,10 @@ describe('Anime cleanup', () => {
       { externalId: 'anime-b', title: 'Same Title', mediaType: 'anime', region: 'europe_us', year: 2026 },
       { externalId: 'anime-c', title: 'Same Title', mediaType: 'anime', region: 'europe_us', year: 2025 },
     ]
-    const accepted = (externalId: string) => [externalId, [{ accepted: true as const, region: 'europe_us' as const, category: { typeId: '31', typeName: '欧美动漫', region: 'europe_us' as const } }]] as const
-    const decisions = new Map([accepted('anime-a'), accepted('anime-b'), accepted('anime-c')])
+    const decisions = new Map<string, Array<AnimeContentDecision | null>>()
+    for (const externalId of ['anime-a', 'anime-b', 'anime-c']) decisions.set(externalId, [
+      { accepted: true, region: 'europe_us', category: { typeId: '31', typeName: '欧美动漫', region: 'europe_us' } },
+    ])
     expect(classifyExistingCatalogue(duplicateRecords, decisions)).toEqual([
       expect.objectContaining({ externalId: 'anime-a', action: 'keep' }),
       expect.objectContaining({ externalId: 'anime-b', action: 'remove', reason: 'duplicate-canonical' }),
