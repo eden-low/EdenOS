@@ -54,7 +54,34 @@ npm run sync:animes -- --mode=full
 npm run sync:animes -- --from-cache=.cache/anime-sync/raw/RUN_ID --dry-run
 npm run sync:animes -- --retry-failed=.cache/anime-sync/failed/RUN_ID.json --dry-run
 npm run sync:animes -- --probe-media --limit=5 --dry-run
+npm run sync:animes -- --dry-run --cleanup=plan --providers=providerA,providerB --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
 ```
+
+## Anime content-quality import
+
+The bounded Anime import discovers each provider's category tree and accepts
+only the exact current categories equivalent to `国产动漫`, `日韩动漫`, and
+`欧美动漫`. Japanese entries must also resolve to Japan; Korean or ambiguous
+East Asian entries are not relabeled as Japanese. The canonical Western region
+is the existing frontend value `europe_us`.
+
+`--content-targets` caps canonical output after conservative deduplication. Its
+combined total cannot exceed 650. The content policy rejects commentary markers
+from titles, provider categories, and `vod_class`; it never scans descriptions
+for the word `解说`.
+
+Cleanup must always be planned before it is applied:
+
+```bash
+npm run sync:animes -- --dry-run --cleanup=plan --providers=providerA,providerB --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+npm run sync:animes -- --cleanup=apply --providers=providerA,providerB --content-targets=japan:20,china:15,europe_us:10 --concurrency=3
+```
+
+The plan lists every catalogue ID as KEEP or REMOVE and reports watch-progress
+IDs that would become orphaned. Applying cleanup deletes only the explicitly
+listed catalogue document, matching R2 detail object, sync state, and exclusive
+source mappings. It never deletes watch progress. Cleanup order is Firestore
+catalogue, R2 detail, then internal sync metadata.
 
 Providers without a verified incremental parameter are safely paginated and
 deduplicated through canonical content hashes. The runner does not invent an

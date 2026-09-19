@@ -28,6 +28,7 @@ on:
   push:
     tags:
       - anime-sync-small-validation-20260919-v3
+      - anime-content-quality-*
 
 permissions:
   contents: read
@@ -127,14 +128,36 @@ jobs:
           test -n "$R2_ACCESS_KEY_ID"
           test -n "$R2_SECRET_ACCESS_KEY"
       - name: Probe configured providers
-        if: github.event_name == 'push'
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
         run: npm run sync:animes -- --probe --providers=lzi,ffzy
       - name: Dry run 15 items per provider
-        if: github.event_name == 'push'
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
         run: npm run sync:animes -- --mode=incremental --dry-run --providers=lzi,ffzy --limit=15
       - name: Publish small validation sample
-        if: github.event_name == 'push'
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
         run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15 --probe-media
       - name: Verify small-sync idempotency
-        if: github.event_name == 'push'
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
         run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15
+      - name: Run bounded Anime content-quality stage
+        if: startsWith(github.ref_name, 'anime-content-quality-')
+        shell: bash
+        run: |
+          case "$GITHUB_REF_NAME" in
+            anime-content-quality-dry-run-v1)
+              npm run sync:animes -- --mode=incremental --dry-run --cleanup=plan --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+              ;;
+            anime-content-quality-wave0-v1)
+              npm run sync:animes -- --mode=incremental --cleanup=apply --providers=lzi,ffzy --content-targets=japan:20,china:15,europe_us:10 --concurrency=3 --probe-media
+              ;;
+            anime-content-quality-wave1-v1)
+              npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --content-targets=japan:100,china:60,europe_us:30 --concurrency=3
+              ;;
+            anime-content-quality-wave2-v1|anime-content-quality-idempotency-v1)
+              npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+              ;;
+            *)
+              echo "Unrecognized bounded content-quality tag"
+              exit 1
+              ;;
+          esac
