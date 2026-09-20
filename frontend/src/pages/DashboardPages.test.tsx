@@ -31,6 +31,8 @@ describe('dedicated dashboards', () => {
     expect(screen.getAllByText('RM 25')[0]).toBeTruthy()
     expect(screen.getByText('Food')).toBeTruthy()
     expect(screen.getByText('Lunch')).toBeTruthy()
+    expect(screen.getByText('Monthly Spending Trend')).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'Monthly cumulative spending line chart' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'View Records' }))
     expect(openRecords).toHaveBeenCalledOnce()
   })
