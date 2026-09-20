@@ -11,11 +11,13 @@ import { FirebaseAuthProvider } from './FirebaseAuthProvider'
 import { useFirebaseAuth } from './useFirebaseAuth'
 import { UserSettingsContext } from './userSettingsContextDefinition'
 import { emptyUserSettings } from '../domain/userSettings'
+import { guestHasMeaningfulData } from '../repositories/guestAccountRepository'
 
 vi.mock('../lib/firebase', () => ({
   firebaseInitialization: { status: 'ready', services: { auth: {}, firestore: {} } },
 }))
 vi.mock('../services/firebaseAuthService', () => ({ createFirebaseAuthService: vi.fn() }))
+vi.mock('../repositories/guestAccountRepository', () => ({ guestHasMeaningfulData: vi.fn(async () => true) }))
 
 const guest: AuthIdentity = { uid: 'guest-uid', isAnonymous: true, email: null }
 const linked: AuthIdentity = { uid: 'guest-uid', isAnonymous: false, email: 'user@example.com' }
@@ -46,11 +48,16 @@ function restore(identity: AuthIdentity | null) {
 }
 
 beforeEach(() => {
+  vi.mocked(guestHasMeaningfulData).mockReset()
+  vi.mocked(guestHasMeaningfulData).mockResolvedValue(true)
   service = {
     observe: vi.fn(async (next) => { observer = next; return () => undefined }),
     continueAnonymously: vi.fn(async () => guest),
     signInWithGoogle: vi.fn(async () => linked),
     linkGoogle: vi.fn(async () => linked),
+    hasConflictingGoogleCredential: vi.fn(() => false),
+    discardConflictingGoogleCredential: vi.fn(),
+    continueWithExistingGoogle: vi.fn(async () => ({ uid: 'existing-uid', isAnonymous: false, email: 'user@example.com' })),
     signOutGoogle: vi.fn(async () => undefined),
   }
   vi.mocked(createFirebaseAuthService).mockReturnValue(service)
@@ -111,7 +118,6 @@ describe('Firebase Auth startup and account UI', () => {
   })
 
   it.each([
-    ['auth/credential-already-in-use', 'already connected to another EdenOS account'],
     ['auth/popup-blocked', 'Allow popups'],
     ['auth/network-request-failed', 'connection was interrupted'],
   ])('keeps the guest session after %s', async (code, message) => {
@@ -126,6 +132,56 @@ describe('Firebase Auth startup and account UI', () => {
     expect(screen.getByTestId('account-kind').textContent).toBe('guest')
     expect(service.signInWithGoogle).not.toHaveBeenCalled()
     expect(service.signOutGoogle).not.toHaveBeenCalled()
+  })
+
+  it('switches an empty Guest to the existing Google UID without linking or merging', async () => {
+    vi.mocked(service.linkGoogle).mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    vi.mocked(service.hasConflictingGoogleCredential).mockReturnValue(true)
+    vi.mocked(guestHasMeaningfulData).mockResolvedValue(false)
+    renderProvider(); restore(guest)
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue with existing Google account' }))
+    await waitFor(() => expect(screen.getByTestId('uid').textContent).toBe('existing-uid'))
+    expect(guestHasMeaningfulData).toHaveBeenCalledTimes(2)
+    expect(service.continueWithExistingGoogle).toHaveBeenCalledWith('guest-uid')
+    expect(service.signOutGoogle).not.toHaveBeenCalled()
+  })
+
+  it('does not switch a Guest with persisted data', async () => {
+    vi.mocked(service.linkGoogle).mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    vi.mocked(service.hasConflictingGoogleCredential).mockReturnValue(true)
+    vi.mocked(guestHasMeaningfulData).mockResolvedValue(true)
+    renderProvider(); restore(guest)
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
+    expect((await screen.findByRole('alert')).textContent).toContain('This Guest has saved data')
+    expect(service.continueWithExistingGoogle).not.toHaveBeenCalled()
+    expect(screen.getByTestId('uid').textContent).toBe('guest-uid')
+  })
+
+  it('keeps a Guest when Firebase supplies no reusable conflict credential', async () => {
+    vi.mocked(service.linkGoogle).mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    vi.mocked(service.hasConflictingGoogleCredential).mockReturnValue(false)
+    renderProvider(); restore(guest)
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
+    expect((await screen.findByRole('alert')).textContent).toContain('could not verify a safe switch')
+    expect(guestHasMeaningfulData).not.toHaveBeenCalled()
+    expect(service.continueWithExistingGoogle).not.toHaveBeenCalled()
+  })
+
+  it('rechecks before switching and keeps newly saved Guest data protected', async () => {
+    vi.mocked(service.linkGoogle).mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    vi.mocked(service.hasConflictingGoogleCredential).mockReturnValue(true)
+    vi.mocked(guestHasMeaningfulData).mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+    renderProvider(); restore(guest)
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue with existing Google account' }))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('now has data'))
+    expect(service.continueWithExistingGoogle).not.toHaveBeenCalled()
+    expect(screen.getByTestId('uid').textContent).toBe('guest-uid')
   })
 
   it('offers Google sign-in only after an unauthenticated state is observed', async () => {

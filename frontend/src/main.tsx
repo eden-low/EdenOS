@@ -8,6 +8,7 @@ import { PwaProvider } from './pwa/PwaProvider'
 import { FirebaseAuthProvider } from './state/FirebaseAuthProvider'
 import { RecordsProvider } from './state/RecordsContext'
 import { UserSettingsProvider } from './state/UserSettingsProvider'
+import { AnimeProgressProvider } from './state/AnimeProgressProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,7 +18,9 @@ createRoot(document.getElementById('root')!).render(
         <FirebaseAuthProvider>
           <RecordsProvider>
             <UserSettingsProvider>
-              <App />
+              <AnimeProgressProvider>
+                <App />
+              </AnimeProgressProvider>
             </UserSettingsProvider>
           </RecordsProvider>
         </FirebaseAuthProvider>

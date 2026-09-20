@@ -11,7 +11,7 @@ import type { ExerciseData, ExerciseRecord } from '../../types/records'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
 import { InlineError } from '../ui/InlineError'
-import { EstimatedCalories } from '../exercise/EstimatedCalories'
+import { ExerciseCalories, WorkoutMetrics } from '../exercise/ExerciseCalories'
 
 type RecordStep = 'view' | 'edit' | 'review' | 'delete'
 
@@ -137,7 +137,10 @@ export function ExerciseRecordDialog({
                   </dd>
                 </div>
               </dl>
-              <div className="mt-5 border-t border-[var(--border-subtle)] pt-4"><EstimatedCalories exercise={record} /></div>
+              <div className="mt-5 border-t border-[var(--border-subtle)] pt-4">
+                <ExerciseCalories exercise={record} />
+                <WorkoutMetrics exercise={record} />
+              </div>
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">

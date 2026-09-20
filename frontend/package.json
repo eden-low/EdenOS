@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "generate:pwa-assets": "pwa-assets-generator",
     "lint": "oxlint",
+    "sync:animes": "tsx scripts/syncAnimes.ts",
     "test": "vitest run",
     "test:rules": "node scripts/testFirestoreRules.mjs",
     "preview": "vite preview"
@@ -21,6 +22,7 @@
     "clsx": "^2.1.1",
     "firebase": "^12.19.0",
     "firebase-admin": "13.10.0",
+    "hls.js": "^1.7.3",
     "lucide-react": "^1.43.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -37,6 +39,7 @@
     "@vitejs/plugin-react": "^6.1.0",
     "jsdom": "^30.1.0",
     "oxlint": "^1.79.0",
+    "tsx": "4.20.6",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0",

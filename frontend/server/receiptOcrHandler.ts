@@ -7,13 +7,13 @@ const responseHeaders = {
   'X-Content-Type-Options': 'nosniff',
 }
 
-export interface ReceiptOcrDependencies {
+export interface ReceiptOcrDependencies<T = ReceiptExtractionResult> {
   verifyToken: (token: string) => Promise<boolean>
   isConfigured: () => boolean
-  extract: (input: ReceiptExtractionInput) => Promise<ReceiptExtractionResult>
+  extract: (input: ReceiptExtractionInput) => Promise<T>
 }
 
-function json(status: number, value: ReceiptExtractionResult | { code: string }): Response {
+function json<T>(status: number, value: T | { code: string }): Response {
   return new Response(JSON.stringify(value), { status, headers: responseHeaders })
 }
 
@@ -25,7 +25,7 @@ function imageType(bytes: Uint8Array): 'image/jpeg' | 'image/png' | 'image/webp'
   return null
 }
 
-export function createReceiptOcrHandler(dependencies: ReceiptOcrDependencies) {
+export function createReceiptOcrHandler<T = ReceiptExtractionResult>(dependencies: ReceiptOcrDependencies<T>) {
   return async (request: Request): Promise<Response> => {
     if (request.method !== 'POST') return json(405, { code: 'method' })
 

@@ -8,28 +8,47 @@ import { InlineError } from '../ui/InlineError'
 import { triggerPressFeedback } from '../ui/pressFeedback'
 import { BodyWeightSettings } from './BodyWeightSettings'
 
-const accountConflictMessage =
-  'This Google account is already connected to another EdenOS account. Your guest records are unchanged.'
-
 export function AccountDialog({ children }: { children: ReactNode }) {
-  const { isAnonymous, email, connectGoogle, signOutGoogle } = useFirebaseAuth()
+  const { isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle } = useFirebaseAuth()
   const [open, setOpen] = useState(false)
-  const [pending, setPending] = useState<'link' | 'sign-out' | null>(null)
+  const [pending, setPending] = useState<'link' | 'switch' | 'sign-out' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const isConflict = error === accountConflictMessage
+  const [conflict, setConflict] = useState<'empty' | 'with-data' | 'unavailable' | null>(null)
+  const isConflict = conflict !== null
 
   function closeAccount() {
     setOpen(false)
     setError(null)
+    setConflict(null)
+    discardExistingGoogleChoice()
   }
 
   async function handleConnect() {
     setPending('link')
     setError(null)
+    setConflict(null)
     try {
-      await connectGoogle()
+      const result = await connectGoogle()
+      if (result === 'existing-empty') setConflict('empty')
+      if (result === 'existing-with-data') setConflict('with-data')
+      if (result === 'existing-unavailable') setConflict('unavailable')
     } catch (cause) {
       setError(googleAuthErrorMessage(cause, 'link'))
+    } finally {
+      setPending(null)
+    }
+  }
+
+  async function handleExistingGoogle() {
+    setPending('switch')
+    setError(null)
+    try {
+      await continueWithExistingGoogle()
+      closeAccount()
+    } catch (cause) {
+      setConflict(null)
+      setError(cause instanceof Error && cause.message === 'This Guest now has data. Its records will stay protected.'
+        ? cause.message : googleAuthErrorMessage(cause, 'sign-in'))
     } finally {
       setPending(null)
     }
@@ -52,7 +71,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
     <Dialog open={open} onOpenChange={(nextOpen) => {
       if (pending) return
       setOpen(nextOpen)
-      if (!nextOpen) setError(null)
+      if (!nextOpen) { setError(null); setConflict(null); discardExistingGoogleChoice() }
     }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent variant="account" closeDisabled={pending !== null} className="sm:w-[min(30rem,calc(100vw-2rem))]">
@@ -89,8 +108,12 @@ export function AccountDialog({ children }: { children: ReactNode }) {
           <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-[var(--border-strong)] bg-[var(--accent-teal-wash)] p-4 text-sm leading-6">
             <ShieldCheck aria-hidden="true" size={20} className="mt-0.5 shrink-0 text-[var(--accent-teal)]" />
             <p className="text-[var(--text-secondary)]">
-              This Google account is already connected to another EdenOS account.{' '}
-              <strong className="mt-2 block font-semibold text-[var(--text-primary)]">Your guest records are unchanged.</strong>
+              This Google account already has an EdenOS account.{' '}
+              {conflict === 'empty'
+                ? <strong className="mt-2 block font-semibold text-[var(--text-primary)]">This Guest has no saved data. You can continue with the existing Google account.</strong>
+                : conflict === 'with-data'
+                  ? <strong className="mt-2 block font-semibold text-[var(--text-primary)]">This Guest has saved data. Its records remain protected; Account Merge is not available yet.</strong>
+                  : <strong className="mt-2 block font-semibold text-[var(--text-primary)]">We could not verify a safe switch. Your guest records are unchanged.</strong>}
             </p>
           </div>
         ) : error ? <InlineError message={error} /> : null}
@@ -101,17 +124,22 @@ export function AccountDialog({ children }: { children: ReactNode }) {
               Close
             </Button>
           )}
-          {isAnonymous ? (
-            <Button {...triggerPressFeedback} type="button" variant={isConflict ? 'secondary' : 'primary'} className="press-feedback" onClick={() => void handleConnect()} disabled={pending !== null}>
+          {isAnonymous && !isConflict ? (
+            <Button {...triggerPressFeedback} type="button" className="press-feedback" onClick={() => void handleConnect()} disabled={pending !== null}>
               {pending === 'link' ? 'Connecting…' : 'Connect Google account'}
             </Button>
-          ) : (
+          ) : !isAnonymous ? (
             <Button {...triggerPressFeedback} type="button" variant="secondary" className="press-feedback" onClick={() => void handleSignOut()} disabled={pending !== null}>
               {pending === 'sign-out' ? 'Signing out…' : 'Sign out'}
             </Button>
+          ) : null}
+          {conflict === 'empty' && (
+            <Button {...triggerPressFeedback} type="button" className="press-feedback" onClick={() => void handleExistingGoogle()} disabled={pending !== null}>
+              {pending === 'switch' ? 'Signing in…' : 'Continue with existing Google account'}
+            </Button>
           )}
           {isConflict && (
-            <Button {...triggerPressFeedback} type="button" className="press-feedback" onClick={closeAccount} disabled={pending !== null}>
+            <Button {...triggerPressFeedback} type="button" variant={conflict === 'empty' ? 'secondary' : 'primary'} className="press-feedback" onClick={closeAccount} disabled={pending !== null}>
               Done
             </Button>
           )}

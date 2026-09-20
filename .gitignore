@@ -11,6 +11,9 @@ dist/
 *.log
 npm-debug.log*
 
+# Anime sync raw responses and failure reports
+.cache/anime-sync/
+
 # GitHub Actions credentials
 gha-creds-*.json
 

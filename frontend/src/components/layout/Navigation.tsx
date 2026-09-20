@@ -1,9 +1,9 @@
-import { CalendarDays, ClipboardCheck, Layers3, Plus, UserRound } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, Layers3, Plus, Tv, UserRound } from 'lucide-react'
 import { AccountDialog } from '../account/AccountDialog'
 import { CaptureSheet } from '../capture/CaptureSheet'
 import { triggerPressFeedback } from '../ui/pressFeedback'
 
-export type AppPage = 'today' | 'records' | 'review'
+export type AppPage = 'today' | 'records' | 'review' | 'anime'
 
 const navItems: Array<{
   label: string
@@ -13,6 +13,7 @@ const navItems: Array<{
   { label: 'Today', icon: CalendarDays, page: 'today' },
   { label: 'Records', icon: Layers3, page: 'records' },
   { label: 'Review', icon: ClipboardCheck, page: 'review' },
+  { label: 'Anime', icon: Tv, page: 'anime' },
 ]
 
 export function DesktopNavigation({
@@ -87,7 +88,7 @@ export function MobileNavigation({
       aria-label="Primary navigation"
       className="fixed inset-x-2 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 rounded-[1.4rem] border border-[var(--border-subtle)] bg-[var(--mobile-nav)] px-1 shadow-[var(--shadow-soft)] backdrop-blur-xl sm:inset-x-3 sm:px-2 lg:hidden"
     >
-      <div className="mx-auto grid h-17 max-w-md grid-cols-5 items-center">
+      <div className="mx-auto grid h-17 max-w-lg grid-cols-6 items-center">
         <MobileNavItem
           label="Today"
           icon={CalendarDays}
@@ -110,7 +111,7 @@ export function MobileNavigation({
             <span className="grid size-10 place-items-center rounded-2xl bg-[var(--accent-primary)] text-white shadow-[var(--accent-shadow)]">
               <Plus aria-hidden="true" size={21} strokeWidth={2.2} />
             </span>
-            <span>Capture</span>
+            <span className="max-[350px]:sr-only">Capture</span>
           </button>
         </CaptureSheet>
         <MobileNavItem
@@ -119,6 +120,12 @@ export function MobileNavigation({
           active={activePage === 'review'}
           onClick={() => onNavigate('review')}
         />
+        <MobileNavItem
+          label="Anime"
+          icon={Tv}
+          active={activePage === 'anime'}
+          onClick={() => onNavigate('anime')}
+        />
         <AccountDialog>
           <button
             type="button"
@@ -126,7 +133,7 @@ export function MobileNavigation({
             className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-xs font-medium text-[var(--text-muted)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
           >
             <UserRound aria-hidden="true" size={19} strokeWidth={1.7} />
-            Account
+            <span className="max-[350px]:sr-only">Account</span>
           </button>
         </AccountDialog>
       </div>
@@ -150,6 +157,7 @@ function MobileNavItem({
   return (
     <button
       type="button"
+      aria-label={label}
       disabled={disabled}
       aria-current={active ? 'page' : undefined}
       aria-disabled={disabled}
@@ -159,7 +167,7 @@ function MobileNavItem({
       }`}
     >
       <Icon aria-hidden="true" size={19} strokeWidth={active ? 2.2 : 1.7} />
-      {label}
+      <span className="max-[350px]:sr-only">{label}</span>
     </button>
   )
 }

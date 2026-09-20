@@ -9,11 +9,13 @@ const sdk = vi.hoisted(() => ({
   signInWithPopup: vi.fn(),
   linkWithPopup: vi.fn(),
   signOut: vi.fn(async () => undefined),
+  signInWithCredential: vi.fn(),
+  credentialFromError: vi.fn(() => ({ providerId: 'google.com' })),
 }))
 
 vi.mock('firebase/auth', () => ({
   browserLocalPersistence: { type: 'LOCAL' },
-  GoogleAuthProvider: class GoogleAuthProvider {},
+  GoogleAuthProvider: class GoogleAuthProvider { static credentialFromError = sdk.credentialFromError },
   ...sdk,
 }))
 
@@ -69,6 +71,42 @@ describe('Firebase auth adapter', () => {
     expect(auth.currentUser).toBe(guest)
     expect(sdk.signInWithPopup).not.toHaveBeenCalled()
     expect(sdk.signOut).not.toHaveBeenCalled()
+  })
+
+  it('uses the conflict credential only after explicit confirmation and enters the existing UID', async () => {
+    auth = { currentUser: guest } as Auth
+    const service = createFirebaseAuthService(auth)
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toMatchObject({ code: 'auth/credential-already-in-use' })
+    expect(service.hasConflictingGoogleCredential()).toBe(true)
+    const existing = { uid: 'existing-uid', isAnonymous: false, email: 'user@example.com' } as User
+    sdk.signInWithCredential.mockResolvedValue({ user: existing })
+    expect(await service.continueWithExistingGoogle(guest.uid)).toMatchObject({ uid: 'existing-uid' })
+    expect(sdk.signInWithCredential).toHaveBeenCalledWith(auth, expect.objectContaining({ providerId: 'google.com' }))
+    expect(sdk.signOut).not.toHaveBeenCalled()
+  })
+
+  it('leaves the Guest intact if existing-account sign-in fails', async () => {
+    auth = { currentUser: guest } as Auth
+    const service = createFirebaseAuthService(auth)
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toBeTruthy()
+    sdk.signInWithCredential.mockRejectedValue({ code: 'auth/network-request-failed' })
+    await expect(service.continueWithExistingGoogle(guest.uid)).rejects.toMatchObject({ code: 'auth/network-request-failed' })
+    expect(auth.currentUser).toBe(guest)
+    expect(sdk.signOut).not.toHaveBeenCalled()
+  })
+
+  it('rejects a stale Guest or missing conflict credential before switching', async () => {
+    auth = { currentUser: guest } as Auth
+    const service = createFirebaseAuthService(auth)
+    await expect(service.continueWithExistingGoogle(guest.uid)).rejects.toThrow('no longer available')
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toBeTruthy()
+    await expect(service.continueWithExistingGoogle('different-guest')).rejects.toThrow('no longer available')
+    service.discardConflictingGoogleCredential()
+    expect(service.hasConflictingGoogleCredential()).toBe(false)
+    expect(sdk.signInWithCredential).not.toHaveBeenCalled()
   })
 
   it('rejects a link result with a different UID', async () => {

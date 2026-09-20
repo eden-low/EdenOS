@@ -37,7 +37,12 @@ export interface ExerciseData {
   distanceMetres?: number
   durationSeconds: number
   occurredAt: string
-  source: 'manual' | 'text'
+  source: 'manual' | 'text' | 'fitness_screenshot'
+  metricsSource?: 'Apple Fitness' | 'Apple Health' | 'Fitness screenshot'
+  reportedActiveCaloriesKcal?: number
+  reportedTotalCaloriesKcal?: number
+  reportedAverageHeartRateBpm?: number
+  reportedSteps?: number
 }
 
 export interface ExerciseRecord extends ExerciseData {

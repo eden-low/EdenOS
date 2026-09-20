@@ -2,7 +2,7 @@ import { ReceiptText } from 'lucide-react'
 import { getExerciseActivityIcon } from '../../lib/exerciseIcon'
 import { formatExerciseMetrics, formatMoney } from '../../lib/format'
 import type { RecentActivityItem } from '../../types/dashboard'
-import { EstimatedCalories } from '../exercise/EstimatedCalories'
+import { ExerciseCalories } from '../exercise/ExerciseCalories'
 
 export function RecentActivity({
   items,
@@ -47,7 +47,8 @@ export function RecentActivity({
                     ? item.category
                     : formatExerciseMetrics(item.durationSeconds, item.distanceMetres)}
                 </p>
-                {!financeItem && <EstimatedCalories compact exercise={{ activity: item.title, durationSeconds: item.durationSeconds, intensity: item.intensity }} />}
+                {!financeItem && <ExerciseCalories compact exercise={{ activity: item.title, durationSeconds: item.durationSeconds, intensity: item.intensity,
+                  reportedActiveCaloriesKcal: item.reportedActiveCaloriesKcal, reportedTotalCaloriesKcal: item.reportedTotalCaloriesKcal, metricsSource: item.metricsSource }} />}
               </div>
               <div className="ml-auto shrink-0 text-right">
                 {financeItem && (

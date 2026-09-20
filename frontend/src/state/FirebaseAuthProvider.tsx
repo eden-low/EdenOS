@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AuthChoiceScreen } from '../components/account/AuthChoiceScreen'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { firebaseInitialization } from '../lib/firebase'
+import { guestHasMeaningfulData } from '../repositories/guestAccountRepository'
 import { createFirebaseAuthService, type AuthIdentity } from '../services/firebaseAuthService'
 import { FirebaseAuthContext, type FirebaseSession } from './firebaseAuthContextDefinition'
 
@@ -104,18 +105,45 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
   }
 
   const { identity } = authentication
+  const firestore = firebaseInitialization.services.firestore
   const session: FirebaseSession = {
     uid: identity.uid,
-    firestore: firebaseInitialization.services.firestore,
+    firestore,
     isAnonymous: identity.isAnonymous,
     email: identity.email,
     async connectGoogle() {
       if (!identity.isAnonymous) throw new Error('This account is already connected.')
-      const linked = await authService.linkGoogle(identity.uid)
+      let linked: AuthIdentity | null
+      try {
+        linked = await authService.linkGoogle(identity.uid)
+      } catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/credential-already-in-use') {
+          if (!authService.hasConflictingGoogleCredential()) return 'existing-unavailable'
+          try {
+            return await guestHasMeaningfulData(firestore, identity.uid)
+              ? 'existing-with-data' : 'existing-empty'
+          } catch {
+            return 'existing-unavailable'
+          }
+        }
+        throw error
+      }
       if (!linked) return 'cancelled'
       if (linked.uid !== identity.uid) throw new Error('The linked Google identity changed unexpectedly.')
       setAuthentication({ status: 'authenticated', identity: linked })
       return 'connected'
+    },
+    async continueWithExistingGoogle() {
+      if (!identity.isAnonymous) throw new Error('The guest session changed.')
+      // Recheck just before switching in case a record was saved while the dialog was open.
+      if (await guestHasMeaningfulData(firestore, identity.uid)) {
+        throw new Error('This Guest now has data. Its records will stay protected.')
+      }
+      const existing = await authService.continueWithExistingGoogle(identity.uid)
+      setAuthentication({ status: 'authenticated', identity: existing })
+    },
+    discardExistingGoogleChoice() {
+      authService.discardConflictingGoogleCredential()
     },
     async signOutGoogle() {
       if (identity.isAnonymous) throw new Error('A guest account cannot be signed out.')

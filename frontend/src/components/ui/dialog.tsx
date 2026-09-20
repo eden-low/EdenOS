@@ -20,7 +20,7 @@ export function DialogContent({
 }: ComponentProps<typeof DialogPrimitive.Content> & {
   closeDisabled?: boolean
   showCloseButton?: boolean
-  variant?: 'default' | 'capture' | 'account' | 'confirmation'
+  variant?: 'default' | 'capture' | 'account' | 'confirmation' | 'player'
 }) {
   return (
     <DialogPrimitive.Portal>
@@ -39,7 +39,9 @@ export function DialogContent({
               ? 'overflow-y-auto data-[state=closed]:animate-[sheet-out_180ms_ease-in] data-[state=open]:animate-[sheet-in_240ms_cubic-bezier(0.22,1,0.36,1)] sm:data-[state=closed]:animate-[dialog-out_160ms_ease-in] sm:data-[state=open]:animate-[dialog-in_200ms_cubic-bezier(0.22,1,0.36,1)]'
               : variant === 'account'
                 ? 'account-dialog overflow-y-auto'
-                : 'confirmation-dialog z-60 overflow-y-auto',
+                : variant === 'player'
+                  ? 'overflow-hidden data-[state=closed]:animate-[dialog-out_160ms_ease-in] data-[state=open]:animate-[dialog-in_200ms_cubic-bezier(0.22,1,0.36,1)]'
+                  : 'confirmation-dialog z-60 overflow-y-auto',
           className,
         )}
         onEscapeKeyDown={(event) => {

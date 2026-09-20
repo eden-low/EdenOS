@@ -1,0 +1,173 @@
+name: Anime content sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        type: choice
+        options: [incremental, full]
+        default: incremental
+      providers:
+        description: Optional comma-separated provider IDs
+        required: false
+        type: string
+      limit:
+        description: Small per-provider validation limit
+        required: false
+        type: string
+        default: ""
+      content_groups:
+        description: Optional bounded group targets (for example china_anime:250,east_asia_anime:550)
+        required: false
+        type: string
+      dry_run:
+        description: Perform no Firestore, R2, or source-map writes
+        type: boolean
+        default: true
+      probe_media:
+        description: Probe up to three normalized media URLs per title
+        type: boolean
+        default: false
+  push:
+    tags:
+      - anime-sync-small-validation-20260919-v3
+      - anime-content-quality-*
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      ANIME_SYNC_PROVIDERS: ${{ vars.ANIME_SYNC_PROVIDERS }}
+      ANIME_PROVIDER_LZI_BASE_URL: ${{ vars.ANIME_PROVIDER_LZI_BASE_URL }}
+      ANIME_PROVIDER_FFZY_BASE_URL: ${{ vars.ANIME_PROVIDER_FFZY_BASE_URL }}
+      EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      SYNC_MODE: ${{ inputs.mode }}
+      SYNC_PROVIDERS: ${{ inputs.providers }}
+      SYNC_LIMIT: ${{ inputs.limit }}
+      SYNC_CONTENT_GROUPS: ${{ inputs.content_groups }}
+      SYNC_DRY_RUN: ${{ inputs.dry_run }}
+      SYNC_PROBE_MEDIA: ${{ inputs.probe_media }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Check Firebase Admin application-data access
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { cert, deleteApp, initializeApp } from 'firebase-admin/app'
+          import { getFirestore } from 'firebase-admin/firestore'
+          const data = JSON.parse(process.env.EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON)
+          const expectedProjectId = 'edenos-e1bbb'
+          const maskedEmail = String(data.client_email).replace(/^(.{2}).*(@.*)$/, '$1***$2')
+          let operation = 'project verification'
+          if (data.project_id !== expectedProjectId) throw new Error(`Unexpected Firebase project: ${data.project_id}`)
+          const app = initializeApp({ credential: cert({ projectId: data.project_id, clientEmail: data.client_email, privateKey: data.private_key }) }, 'anime-sync-access-check')
+          const firestore = getFirestore(app)
+          const diagnostic = firestore.doc(`animeSyncDiagnostics/admin-access-${process.env.GITHUB_RUN_ID}`)
+          let diagnosticCreated = false
+          try {
+            operation = 'database collection metadata read'
+            await firestore.listCollections()
+            operation = 'animeSyncSourceMap query'
+            await firestore.collection('animeSyncSourceMap').limit(1).get()
+            operation = 'diagnostic create'
+            await diagnostic.set({ purpose: 'admin-access-check', runId: process.env.GITHUB_RUN_ID })
+            diagnosticCreated = true
+            operation = 'diagnostic read'
+            if (!(await diagnostic.get()).exists) throw new Error('Diagnostic document was not readable')
+            operation = 'diagnostic delete'
+            await diagnostic.delete()
+            diagnosticCreated = false
+            operation = 'diagnostic deletion verification'
+            if ((await diagnostic.get()).exists) throw new Error('Diagnostic document still exists after deletion')
+            console.log(`firebase-project: ${data.project_id}`)
+            console.log('database-metadata-read: ok')
+            console.log('animeSyncSourceMap-query: ok')
+            console.log('diagnostic-create-read-delete: ok')
+          } catch (error) {
+            console.log(`firebase-project: ${data.project_id}`)
+            console.log(`service-account: ${maskedEmail}`)
+            console.log(`denied-operation: ${operation}`)
+            console.log(`error-code: ${typeof error === 'object' && error && 'code' in error ? error.code : 'failed'}`)
+            process.exitCode = 1
+          } finally {
+            if (diagnosticCreated) await diagnostic.delete().catch(() => undefined)
+            await deleteApp(app)
+          }
+          NODE
+      - name: Run bounded Anime sync
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          args=("--mode=$SYNC_MODE" "--concurrency=3")
+          if [[ -n "$SYNC_PROVIDERS" ]]; then args+=("--providers=$SYNC_PROVIDERS"); fi
+          if [[ -n "$SYNC_LIMIT" ]]; then args+=("--limit=$SYNC_LIMIT"); fi
+          if [[ -n "$SYNC_CONTENT_GROUPS" ]]; then args+=("--content-groups=$SYNC_CONTENT_GROUPS"); fi
+          if [[ "$SYNC_DRY_RUN" == "true" ]]; then args+=("--dry-run"); fi
+          if [[ "$SYNC_PROBE_MEDIA" == "true" ]]; then args+=("--probe-media"); fi
+          npm run sync:animes -- "${args[@]}"
+      - name: Validate small-sync configuration
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          test "$ANIME_SYNC_PROVIDERS" = "lzi,ffzy"
+          test "$R2_BUCKET" = "edenos-anime"
+          test -n "$EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON"
+          test -n "$R2_ACCOUNT_ID"
+          test -n "$R2_ACCESS_KEY_ID"
+          test -n "$R2_SECRET_ACCESS_KEY"
+      - name: Probe configured providers
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
+        run: npm run sync:animes -- --probe --providers=lzi,ffzy
+      - name: Dry run 15 items per provider
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
+        run: npm run sync:animes -- --mode=incremental --dry-run --providers=lzi,ffzy --limit=15
+      - name: Publish small validation sample
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
+        run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15 --probe-media
+      - name: Verify small-sync idempotency
+        if: github.ref_name == 'anime-sync-small-validation-20260919-v3'
+        run: npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --limit=15
+      - name: Run bounded Anime content-quality stage
+        if: startsWith(github.ref_name, 'anime-content-quality-')
+        shell: bash
+        run: |
+          case "$GITHUB_REF_NAME" in
+            anime-content-quality-dry-run-v*)
+              npm run sync:animes -- --mode=incremental --dry-run --cleanup=plan --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+              ;;
+            anime-content-quality-wave0-v*)
+              npm run sync:animes -- --mode=incremental --cleanup=apply --providers=lzi,ffzy --content-targets=japan:20,china:15,europe_us:10 --concurrency=3 --probe-media
+              ;;
+            anime-content-quality-wave1-v*)
+              npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --content-targets=japan:100,china:60,europe_us:30 --concurrency=3
+              ;;
+            anime-content-quality-wave2-v*|anime-content-quality-idempotency-v*)
+              npm run sync:animes -- --mode=incremental --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+              ;;
+            anime-content-quality-final-v*)
+              npm run sync:animes -- --mode=incremental --cleanup=apply --providers=lzi,ffzy --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
+              ;;
+            *)
+              echo "Unrecognized bounded content-quality tag"
+              exit 1
+              ;;
+          esac

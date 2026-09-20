@@ -2,11 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../lib/date'
 import { formatDuration, parseDurationToSeconds } from '../../lib/format'
 import type { ExerciseData } from '../../types/records'
+import type { FitnessScreenshotCandidate } from '../../types/fitnessScreenshot'
 import { Button } from '../ui/button'
 import { InlineError } from '../ui/InlineError'
 
 interface ExerciseFormProps {
-  initialData?: Partial<ExerciseData>
+  initialData?: Partial<ExerciseData> | FitnessScreenshotCandidate
   submitLabel: string
   onSubmit: (data: ExerciseData) => void | Promise<void>
   onCancel: () => void
@@ -20,6 +21,7 @@ interface FormErrors {
   duration?: string
   distance?: string
   occurredAt?: string
+  metrics?: string
 }
 
 function parsePositiveWholeNumber(value: string): number | null {
@@ -47,8 +49,14 @@ export function ExerciseForm({
       distance: initialData?.distanceMetres === undefined
         ? ''
         : String(initialData.distanceMetres),
-      date: toLocalDateInput(initialDate),
-      time: toLocalTimeInput(initialDate),
+      date: initialData && 'screenshotDate' in initialData && initialData.screenshotDate
+        ? initialData.screenshotDate : toLocalDateInput(initialDate),
+      time: initialData && 'screenshotTime' in initialData && initialData.screenshotTime
+        ? initialData.screenshotTime : toLocalTimeInput(initialDate),
+      activeCalories: initialData?.reportedActiveCaloriesKcal?.toString() ?? '',
+      totalCalories: initialData?.reportedTotalCaloriesKcal?.toString() ?? '',
+      heartRate: initialData?.reportedAverageHeartRateBpm?.toString() ?? '',
+      steps: initialData?.reportedSteps?.toString() ?? '',
     }
   })
   const [activity, setActivity] = useState(initialValues.activity)
@@ -56,6 +64,10 @@ export function ExerciseForm({
   const [distance, setDistance] = useState(initialValues.distance)
   const [date, setDate] = useState(initialValues.date)
   const [time, setTime] = useState(initialValues.time)
+  const [activeCalories, setActiveCalories] = useState(initialValues.activeCalories)
+  const [totalCalories, setTotalCalories] = useState(initialValues.totalCalories)
+  const [heartRate, setHeartRate] = useState(initialValues.heartRate)
+  const [steps, setSteps] = useState(initialValues.steps)
   const [errors, setErrors] = useState<FormErrors>({})
 
   useEffect(() => {
@@ -64,7 +76,9 @@ export function ExerciseForm({
       duration !== initialValues.duration ||
       distance !== initialValues.distance ||
       date !== initialValues.date ||
-      time !== initialValues.time,
+      time !== initialValues.time ||
+      activeCalories !== initialValues.activeCalories || totalCalories !== initialValues.totalCalories ||
+      heartRate !== initialValues.heartRate || steps !== initialValues.steps,
     )
   }, [
     activity,
@@ -74,6 +88,7 @@ export function ExerciseForm({
     initialValues,
     onDirtyChange,
     time,
+    activeCalories, totalCalories, heartRate, steps,
   ])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -84,6 +99,12 @@ export function ExerciseForm({
     const hasDistance = distance.trim().length > 0
     const distanceMetres = hasDistance ? parsePositiveWholeNumber(distance) : undefined
     const occurredAt = combineLocalDateTime(date, time)
+    const parseMetric = (value: string, min: number) => value.trim() === '' ? undefined :
+      /^\d+$/.test(value.trim()) && Number.isSafeInteger(Number(value)) && Number(value) >= min ? Number(value) : null
+    const active = parseMetric(activeCalories, 0)
+    const total = parseMetric(totalCalories, 0)
+    const averageHeartRate = parseMetric(heartRate, 1)
+    const workoutSteps = parseMetric(steps, 0)
 
     if (!trimmedActivity) nextErrors.activity = 'Add an activity.'
     if (trimmedActivity.length > 80) nextErrors.activity = 'Keep the activity to 80 characters or fewer.'
@@ -92,6 +113,9 @@ export function ExerciseForm({
       nextErrors.distance = 'Enter a whole number of metres greater than 0, or leave it blank.'
     }
     if (!occurredAt) nextErrors.occurredAt = 'Choose a valid date and time.'
+    if ([active, total, averageHeartRate, workoutSteps].includes(null)) {
+      nextErrors.metrics = 'Workout metrics must be valid whole numbers, or left blank.'
+    }
 
     setErrors(nextErrors)
     if (!durationSeconds || (hasDistance && !distanceMetres) || !occurredAt || Object.keys(nextErrors).length > 0) {
@@ -105,6 +129,13 @@ export function ExerciseForm({
       durationSeconds,
       occurredAt,
       source: initialData?.source ?? 'manual',
+      ...(initialData?.source === 'fitness_screenshot' ? {
+        metricsSource: initialData.metricsSource ?? 'Fitness screenshot',
+        ...(active === undefined ? {} : { reportedActiveCaloriesKcal: active as number }),
+        ...(total === undefined ? {} : { reportedTotalCaloriesKcal: total as number }),
+        ...(averageHeartRate === undefined ? {} : { reportedAverageHeartRateBpm: averageHeartRate as number }),
+        ...(workoutSteps === undefined ? {} : { reportedSteps: workoutSteps as number }),
+      } : {}),
     })
   }
 
@@ -196,6 +227,23 @@ export function ExerciseForm({
         </div>
       </div>
       {errors.occurredAt && <p className="form-error">{errors.occurredAt}</p>}
+
+      {initialData?.source === 'fitness_screenshot' && <div className="mt-5 border-t border-[var(--border-subtle)] pt-5">
+        <p className="form-label">Workout metrics <span className="font-normal text-[var(--text-muted)]">(optional, source-reported)</span></p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          {([
+            ['Active Calories (kcal)', activeCalories, setActiveCalories, 'active-calories'],
+            ['Total Calories (kcal)', totalCalories, setTotalCalories, 'total-calories'],
+            ['Average Heart Rate (bpm)', heartRate, setHeartRate, 'heart-rate'],
+            ['Workout Steps', steps, setSteps, 'workout-steps'],
+          ] as const).map(([label, value, setValue, id]) => <div key={id}>
+            <label htmlFor={id} className="form-label">{label}</label>
+            <input id={id} className="form-control" inputMode="numeric" value={value}
+              onChange={(event) => setValue(event.target.value)} />
+          </div>)}
+        </div>
+        {errors.metrics && <p className="form-error">{errors.metrics}</p>}
+      </div>}
 
       {submitError && <InlineError message={submitError} />}
 
