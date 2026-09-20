@@ -20,7 +20,7 @@ export function DialogContent({
 }: ComponentProps<typeof DialogPrimitive.Content> & {
   closeDisabled?: boolean
   showCloseButton?: boolean
-  variant?: 'default' | 'capture' | 'account' | 'confirmation' | 'player'
+  variant?: 'default' | 'capture' | 'account' | 'confirmation' | 'player' | 'drawer'
 }) {
   return (
     <DialogPrimitive.Portal>
@@ -41,6 +41,8 @@ export function DialogContent({
                 ? 'account-dialog overflow-y-auto'
                 : variant === 'player'
                   ? 'overflow-hidden data-[state=closed]:animate-[dialog-out_160ms_ease-in] data-[state=open]:animate-[dialog-in_200ms_cubic-bezier(0.22,1,0.36,1)]'
+                  : variant === 'drawer'
+                    ? 'left-0 top-0 bottom-0 right-auto h-[100dvh] max-h-none w-[min(20rem,88vw)] rounded-none rounded-r-[1.75rem] border-y-0 border-l-0 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] data-[state=closed]:animate-[drawer-out_180ms_ease-in] data-[state=open]:animate-[drawer-in_220ms_cubic-bezier(0.22,1,0.36,1)]'
                   : 'confirmation-dialog z-60 overflow-y-auto',
           className,
         )}

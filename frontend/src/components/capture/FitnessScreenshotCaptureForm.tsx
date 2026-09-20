@@ -12,8 +12,8 @@ const messages = {
   invalid: 'This screenshot could not be read. Try another image.',
   auth: 'Your session could not be verified. Try again after reconnecting.',
   'not-configured': 'Screenshot reading is not available yet. Enter the exercise manually.',
-  provider: 'Screenshot reading is temporarily unavailable. Try again or enter manually.',
-  network: 'Could not reach screenshot reading. Check your connection and try again.',
+  provider: 'Screenshot reading is temporarily unavailable. Try a screenshot showing one completed workout, or enter manually.',
+  network: 'Could not reach screenshot reading. Check your connection, retry, or enter manually.',
 } as const
 
 export function FitnessScreenshotCaptureForm({ onContinue, onCancel, onManual, onDirtyChange }: {
@@ -93,6 +93,10 @@ export function FitnessScreenshotCaptureForm({ onContinue, onCancel, onManual, o
   }
 
   return <div>
+    <div className="mb-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--accent-teal-wash)] p-4 text-sm leading-6 text-[var(--text-secondary)]">
+      <p className="font-semibold text-[var(--text-primary)]">Upload one completed Workout detail or workout summary screen.</p>
+      <p className="mt-1">Include activity, duration, distance when available, and Active Calories when available. Daily Activity or daily Steps overviews may not describe one workout.</p>
+    </div>
     <input id="fitness-screenshot-file" type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only"
       onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void receiveImage(file) }} />
     <div className="flex flex-wrap items-center gap-3">

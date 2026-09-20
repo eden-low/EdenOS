@@ -11,8 +11,6 @@ const firebaseEnvironmentKeys = [
   'VITE_FIREBASE_APP_ID',
 ] as const
 
-type FirebaseEnvironmentKey = (typeof firebaseEnvironmentKeys)[number]
-
 export interface FirebaseServices {
   app: FirebaseApp
   auth: Auth
@@ -23,8 +21,7 @@ export type FirebaseInitialization =
   | { status: 'ready'; services: FirebaseServices }
   | { status: 'error'; message: string }
 
-function readEnvironmentValue(key: FirebaseEnvironmentKey): string | undefined {
-  const value = import.meta.env[key]
+function readEnvironmentValue(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined
 
   const trimmed = value.trim()
@@ -32,9 +29,14 @@ function readEnvironmentValue(key: FirebaseEnvironmentKey): string | undefined {
 }
 
 function initializeFirebase(): FirebaseInitialization {
-  const values = Object.fromEntries(
-    firebaseEnvironmentKeys.map((key) => [key, readEnvironmentValue(key)]),
-  ) as Record<FirebaseEnvironmentKey, string | undefined>
+  const values = {
+    VITE_FIREBASE_API_KEY: readEnvironmentValue(import.meta.env.VITE_FIREBASE_API_KEY),
+    VITE_FIREBASE_AUTH_DOMAIN: readEnvironmentValue(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+    VITE_FIREBASE_PROJECT_ID: readEnvironmentValue(import.meta.env.VITE_FIREBASE_PROJECT_ID),
+    VITE_FIREBASE_STORAGE_BUCKET: readEnvironmentValue(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+    VITE_FIREBASE_MESSAGING_SENDER_ID: readEnvironmentValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+    VITE_FIREBASE_APP_ID: readEnvironmentValue(import.meta.env.VITE_FIREBASE_APP_ID),
+  }
   const missingKeys = firebaseEnvironmentKeys.filter((key) => !values[key])
 
   if (missingKeys.length > 0) {
