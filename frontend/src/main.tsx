@@ -9,9 +9,12 @@ import { FirebaseAuthProvider } from './state/FirebaseAuthProvider'
 import { RecordsProvider } from './state/RecordsContext'
 import { UserSettingsProvider } from './state/UserSettingsProvider'
 import { AnimeProgressProvider } from './state/AnimeProgressProvider'
+import { ThemeProvider } from './theme/ThemeProvider'
+import { PrivacyLockProvider } from './privacy/PrivacyLockProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ThemeProvider>
     <ConnectivityProvider>
       <PwaProvider>
         <OfflineIndicator />
@@ -19,12 +22,15 @@ createRoot(document.getElementById('root')!).render(
           <RecordsProvider>
             <UserSettingsProvider>
               <AnimeProgressProvider>
-                <App />
+                <PrivacyLockProvider>
+                  <App />
+                </PrivacyLockProvider>
               </AnimeProgressProvider>
             </UserSettingsProvider>
           </RecordsProvider>
         </FirebaseAuthProvider>
       </PwaProvider>
     </ConnectivityProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

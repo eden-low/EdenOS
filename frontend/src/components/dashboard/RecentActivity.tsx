@@ -1,8 +1,9 @@
 import { ReceiptText } from 'lucide-react'
 import { getExerciseActivityIcon } from '../../lib/exerciseIcon'
-import { formatExerciseMetrics, formatMoney } from '../../lib/format'
+import { formatExerciseMetrics } from '../../lib/format'
 import type { RecentActivityItem } from '../../types/dashboard'
 import { ExerciseCalories } from '../exercise/ExerciseCalories'
+import { FinancialAmount } from '../privacy/FinancialAmount'
 
 export function RecentActivity({
   items,
@@ -52,9 +53,7 @@ export function RecentActivity({
               </div>
               <div className="ml-auto shrink-0 text-right">
                 {financeItem && (
-                  <p className="font-semibold text-[var(--text-primary)]">
-                    {formatMoney(item.amountSen)}
-                  </p>
+                  <FinancialAmount amountSen={item.amountSen} className="font-semibold text-[var(--text-primary)]" />
                 )}
                 <p className="mt-0.5 text-xs text-[var(--text-muted)]">{item.occurredAt}</p>
               </div>

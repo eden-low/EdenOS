@@ -10,7 +10,8 @@ import { expenseCategoryLabels } from '../domain/expense'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { formatTime, relativeDayLabel } from '../lib/date'
 import { getExerciseActivityIcon } from '../lib/exerciseIcon'
-import { formatExerciseMetrics, formatMoney } from '../lib/format'
+import { formatExerciseMetrics } from '../lib/format'
+import { FinancialAmount } from '../components/privacy/FinancialAmount'
 import { selectTimelineGroups } from '../selectors/recordSelectors'
 import { useRecords } from '../state/useRecords'
 import type { RecordDomainStatus, RecordFilter } from '../types/records'
@@ -215,7 +216,7 @@ export function RecordsPage() {
                           </p>
                         </div>
                         <div className="ml-auto min-w-0 shrink-0 text-right">
-                          <p className="font-semibold text-[var(--text-primary)]">{formatMoney(expense.amountSen)}</p>
+                          <FinancialAmount amountSen={expense.amountSen} interactive={false} className="font-semibold text-[var(--text-primary)]" />
                           <p className="mt-1 text-xs text-[var(--text-muted)]">
                             {relativeDayLabel(expense.occurredAt, referenceDate)} · {formatTime(expense.occurredAt)}
                           </p>

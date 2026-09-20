@@ -16,6 +16,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="EdenOS" />
+    <script>
+      (() => {
+        try {
+          const preference = localStorage.getItem('edenos.theme.v1')
+          const dark = preference === 'dark' || (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+          const theme = dark ? 'dark' : 'light'
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#090c13' : '#f4f1eb')
+        } catch { document.documentElement.dataset.theme = 'dark' }
+      })()
+    </script>
     <title>Today · Eden OS</title>
   </head>
   <body>

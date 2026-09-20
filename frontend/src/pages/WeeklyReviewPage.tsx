@@ -6,7 +6,8 @@ import { triggerPressFeedback } from '../components/ui/pressFeedback'
 import { expenseCategoryLabels } from '../domain/expense'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { addLocalWeeks, formatDateHeading, formatTime, startOfLocalWeek } from '../lib/date'
-import { formatDuration, formatExerciseMetrics, formatMoney } from '../lib/format'
+import { formatDuration, formatExerciseMetrics } from '../lib/format'
+import { FinancialAmount } from '../components/privacy/FinancialAmount'
 import { selectWeeklyReview } from '../selectors/weeklyReviewSelectors'
 import { useRecords } from '../state/useRecords'
 import type { RecordDomainStatus } from '../types/records'
@@ -128,7 +129,7 @@ export function WeeklyReviewPage() {
           </div>
           {expenseStatus === 'loaded' ? (
             <>
-              <p className="metric-value mt-5 text-3xl font-semibold">{formatMoney(summary.expenses.spentSen)}</p>
+              <FinancialAmount amountSen={summary.expenses.spentSen} className="metric-value mt-5 text-3xl font-semibold" />
               <p className="mt-2 text-sm text-[var(--text-secondary)]">
                 {summary.expenses.count} {summary.expenses.count === 1 ? 'expense' : 'expenses'} recorded
               </p>
@@ -145,7 +146,7 @@ export function WeeklyReviewPage() {
                         <dt className="text-[var(--text-secondary)]">
                           {expenseCategoryLabels[category]} <span className="text-[var(--text-muted)]">({count})</span>
                         </dt>
-                        <dd className="font-semibold text-[var(--text-primary)]">{formatMoney(spentSen)}</dd>
+                        <dd><FinancialAmount amountSen={spentSen} className="font-semibold text-[var(--text-primary)]" /></dd>
                       </div>
                     ))}
                   </dl>

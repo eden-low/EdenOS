@@ -50,13 +50,13 @@ describe('Weekly Review page', () => {
     render(<WeeklyReviewPage />)
     expect(screen.getByRole('heading', { name: 'Weekly Review' })).toBeTruthy()
     expect(screen.getByText('Sep 14, 2026 – Sep 20, 2026')).toBeTruthy()
-    expect(within(screen.getByRole('region', { name: 'Weekly expenses' })).getByText('RM 12.50', { selector: 'p' })).toBeTruthy()
+    expect(within(screen.getByRole('region', { name: 'Weekly expenses' })).getAllByText('RM 12.50')[0]).toBeTruthy()
     expect(within(screen.getByRole('region', { name: 'Weekly exercise sessions' })).getByText('Walk')).toBeTruthy()
     expect((screen.getByRole('button', { name: 'Next week' }) as HTMLButtonElement).disabled).toBe(true)
 
     fireEvent.click(screen.getByRole('button', { name: 'Previous week' }))
     expect(screen.getByText('Sep 7, 2026 – Sep 13, 2026')).toBeTruthy()
-    expect(within(screen.getByRole('region', { name: 'Weekly expenses' })).getByText('RM 7', { selector: 'p' })).toBeTruthy()
+    expect(within(screen.getByRole('region', { name: 'Weekly expenses' })).getAllByText('RM 7')[0]).toBeTruthy()
     expect(screen.getByText('No exercise recorded this week.')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'This week' }))
@@ -81,7 +81,7 @@ describe('Weekly Review page', () => {
     render(<WeeklyReviewPage />)
 
     expect(within(screen.getByRole('region', { name: 'Weekly expenses' }))
-      .getByText('RM 12.50', { selector: 'p' })).toBeTruthy()
+      .getAllByText('RM 12.50')[0]).toBeTruthy()
     const exerciseRegion = screen.getByRole('region', { name: 'Weekly exercise sessions' })
     expect(within(exerciseRegion).getByRole('alert').textContent).toContain('Exercise records unavailable')
     expect(within(exerciseRegion).queryByText('0 sessions')).toBeNull()
