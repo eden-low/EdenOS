@@ -2,8 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { AuthChoiceScreen } from '../components/account/AuthChoiceScreen'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { firebaseInitialization } from '../lib/firebase'
-import { guestHasMeaningfulData } from '../repositories/guestAccountRepository'
+import { classifyGoogleAuthError } from '../lib/googleAuthError'
+import { createFirestoreAnimeProgressRepository } from '../repositories/firestoreAnimeProgressRepository'
+import { getGuestDataSummary } from '../repositories/guestAccountRepository'
+import { readLocalAnimeProgress, writeLocalAnimeProgress } from '../services/animeProgressLocalStorage'
+import { reconcileAnimeProgress } from '../services/animeProgressReconciliation'
 import { createFirebaseAuthService, type AuthIdentity } from '../services/firebaseAuthService'
+import type { GuestDataSummary } from '../types/account'
 import { FirebaseAuthContext, type FirebaseSession } from './firebaseAuthContextDefinition'
 
 type AuthenticationState =
@@ -16,6 +21,19 @@ function createInitialAuthenticationState(): AuthenticationState {
   return firebaseInitialization.status === 'error'
     ? { status: 'error', message: firebaseInitialization.message }
     : { status: 'initializing' }
+}
+
+function maskedUid(uid: string): string {
+  return uid.length > 8 ? `${uid.slice(0, 4)}…${uid.slice(-4)}` : 'masked'
+}
+
+function authErrorCode(error: unknown): string {
+  return error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+    ? error.code : 'unknown'
+}
+
+function accountDiagnostic(event: string, details: Record<string, unknown>): void {
+  if (import.meta.env.DEV) console.info('[account-auth]', { event, ...details })
 }
 
 export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
@@ -106,6 +124,20 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
 
   const { identity } = authentication
   const firestore = firebaseInitialization.services.firestore
+
+  async function summarizeGuest(): Promise<GuestDataSummary> {
+    const localAnimeProgressCount = readLocalAnimeProgress(localStorage).length
+    return getGuestDataSummary(firestore, identity.uid, localAnimeProgressCount)
+  }
+
+  async function preserveGuestCloudAnimeProgress(summary: GuestDataSummary): Promise<void> {
+    if (summary.animeCloudProgressCount === 0) return
+    const repository = createFirestoreAnimeProgressRepository(firestore, identity.uid)
+    const cloudItems = await repository.readAllFromServer()
+    const localItems = readLocalAnimeProgress(localStorage)
+    writeLocalAnimeProgress(localStorage, reconcileAnimeProgress(localItems, cloudItems))
+  }
+
   const session: FirebaseSession = {
     uid: identity.uid,
     firestore,
@@ -117,30 +149,65 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
       try {
         linked = await authService.linkGoogle(identity.uid)
       } catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/credential-already-in-use') {
-          if (!authService.hasConflictingGoogleCredential()) return 'existing-unavailable'
+        if (classifyGoogleAuthError(error) === 'account-conflict') {
+          accountDiagnostic('google-link-conflict', {
+            uid: maskedUid(identity.uid),
+            code: authErrorCode(error),
+          })
+          if (!authService.hasPendingGoogleConflict()) return { status: 'existing-unavailable' }
           try {
-            return await guestHasMeaningfulData(firestore, identity.uid)
-              ? 'existing-with-data' : 'existing-empty'
-          } catch {
-            return 'existing-unavailable'
+            const summary = await summarizeGuest()
+            accountDiagnostic(summary.hasBlockingData ? 'guest-blocked' : 'guest-safe', {
+              uid: maskedUid(identity.uid),
+              expensesCount: summary.expensesCount,
+              exercisesCount: summary.exercisesCount,
+              hasBodyWeight: summary.hasBodyWeight,
+              hasBudget: summary.hasBudget,
+              hasSavingsGoal: summary.hasSavingsGoal,
+              animeProgressCount: summary.animeProgressCount,
+              otherBlockingData: summary.otherBlockingData,
+            })
+            return { status: 'existing-account', summary }
+          } catch (summaryError) {
+            accountDiagnostic('guest-summary-failure', {
+              uid: maskedUid(identity.uid),
+              code: authErrorCode(summaryError),
+            })
+            return { status: 'existing-unavailable' }
           }
         }
         throw error
       }
-      if (!linked) return 'cancelled'
+      if (!linked) return { status: 'cancelled' }
       if (linked.uid !== identity.uid) throw new Error('The linked Google identity changed unexpectedly.')
       setAuthentication({ status: 'authenticated', identity: linked })
-      return 'connected'
+      return { status: 'connected' }
     },
     async continueWithExistingGoogle() {
       if (!identity.isAnonymous) throw new Error('The guest session changed.')
       // Recheck just before switching in case a record was saved while the dialog was open.
-      if (await guestHasMeaningfulData(firestore, identity.uid)) {
-        throw new Error('This Guest now has data. Its records will stay protected.')
+      const summary = await summarizeGuest()
+      if (summary.hasBlockingData) {
+        accountDiagnostic('guest-blocked', { uid: maskedUid(identity.uid), recheck: true })
+        return { status: 'blocked', summary }
       }
-      const existing = await authService.continueWithExistingGoogle(identity.uid)
-      setAuthentication({ status: 'authenticated', identity: existing })
+      await preserveGuestCloudAnimeProgress(summary)
+      try {
+        const existing = await authService.continueWithExistingGoogle(identity.uid)
+        if (!existing) return { status: 'cancelled' }
+        setAuthentication({ status: 'authenticated', identity: existing })
+        accountDiagnostic('existing-account-signin-success', {
+          fromUid: maskedUid(identity.uid),
+          toUid: maskedUid(existing.uid),
+        })
+        return { status: 'connected' }
+      } catch (error) {
+        accountDiagnostic('existing-account-signin-failure', {
+          uid: maskedUid(identity.uid),
+          code: authErrorCode(error),
+        })
+        throw error
+      }
     },
     discardExistingGoogleChoice() {
       authService.discardConflictingGoogleCredential()
@@ -152,5 +219,5 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     },
   }
 
-  return <FirebaseAuthContext.Provider value={session}>{children}</FirebaseAuthContext.Provider>
+  return <FirebaseAuthContext.Provider key={identity.uid} value={session}>{children}</FirebaseAuthContext.Provider>
 }

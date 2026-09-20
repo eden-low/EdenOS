@@ -32,9 +32,9 @@ export interface FirebaseAuthService {
   continueAnonymously: () => Promise<AuthIdentity>
   signInWithGoogle: () => Promise<AuthIdentity | null>
   linkGoogle: (expectedUid: string) => Promise<AuthIdentity | null>
-  hasConflictingGoogleCredential: () => boolean
+  hasPendingGoogleConflict: () => boolean
   discardConflictingGoogleCredential: () => void
-  continueWithExistingGoogle: (expectedGuestUid: string) => Promise<AuthIdentity>
+  continueWithExistingGoogle: (expectedGuestUid: string) => Promise<AuthIdentity | null>
   signOutGoogle: () => Promise<void>
 }
 
@@ -53,9 +53,13 @@ async function withGooglePopup(action: () => Promise<UserCredential>): Promise<A
 
 export function createFirebaseAuthService(auth: Auth): FirebaseAuthService {
   let conflictingCredential: OAuthCredential | null = null
+  let pendingGoogleConflict = false
   return {
-    hasConflictingGoogleCredential: () => conflictingCredential !== null,
-    discardConflictingGoogleCredential: () => { conflictingCredential = null },
+    hasPendingGoogleConflict: () => pendingGoogleConflict,
+    discardConflictingGoogleCredential: () => {
+      conflictingCredential = null
+      pendingGoogleConflict = false
+    },
     async observe(observer) {
       await setPersistence(auth, browserLocalPersistence)
       return onAuthStateChanged(
@@ -77,6 +81,7 @@ export function createFirebaseAuthService(auth: Auth): FirebaseAuthService {
 
     async linkGoogle(expectedUid) {
       conflictingCredential = null
+      pendingGoogleConflict = false
       const user = auth.currentUser
       if (!user || !user.isAnonymous || user.uid !== expectedUid) {
         throw new Error('The current guest session could not be verified.')
@@ -85,8 +90,8 @@ export function createFirebaseAuthService(auth: Auth): FirebaseAuthService {
       try {
         identity = await withGooglePopup(() => linkWithPopup(user, new GoogleAuthProvider()))
       } catch (error) {
-        if (error && typeof error === 'object' && 'code' in error &&
-            error.code === 'auth/credential-already-in-use') {
+        if (classifyGoogleAuthError(error) === 'account-conflict') {
+          pendingGoogleConflict = true
           conflictingCredential = GoogleAuthProvider.credentialFromError(error as AuthError)
         }
         throw error
@@ -99,15 +104,18 @@ export function createFirebaseAuthService(auth: Auth): FirebaseAuthService {
 
     async continueWithExistingGoogle(expectedGuestUid) {
       const user = auth.currentUser
-      if (!user || !user.isAnonymous || user.uid !== expectedGuestUid || !conflictingCredential) {
-        throw new Error('The guest session or Google credential is no longer available. Connect Google again.')
+      if (!user || !user.isAnonymous || user.uid !== expectedGuestUid || !pendingGoogleConflict) {
+        throw new Error('The guest session or Google account choice is no longer available. Connect Google again.')
       }
-      const credential = conflictingCredential
-      conflictingCredential = null
-      const identity = toIdentity((await signInWithCredential(auth, credential)).user)
+      const identity = conflictingCredential
+        ? toIdentity((await signInWithCredential(auth, conflictingCredential)).user)
+        : await withGooglePopup(() => signInWithPopup(auth, new GoogleAuthProvider()))
+      if (!identity) return null
       if (identity.isAnonymous || identity.uid === expectedGuestUid) {
         throw new Error('The existing Google account could not be verified.')
       }
+      conflictingCredential = null
+      pendingGoogleConflict = false
       return identity
     },
 

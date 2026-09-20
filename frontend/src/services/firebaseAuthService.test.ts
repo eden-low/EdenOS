@@ -10,7 +10,7 @@ const sdk = vi.hoisted(() => ({
   linkWithPopup: vi.fn(),
   signOut: vi.fn(async () => undefined),
   signInWithCredential: vi.fn(),
-  credentialFromError: vi.fn(() => ({ providerId: 'google.com' })),
+  credentialFromError: vi.fn((): { providerId: string } | null => ({ providerId: 'google.com' })),
 }))
 
 vi.mock('firebase/auth', () => ({
@@ -78,7 +78,7 @@ describe('Firebase auth adapter', () => {
     const service = createFirebaseAuthService(auth)
     sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
     await expect(service.linkGoogle(guest.uid)).rejects.toMatchObject({ code: 'auth/credential-already-in-use' })
-    expect(service.hasConflictingGoogleCredential()).toBe(true)
+    expect(service.hasPendingGoogleConflict()).toBe(true)
     const existing = { uid: 'existing-uid', isAnonymous: false, email: 'user@example.com' } as User
     sdk.signInWithCredential.mockResolvedValue({ user: existing })
     expect(await service.continueWithExistingGoogle(guest.uid)).toMatchObject({ uid: 'existing-uid' })
@@ -95,9 +95,12 @@ describe('Firebase auth adapter', () => {
     await expect(service.continueWithExistingGoogle(guest.uid)).rejects.toMatchObject({ code: 'auth/network-request-failed' })
     expect(auth.currentUser).toBe(guest)
     expect(sdk.signOut).not.toHaveBeenCalled()
+    const existing = { uid: 'existing-uid', isAnonymous: false, email: 'user@example.com' } as User
+    sdk.signInWithCredential.mockResolvedValue({ user: existing })
+    await expect(service.continueWithExistingGoogle(guest.uid)).resolves.toMatchObject({ uid: 'existing-uid' })
   })
 
-  it('rejects a stale Guest or missing conflict credential before switching', async () => {
+  it('rejects a stale Guest or missing conflict choice before switching', async () => {
     auth = { currentUser: guest } as Auth
     const service = createFirebaseAuthService(auth)
     await expect(service.continueWithExistingGoogle(guest.uid)).rejects.toThrow('no longer available')
@@ -105,8 +108,43 @@ describe('Firebase auth adapter', () => {
     await expect(service.linkGoogle(guest.uid)).rejects.toBeTruthy()
     await expect(service.continueWithExistingGoogle('different-guest')).rejects.toThrow('no longer available')
     service.discardConflictingGoogleCredential()
-    expect(service.hasConflictingGoogleCredential()).toBe(false)
+    expect(service.hasPendingGoogleConflict()).toBe(false)
     expect(sdk.signInWithCredential).not.toHaveBeenCalled()
+  })
+
+  it('recognizes account-exists-with-different-credential as an existing account conflict', async () => {
+    auth = { currentUser: guest } as Auth
+    const service = createFirebaseAuthService(auth)
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/account-exists-with-different-credential' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toMatchObject({
+      code: 'auth/account-exists-with-different-credential',
+    })
+    expect(service.hasPendingGoogleConflict()).toBe(true)
+  })
+
+  it('uses one fresh popup only when Firebase supplies no reusable credential', async () => {
+    auth = { currentUser: guest } as Auth
+    sdk.credentialFromError.mockReturnValueOnce(null)
+    const service = createFirebaseAuthService(auth)
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toBeTruthy()
+    const existing = { uid: 'existing-uid', isAnonymous: false, email: 'user@example.com' } as User
+    sdk.signInWithPopup.mockResolvedValue({ user: existing })
+    await expect(service.continueWithExistingGoogle(guest.uid)).resolves.toMatchObject({ uid: 'existing-uid' })
+    expect(sdk.signInWithCredential).not.toHaveBeenCalled()
+    expect(sdk.signInWithPopup).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the pending conflict after cancelling a required fresh popup', async () => {
+    auth = { currentUser: guest } as Auth
+    sdk.credentialFromError.mockReturnValueOnce(null)
+    const service = createFirebaseAuthService(auth)
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toBeTruthy()
+    sdk.signInWithPopup.mockRejectedValueOnce({ code: 'auth/popup-closed-by-user' })
+    await expect(service.continueWithExistingGoogle(guest.uid)).resolves.toBeNull()
+    expect(service.hasPendingGoogleConflict()).toBe(true)
+    expect(auth.currentUser).toBe(guest)
   })
 
   it('rejects a link result with a different UID', async () => {
