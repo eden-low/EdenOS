@@ -1,49 +1,98 @@
 import type { Firestore } from 'firebase/firestore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { guestHasMeaningfulData } from './guestAccountRepository'
+import { getGuestDataSummary } from './guestAccountRepository'
 
 const sdk = vi.hoisted(() => ({
   collection: vi.fn((...parts: unknown[]) => parts.slice(1).join('/')),
   doc: vi.fn((...parts: unknown[]) => parts.slice(1).join('/')),
-  limit: vi.fn((size: number) => size),
   query: vi.fn((path: string) => path),
-  getDocsFromServer: vi.fn(),
+  getCountFromServer: vi.fn(),
   getDocFromServer: vi.fn(),
 }))
 vi.mock('firebase/firestore', () => sdk)
 
 const db = {} as Firestore
-function state(expenses = false, exercises = false, settings: Record<string, unknown> | null = null) {
-  sdk.getDocsFromServer.mockResolvedValueOnce({ empty: !expenses }).mockResolvedValueOnce({ empty: !exercises })
+function state(
+  expensesCount = 0,
+  exercisesCount = 0,
+  settings: Record<string, unknown> | null = null,
+  animeCloudProgressCount = 0,
+) {
+  for (const value of [expensesCount, exercisesCount, animeCloudProgressCount]) {
+    sdk.getCountFromServer.mockResolvedValueOnce({ data: () => ({ count: value }) })
+  }
   sdk.getDocFromServer.mockResolvedValue({ exists: () => settings !== null, data: () => settings })
 }
 beforeEach(() => { vi.clearAllMocks() })
 
-describe('authoritative Guest data check', () => {
-  it('finds an empty Guest across all owner paths', async () => {
+describe('authoritative Guest data summary', () => {
+  it('finds a completely empty Guest across every owner path', async () => {
     state()
-    expect(await guestHasMeaningfulData(db, 'guest-uid')).toBe(false)
+    expect(await getGuestDataSummary(db, 'guest-uid')).toEqual({
+      expensesCount: 0,
+      exercisesCount: 0,
+      hasBodyWeight: false,
+      hasBudget: false,
+      hasSavingsGoal: false,
+      animeProgressCount: 0,
+      animeCloudProgressCount: 0,
+      otherBlockingData: [],
+      hasBlockingData: false,
+    })
     expect(sdk.collection.mock.calls.map((call) => call.slice(1))).toEqual([
-      ['users', 'guest-uid', 'expenses'], ['users', 'guest-uid', 'exercises'],
+      ['users', 'guest-uid', 'expenses'],
+      ['users', 'guest-uid', 'exercises'],
+      ['users', 'guest-uid', 'animeWatchProgress'],
     ])
     expect(sdk.doc).toHaveBeenCalledWith(db, 'users', 'guest-uid', 'settings', 'preferences')
-    expect(sdk.getDocsFromServer).toHaveBeenCalledTimes(2)
   })
 
   it.each([
-    ['Expense', true, false, null],
-    ['Exercise', false, true, null],
-    ['body weight', false, false, { bodyWeightKg: 70 }],
-    ['Budget', false, false, { monthlyBudgetSen: 10000 }],
-    ['Savings Goal', false, false, { savingsGoalSen: 50000 }],
-  ])('protects a Guest with %s', async (_name, expense, exercise, settings) => {
-    state(expense as boolean, exercise as boolean, settings as Record<string, unknown> | null)
-    expect(await guestHasMeaningfulData(db, 'guest-uid')).toBe(true)
+    ['Expense', 2, 0, null, { expensesCount: 2 }],
+    ['Exercise', 0, 1, null, { exercisesCount: 1 }],
+    ['body weight', 0, 0, { bodyWeightKg: 70 }, { hasBodyWeight: true }],
+    ['Budget', 0, 0, { monthlyBudgetSen: 10000 }, { hasBudget: true }],
+    ['Savings Goal', 0, 0, { savingsGoalSen: 50000 }, { hasSavingsGoal: true }],
+  ])('protects a Guest with %s', async (_name, expenses, exercises, settings, expected) => {
+    state(expenses as number, exercises as number, settings as Record<string, unknown> | null)
+    expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({ ...expected, hasBlockingData: true })
+  })
+
+  it('reports multiple blocking categories together', async () => {
+    state(2, 3, { bodyWeightKg: 72, monthlyBudgetSen: 10000, savingsGoalSen: 50000 })
+    expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({
+      expensesCount: 2,
+      exercisesCount: 3,
+      hasBodyWeight: true,
+      hasBudget: true,
+      hasSavingsGoal: true,
+      hasBlockingData: true,
+    })
+  })
+
+  it('treats local and legacy cloud Anime progress as non-blocking', async () => {
+    state(0, 0, null, 2)
+    expect(await getGuestDataSummary(db, 'guest-uid', 3)).toMatchObject({
+      animeProgressCount: 3,
+      animeCloudProgressCount: 2,
+      hasBlockingData: false,
+    })
+  })
+
+  it('ignores empty known preference placeholders but protects unknown saved data', async () => {
+    state(0, 0, { updatedAt: {}, bodyWeightKg: null, monthlyBudgetSen: null, savingsGoalSen: null })
+    expect((await getGuestDataSummary(db, 'guest-uid')).hasBlockingData).toBe(false)
+    vi.clearAllMocks()
+    state(0, 0, { futureDurableSetting: true })
+    expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({
+      otherBlockingData: ['futureDurableSetting'],
+      hasBlockingData: true,
+    })
   })
 
   it('treats a failed server read as unsafe, never as empty', async () => {
-    sdk.getDocsFromServer.mockRejectedValue(new Error('offline'))
+    sdk.getCountFromServer.mockRejectedValue(new Error('offline'))
     sdk.getDocFromServer.mockResolvedValue({ exists: () => false })
-    await expect(guestHasMeaningfulData(db, 'guest-uid')).rejects.toThrow('offline')
+    await expect(getGuestDataSummary(db, 'guest-uid')).rejects.toThrow('offline')
   })
 })

@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDocsFromServer,
   onSnapshot,
   orderBy,
   query,
@@ -45,6 +46,13 @@ export function createFirestoreAnimeProgressRepository(firestore: Firestore, uid
           return progress ? [progress] : []
         }))
       }, observer.error)
+    },
+    async readAllFromServer() {
+      const snapshot = await getDocsFromServer(query(reference, orderBy('updatedAt', 'desc')))
+      return snapshot.docs.flatMap((item) => {
+        const progress = decodeProgress(item)
+        return progress ? [progress] : []
+      })
     },
     async save(progress) {
       const normalized = normalizeAnimeProgress(progress)

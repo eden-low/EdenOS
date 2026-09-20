@@ -2,15 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { animeProgressWriteIntervalMs, normalizeAnimeProgress } from '../domain/anime'
 import { createFirestoreAnimeProgressRepository } from '../repositories/firestoreAnimeProgressRepository'
 import { readLocalAnimeProgress, writeLocalAnimeProgress } from '../services/animeProgressLocalStorage'
+import { newerAnimeProgress, reconcileAnimeProgress } from '../services/animeProgressReconciliation'
 import type { AnimeProgress } from '../types/anime'
 import { useFirebaseAuth } from './useFirebaseAuth'
 import { AnimeProgressContext } from './animeProgressContextDefinition'
-
-function newerProgress(local: AnimeProgress | undefined, cloud: AnimeProgress | undefined): AnimeProgress | undefined {
-  if (!local) return cloud
-  if (!cloud) return local
-  return local.updatedAt >= cloud.updatedAt ? local : cloud
-}
 
 export function AnimeProgressProvider({ children }: { children: ReactNode }) {
   const { firestore, uid, isAnonymous } = useFirebaseAuth()
@@ -34,25 +29,24 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
         if (!reconciledRef.current) {
           reconciledRef.current = true
           const localItems = readLocalAnimeProgress(localStorage)
-          const ids = new Set([...localItems, ...cloudItems].map((item) => item.externalId))
-          const merged = [...ids].flatMap((externalId) => {
-            const local = localItems.find((item) => item.externalId === externalId)
-            const cloud = cloudItems.find((item) => item.externalId === externalId)
-            const winner = newerProgress(local, cloud)
-            if (winner && local && (!cloud || local.updatedAt > cloud.updatedAt)) {
-              void repository.save(winner).catch(() => {
+          const merged = reconcileAnimeProgress(localItems, cloudItems)
+          const cloudById = new Map(cloudItems.map((item) => [item.externalId, item]))
+          for (const winner of merged) {
+            const local = localItems.find((item) => item.externalId === winner.externalId)
+            const cloud = cloudById.get(winner.externalId)
+            if (local === winner && (!cloud || local.updatedAt > cloud.updatedAt)) {
+              void repository.save(local).catch(() => {
                 if (active) setCloudError('Cloud watch progress is temporarily unavailable.')
               })
             }
-            return winner ? [winner] : []
-          }).sort((a, b) => b.updatedAt - a.updatedAt)
+          }
           writeLocalAnimeProgress(localStorage, merged)
           setItems(merged)
           return
         }
         setItems((current) => {
           const cloudMap = new Map(cloudItems.map((item) => [item.externalId, item]))
-          const merged = current.map((item) => newerProgress(item, cloudMap.get(item.externalId)) ?? item)
+          const merged = current.map((item) => newerAnimeProgress(item, cloudMap.get(item.externalId)) ?? item)
           for (const cloud of cloudItems) if (!merged.some((item) => item.externalId === cloud.externalId)) merged.push(cloud)
           const sorted = merged.sort((a, b) => b.updatedAt - a.updatedAt)
           writeLocalAnimeProgress(localStorage, sorted)

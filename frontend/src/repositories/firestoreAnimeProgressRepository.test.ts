@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mock = vi.hoisted(() => ({ onSnapshot: vi.fn(), setDoc: vi.fn(), serverTimestamp: vi.fn(() => ({ server: true })) }))
+const mock = vi.hoisted(() => ({
+  getDocsFromServer: vi.fn(), onSnapshot: vi.fn(), setDoc: vi.fn(),
+  serverTimestamp: vi.fn(() => ({ server: true })),
+}))
 vi.mock('firebase/firestore', () => ({
   collection: (...parts: unknown[]) => ({ parts }), doc: (reference: unknown, id: string) => ({ reference, id }),
   query: (reference: unknown, ...constraints: unknown[]) => ({ reference, constraints }),
   orderBy: (...args: unknown[]) => ({ args }), onSnapshot: mock.onSnapshot,
+  getDocsFromServer: mock.getDocsFromServer,
   serverTimestamp: mock.serverTimestamp, setDoc: mock.setDoc,
 }))
 
@@ -13,7 +17,10 @@ import { createFirestoreAnimeProgressRepository } from './firestoreAnimeProgress
 const progress = { externalId: 'sample-anime', animeId: 'sample-anime', currentEpisode: 2, positionSeconds: 10, durationSeconds: 100, watchedEpisodes: [1], trackingStatus: 'watching' as const, updatedAt: 100, title: 'Sample' }
 
 describe('Firestore Anime progress repository', () => {
-  beforeEach(() => { mock.onSnapshot.mockReset(); mock.setDoc.mockReset(); mock.serverTimestamp.mockClear() })
+  beforeEach(() => {
+    mock.getDocsFromServer.mockReset(); mock.onSnapshot.mockReset()
+    mock.setDoc.mockReset(); mock.serverTimestamp.mockClear()
+  })
   it('subscribes once to the UID-scoped collection and normalizes cloud data', () => {
     mock.onSnapshot.mockImplementation((_query, next) => { next({ docs: [{ id: 'sample-anime', data: () => ({ ...progress, updatedAt: { toMillis: () => 200 } }) }] }); return () => undefined })
     const repository = createFirestoreAnimeProgressRepository({} as never, 'owner')
@@ -29,6 +36,13 @@ describe('Firestore Anime progress repository', () => {
     expect(reference.id).toBe('sample-anime')
     expect(payload.updatedAt).toEqual({ server: true })
     expect(JSON.stringify(payload)).not.toContain('m3u8')
+  })
+  it('reads legacy Guest cloud progress once for safe account reconciliation', async () => {
+    mock.getDocsFromServer.mockResolvedValue({
+      docs: [{ id: 'sample-anime', data: () => ({ ...progress, updatedAt: { toMillis: () => 250 } }) }],
+    })
+    const repository = createFirestoreAnimeProgressRepository({} as never, 'guest')
+    await expect(repository.readAllFromServer()).resolves.toEqual([{ ...progress, updatedAt: 250 }])
   })
   it('preserves deterministic fallback episode numbers in the outgoing payload', async () => {
     mock.setDoc.mockResolvedValue(undefined)
