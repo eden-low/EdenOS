@@ -2,7 +2,6 @@ import { CalendarClock, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { expenseCategoryLabels } from '../../domain/expense'
 import { formatLongDate, formatTime } from '../../lib/date'
-import { formatMoneyExact } from '../../lib/format'
 import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
 import { useRecords } from '../../state/useRecords'
 import type { ExpenseData, ExpenseRecord } from '../../types/records'
@@ -10,6 +9,8 @@ import { ExpenseForm } from '../capture/ExpenseForm'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
 import { InlineError } from '../ui/InlineError'
+import { FinancialAmount } from '../privacy/FinancialAmount'
+import { usePrivacyLock } from '../../privacy/usePrivacyLock'
 
 type RecordStep = 'view' | 'edit' | 'delete'
 
@@ -21,6 +22,7 @@ export function ExpenseRecordDialog({
   onClose: () => void
 }) {
   const { updateExpense, deleteExpense } = useRecords()
+  const privacy = usePrivacyLock()
   const [step, setStep] = useState<RecordStep>('view')
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -79,7 +81,7 @@ export function ExpenseRecordDialog({
             <div className="mt-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5 sm:p-6">
               <p className="section-label">{expenseCategoryLabels[record.category]}</p>
               <h3 className="mt-3 text-xl font-semibold text-[var(--text-primary)]">{record.title}</h3>
-              <p className="metric-value mt-3 text-4xl font-semibold">{formatMoneyExact(record.amountSen)}</p>
+              <FinancialAmount amountSen={record.amountSen} exact className="metric-value mt-3 text-4xl font-semibold" />
 
               <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-[var(--border-subtle)] pt-5 text-sm">
                 <div>
@@ -116,7 +118,8 @@ export function ExpenseRecordDialog({
               </Button>
               <Button type="button" variant="secondary" onClick={() => {
                 setOperationError(null)
-                setStep('edit')
+                if (privacy.locked) privacy.requestUnlock()
+                else setStep('edit')
               }}>
                 <Pencil aria-hidden="true" size={17} />
                 Edit expense
@@ -153,7 +156,7 @@ export function ExpenseRecordDialog({
               Delete expense?
             </DialogTitle>
             <DialogDescription className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-              This will remove {record.title} and {formatMoneyExact(record.amountSen)} from your records and dashboard totals.
+              This will remove {record.title} and its amount from your records and dashboard totals.
             </DialogDescription>
 
             <div className="mt-7 flex items-center gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5">

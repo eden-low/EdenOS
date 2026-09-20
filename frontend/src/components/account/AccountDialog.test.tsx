@@ -7,6 +7,8 @@ import { emptyUserSettings } from '../../domain/userSettings'
 import type { GuestDataSummary } from '../../types/account'
 
 vi.mock('../../state/useFirebaseAuth', () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock('./ThemeSettings', () => ({ ThemeSettings: () => null }))
+vi.mock('./PrivacyLockSettings', () => ({ PrivacyLockSettings: () => null }))
 
 const connectGoogle = vi.fn()
 const signOutGoogle = vi.fn()

@@ -1,10 +1,10 @@
 import { Gauge, WalletCards } from 'lucide-react'
-import { formatMoney } from '../../lib/format'
 import type { MonthlySpendingSummary } from '../../types/dashboard'
 import type { RecordDomainStatus } from '../../types/records'
 import { Button } from '../ui/button'
 import { useUserSettings } from '../../state/useUserSettings'
 import { MoneySettingsDialog } from './MoneySettingsDialog'
+import { FinancialAmount } from '../privacy/FinancialAmount'
 
 interface SpendingCardProps {
   spending: MonthlySpendingSummary
@@ -30,9 +30,7 @@ export function SpendingCard({ spending, status, error, onRetry }: SpendingCardP
       <div className="mt-7 sm:mt-8">
         {status === 'loaded' ? (
           <>
-            <p className="metric-value text-[clamp(2rem,5vw,3.2rem)] font-semibold leading-none">
-              {formatMoney(spending.spentSen)}
-            </p>
+            <FinancialAmount amountSen={spending.spentSen} className="metric-value text-[clamp(2rem,5vw,3.2rem)] font-semibold leading-none" />
             <p className="mt-2 text-sm text-[var(--text-secondary)]">spent this month</p>
           </>
         ) : status === 'loading' ? (
@@ -56,10 +54,10 @@ export function SpendingCard({ spending, status, error, onRetry }: SpendingCardP
       <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
         <div className="flex min-w-0 items-center gap-3">
           <Gauge aria-hidden="true" size={17} className="shrink-0 text-[var(--text-muted)]" />
-          <p className="min-w-0 break-all text-sm font-semibold text-[var(--text-primary)]">
+          <div className="min-w-0 break-all text-sm font-semibold text-[var(--text-primary)]">
             {settingsStatus === 'loading' ? 'Loading budget…' : settingsStatus === 'error' ? 'Budget unavailable' :
-              settings.monthlyBudgetSen === null ? 'Budget not configured' : `Monthly budget ${formatMoney(settings.monthlyBudgetSen)}`}
-          </p>
+              settings.monthlyBudgetSen === null ? 'Budget not configured' : <FinancialAmount amountSen={settings.monthlyBudgetSen} prefix="Monthly budget " />}
+          </div>
         </div>
         {settingsStatus === 'loaded' && <MoneySettingsDialog kind="budget" />}
       </div>
@@ -82,9 +80,7 @@ export function DailySpendingCards({
         </div>
         {status === 'loaded' ? (
           <>
-            <p className="metric-value mt-6 text-2xl font-semibold sm:text-3xl">
-              {formatMoney(spending.spentTodaySen)}
-            </p>
+            <FinancialAmount amountSen={spending.spentTodaySen} className="metric-value mt-6 text-2xl font-semibold sm:text-3xl" />
             <p className="mt-1 text-sm text-[var(--text-secondary)]">spent</p>
           </>
         ) : (
@@ -104,9 +100,9 @@ export function DailySpendingCards({
           <p className="section-label">Monthly remaining</p>
           <span className="size-2 rounded-full bg-[var(--text-muted)]" aria-hidden="true" />
         </div>
-        <p className="metric-value mt-6 break-all text-[clamp(1rem,5vw,1.5rem)] font-semibold sm:text-3xl">
-          {status === 'loaded' && settingsStatus === 'loaded' && remainingSen !== null ? formatMoney(remainingSen) : '—'}
-        </p>
+        <div className="metric-value mt-6 break-all text-[clamp(1rem,5vw,1.5rem)] font-semibold sm:text-3xl">
+          {status === 'loaded' && settingsStatus === 'loaded' && remainingSen !== null ? <FinancialAmount amountSen={remainingSen} /> : '—'}
+        </div>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
           {settingsStatus === 'loading' ? 'Loading budget' : settingsStatus === 'error' ? 'Budget unavailable' :
             remainingSen === null ? 'Budget not configured' : status !== 'loaded' ? 'Spending unavailable' :

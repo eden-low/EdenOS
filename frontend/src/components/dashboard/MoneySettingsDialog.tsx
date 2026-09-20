@@ -4,6 +4,7 @@ import { useUserSettings } from '../../state/useUserSettings'
 import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { InlineError } from '../ui/InlineError'
+import { usePrivacyLock } from '../../privacy/usePrivacyLock'
 
 function amountInput(amountSen: number | null) {
   if (amountSen === null) return ''
@@ -12,6 +13,7 @@ function amountInput(amountSen: number | null) {
 
 export function MoneySettingsDialog({ kind }: { kind: 'budget' | 'savings' }) {
   const { settings, status, saveMonthlyBudget, saveSavingsGoal } = useUserSettings()
+  const privacy = usePrivacyLock()
   const isBudget = kind === 'budget'
   const label = isBudget ? 'Budget' : 'Savings Goal'
   const amountSen = isBudget ? settings.monthlyBudgetSen : settings.savingsGoalSen
@@ -22,6 +24,10 @@ export function MoneySettingsDialog({ kind }: { kind: 'budget' | 'savings' }) {
 
   function handleOpen(nextOpen: boolean) {
     if (saving) return
+    if (nextOpen && privacy.locked) {
+      privacy.requestUnlock()
+      return
+    }
     setOpen(nextOpen)
     if (nextOpen) setInput(amountInput(amountSen))
     setError(null)

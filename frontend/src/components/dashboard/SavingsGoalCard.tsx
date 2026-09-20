@@ -1,7 +1,7 @@
 import { Target } from 'lucide-react'
-import { formatMoney } from '../../lib/format'
 import { useUserSettings } from '../../state/useUserSettings'
 import { MoneySettingsDialog } from './MoneySettingsDialog'
+import { FinancialAmount } from '../privacy/FinancialAmount'
 
 export function SavingsGoalCard() {
   const { settings, status } = useUserSettings()
@@ -20,9 +20,9 @@ export function SavingsGoalCard() {
             </p>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3 sm:mt-0">
-            <p className="break-all text-sm font-semibold text-[var(--text-primary)]">
-              {status === 'loaded' && settings.savingsGoalSen !== null ? formatMoney(settings.savingsGoalSen) : status === 'loaded' ? 'Not configured' : '—'}
-            </p>
+            <div className="break-all text-sm font-semibold text-[var(--text-primary)]">
+              {status === 'loaded' && settings.savingsGoalSen !== null ? <FinancialAmount amountSen={settings.savingsGoalSen} /> : status === 'loaded' ? 'Not configured' : '—'}
+            </div>
             {status === 'loaded' && <MoneySettingsDialog kind="savings" />}
           </div>
         </div>

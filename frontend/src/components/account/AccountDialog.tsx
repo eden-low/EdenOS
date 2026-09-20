@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } 
 import { InlineError } from '../ui/InlineError'
 import { triggerPressFeedback } from '../ui/pressFeedback'
 import { BodyWeightSettings } from './BodyWeightSettings'
+import { ThemeSettings } from './ThemeSettings'
+import { PrivacyLockSettings } from './PrivacyLockSettings'
 
 export function AccountDialog({ children }: { children: ReactNode }) {
   const { isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle } = useFirebaseAuth()
@@ -114,6 +116,8 @@ export function AccountDialog({ children }: { children: ReactNode }) {
         </div>
 
         <BodyWeightSettings />
+        <ThemeSettings />
+        <PrivacyLockSettings />
 
         {isConflict ? (
           <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-[var(--border-strong)] bg-[var(--accent-teal-wash)] p-4 text-sm leading-6">
