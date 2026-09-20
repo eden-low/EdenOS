@@ -171,6 +171,54 @@ button:not(:disabled) {
   border-color: var(--danger);
 }
 
+.search-field {
+  position: relative;
+}
+
+.search-field-icon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.form-control.search-field-control {
+  box-sizing: border-box;
+  height: 3rem;
+  min-height: 3rem;
+  padding: 0.75rem 3rem;
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.search-field-clear {
+  position: absolute;
+  right: 0.25rem;
+  top: 0.25rem;
+  z-index: 1;
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 0.75rem;
+  color: var(--text-muted);
+  outline: none;
+}
+
+.search-field-clear:hover {
+  background: var(--surface-hover);
+}
+
+.search-field-clear:focus-visible {
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
 .expense-amount-control {
   padding-left: 3.5rem;
 }

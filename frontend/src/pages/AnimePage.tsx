@@ -1,4 +1,3 @@
-import { Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimeCard } from '../components/anime/AnimeCard'
 import { AnimeFilters } from '../components/anime/AnimeFilters'
@@ -6,6 +5,7 @@ import { AnimePlayerDialog, type AnimePlayerTarget } from '../components/anime/A
 import { AnimeTrackingPanel } from '../components/anime/AnimeTrackingPanel'
 import { RecentlyWatching } from '../components/anime/RecentlyWatching'
 import { Button } from '../components/ui/button'
+import { SearchField } from '../components/ui/SearchField'
 import { animePageSize, animeSearchDebounceMs } from '../domain/anime'
 import { createFirestoreAnimeRepository } from '../repositories/firestoreAnimeRepository'
 import { useFirebaseAuth } from '../state/useFirebaseAuth'
@@ -78,10 +78,8 @@ export function AnimePage() {
     <RecentlyWatching onOpen={setSelected} />
     <section className="mt-8" aria-labelledby="anime-catalogue-heading">
       <h2 id="anime-catalogue-heading" className="section-label">{t('catalogue')}</h2>
-      <form className="relative mt-3" onSubmit={(event) => { event.preventDefault(); if (searchTimer.current) clearTimeout(searchTimer.current); setSearch(queryInput.trim()) }}>
-        <Search aria-hidden="true" className="absolute left-4 top-3.5 text-[var(--text-muted)]" size={18} />
-        <input aria-label={t('search')} className="form-control pl-11 pr-12" placeholder={t('search')} value={queryInput} onChange={(event) => changeSearchInput(event.target.value)} />
-        {queryInput && <button type="button" aria-label={t('clearSearch')} onClick={clearSearch} className="absolute right-2 top-1.5 grid size-9 place-items-center rounded-lg text-[var(--text-muted)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"><X aria-hidden="true" size={17} /></button>}
+      <form className="mt-3" onSubmit={(event) => { event.preventDefault(); if (searchTimer.current) clearTimeout(searchTimer.current); setSearch(queryInput.trim()) }}>
+        <SearchField label={t('search')} placeholder={t('search')} value={queryInput} onChange={changeSearchInput} onClear={clearSearch} clearLabel={t('clearSearch')} />
       </form>
       <AnimeFilters value={filters} onChange={setFilters} />
       {status === 'loading' && items.length === 0 && <div aria-label="Loading Anime catalogue" className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">{Array.from({ length: 12 }, (_, index) => <div key={index} className="aspect-[2/3] animate-pulse rounded-2xl bg-[var(--surface-primary)]" />)}</div>}
