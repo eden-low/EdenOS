@@ -1,6 +1,5 @@
 import { createReceiptOcrHandler } from '../../server/receiptOcrHandler'
 import { createReceiptOcrRuntime } from '../../server/receiptOcrRuntime'
+import { createNetlifyLegacyHandler } from '../../server/netlifyLegacyAdapter'
 
-export const config = { nodeVersion: '24' }
-
-export default createReceiptOcrHandler(createReceiptOcrRuntime())
+export const handler = createNetlifyLegacyHandler(createReceiptOcrHandler(createReceiptOcrRuntime()))

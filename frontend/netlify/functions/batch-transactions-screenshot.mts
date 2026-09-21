@@ -1,6 +1,5 @@
 import { createBatchTransactionOcrRuntime } from '../../server/batchTransactionOcrRuntime'
 import { createReceiptOcrHandler } from '../../server/receiptOcrHandler'
+import { createNetlifyLegacyHandler } from '../../server/netlifyLegacyAdapter'
 
-export const config = { nodeVersion: '24' }
-
-export default createReceiptOcrHandler(createBatchTransactionOcrRuntime())
+export const handler = createNetlifyLegacyHandler(createReceiptOcrHandler(createBatchTransactionOcrRuntime()))
