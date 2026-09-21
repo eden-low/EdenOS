@@ -39,4 +39,27 @@ describe('Anime sync configuration', () => {
     })
     expect(() => parseSyncOptions(['--content-targets=japan:1', '--content-groups=east_asia_anime:1'])).toThrow('either')
   })
+
+  it('uses explicit operation budgets and controlled checkpoint options', () => {
+    expect(parseSyncOptions([
+      '--controlled',
+      '--max-titles=100',
+      '--max-firestore-writes=12000',
+      '--max-firestore-reads=30000',
+      '--operation-safety-margin=100',
+      '--checkpoint-id=canary-v1',
+      '--catalogue-stats',
+      '--verify-idempotency',
+    ], {})).toMatchObject({
+      controlled: true,
+      maxTitles: 100,
+      maxFirestoreWrites: 12_000,
+      maxFirestoreReads: 30_000,
+      operationSafetyMargin: 100,
+      checkpointId: 'canary-v1',
+      catalogueStats: true,
+      verifyIdempotency: true,
+    })
+    expect(() => parseSyncOptions(['--max-firestore-writes=100', '--operation-safety-margin=100'], {})).toThrow('smaller')
+  })
 })

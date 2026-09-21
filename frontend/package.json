@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "analyze:bundle": "tsx scripts/analyzeBundle.ts",
+    "anime:inspect-providers": "tsx scripts/inspectAnimeProviders.ts",
+    "anime:repair-policy-drift": "tsx scripts/repairAnimePolicyDrift.ts",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "generate:pwa-assets": "pwa-assets-generator",

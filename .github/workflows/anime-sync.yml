@@ -29,6 +29,46 @@ on:
         description: Probe up to three normalized media URLs per title
         type: boolean
         default: false
+      controlled:
+        description: Resume the budgeted approved-category expansion checkpoint
+        type: boolean
+        default: false
+      max_titles:
+        description: Secondary canonical candidate cap for this run
+        required: false
+        type: string
+        default: ""
+      max_firestore_writes:
+        description: Authoritative Firestore write ceiling
+        required: true
+        type: string
+        default: "12000"
+      max_firestore_reads:
+        description: Authoritative Firestore read ceiling
+        required: true
+        type: string
+        default: "30000"
+      checkpoint_id:
+        description: Durable controlled-sync checkpoint name
+        required: true
+        type: string
+        default: "controlled-v1"
+      catalogue_stats:
+        description: Measure catalogue count and representative document sizes
+        type: boolean
+        default: false
+      verify_idempotency:
+        description: Replay the exact raw batch and fail if it writes again
+        type: boolean
+        default: false
+      repair_policy_since:
+        description: Optional bounded ISO start time for policy-replay metadata repair
+        required: false
+        type: string
+      repair_policy_before:
+        description: Required exclusive ISO end time when repair_policy_since is set
+        required: false
+        type: string
   push:
     tags:
       - anime-sync-small-validation-20260919-v3
@@ -59,6 +99,15 @@ jobs:
       SYNC_CONTENT_GROUPS: ${{ inputs.content_groups }}
       SYNC_DRY_RUN: ${{ inputs.dry_run }}
       SYNC_PROBE_MEDIA: ${{ inputs.probe_media }}
+      SYNC_CONTROLLED: ${{ inputs.controlled }}
+      SYNC_MAX_TITLES: ${{ inputs.max_titles }}
+      SYNC_MAX_FIRESTORE_WRITES: ${{ inputs.max_firestore_writes }}
+      SYNC_MAX_FIRESTORE_READS: ${{ inputs.max_firestore_reads }}
+      SYNC_CHECKPOINT_ID: ${{ inputs.checkpoint_id }}
+      SYNC_CATALOGUE_STATS: ${{ inputs.catalogue_stats }}
+      SYNC_VERIFY_IDEMPOTENCY: ${{ inputs.verify_idempotency }}
+      REPAIR_POLICY_SINCE: ${{ inputs.repair_policy_since }}
+      REPAIR_POLICY_BEFORE: ${{ inputs.repair_policy_before }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -114,7 +163,7 @@ jobs:
           }
           NODE
       - name: Run bounded Anime sync
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' && inputs.repair_policy_since == ''
         shell: bash
         run: |
           args=("--mode=$SYNC_MODE" "--concurrency=3")
@@ -123,7 +172,15 @@ jobs:
           if [[ -n "$SYNC_CONTENT_GROUPS" ]]; then args+=("--content-groups=$SYNC_CONTENT_GROUPS"); fi
           if [[ "$SYNC_DRY_RUN" == "true" ]]; then args+=("--dry-run"); fi
           if [[ "$SYNC_PROBE_MEDIA" == "true" ]]; then args+=("--probe-media"); fi
+          if [[ "$SYNC_CONTROLLED" == "true" ]]; then args+=("--controlled"); fi
+          if [[ -n "$SYNC_MAX_TITLES" ]]; then args+=("--max-titles=$SYNC_MAX_TITLES"); fi
+          args+=("--max-firestore-writes=$SYNC_MAX_FIRESTORE_WRITES" "--max-firestore-reads=$SYNC_MAX_FIRESTORE_READS" "--checkpoint-id=$SYNC_CHECKPOINT_ID")
+          if [[ "$SYNC_CATALOGUE_STATS" == "true" ]]; then args+=("--catalogue-stats"); fi
+          if [[ "$SYNC_VERIFY_IDEMPOTENCY" == "true" ]]; then args+=("--verify-idempotency"); fi
           npm run sync:animes -- "${args[@]}"
+      - name: Repair bounded policy-replay metadata drift
+        if: github.event_name == 'workflow_dispatch' && inputs.repair_policy_since != ''
+        run: npm run anime:repair-policy-drift -- --since="$REPAIR_POLICY_SINCE" --before="$REPAIR_POLICY_BEFORE"
       - name: Validate small-sync configuration
         if: github.event_name == 'push'
         shell: bash

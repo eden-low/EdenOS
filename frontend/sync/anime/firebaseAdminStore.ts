@@ -2,7 +2,7 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { FieldValue, Timestamp, getFirestore, type Firestore } from 'firebase-admin/firestore'
 import { sourceMappingId } from './identity'
 import type { AnimeMediaType, AnimeRegion } from '../../src/types/anime'
-import type { CanonicalAnime, PreparedCanonicalWrite, SourceMapping, SyncState } from './types'
+import type { CanonicalAnime, CatalogueStorageMetrics, PreparedCanonicalWrite, SourceMapping, SyncCheckpoint, SyncState } from './types'
 
 export interface ExistingCatalogueRecord {
   externalId: string
@@ -27,6 +27,9 @@ export interface AnimeSyncStore {
   findProgressExternalIds(externalIds: string[]): Promise<string[]>
   deleteCatalogue(externalIds: string[]): Promise<void>
   deleteInternalMetadata(externalIds: string[], mappingDocumentIds: string[]): Promise<void>
+  getCheckpoint?(checkpointId: string): Promise<SyncCheckpoint | null>
+  saveCheckpoint?(checkpointId: string, checkpoint: SyncCheckpoint): Promise<void>
+  getCatalogueMetrics?(sampleSize?: number): Promise<CatalogueStorageMetrics>
 }
 
 function readServiceAccount(env: NodeJS.ProcessEnv): ServiceAccountConfig | null {
@@ -164,6 +167,43 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
         ...externalIds.map((externalId) => `animeSyncState/${externalId}`),
         ...mappingDocumentIds.map((documentId) => `animeSyncSourceMap/${documentId}`),
       ])
+    },
+    async getCheckpoint(checkpointId) {
+      const snapshot = await firestore.doc(`animeSyncControl/${checkpointId}`).get()
+      if (!snapshot.exists) return null
+      const data = snapshot.data()!
+      if (data.version !== 1 || !Number.isInteger(data.providerIndex) || !Number.isInteger(data.categoryIndex) || !Number.isInteger(data.page) || !Number.isInteger(data.offset)) return null
+      const updatedAtMs = data.updatedAt && typeof data.updatedAt.toMillis === 'function' ? data.updatedAt.toMillis() : 0
+      return {
+        version: 1,
+        providerIndex: data.providerIndex,
+        categoryIndex: data.categoryIndex,
+        page: data.page,
+        offset: data.offset,
+        updatedAtMs,
+        complete: data.complete === true,
+      }
+    },
+    async saveCheckpoint(checkpointId, checkpoint) {
+      await firestore.doc(`animeSyncControl/${checkpointId}`).set({
+        ...checkpoint,
+        updatedAt: Timestamp.fromMillis(checkpoint.updatedAtMs),
+      })
+    },
+    async getCatalogueMetrics(sampleSize = 100) {
+      const collection = firestore.collection('animes')
+      const [countSnapshot, sample] = await Promise.all([
+        collection.count().get(),
+        collection.limit(Math.max(1, Math.min(sampleSize, 500))).get(),
+      ])
+      const sizes = sample.docs.map((document) => Buffer.byteLength(JSON.stringify({ id: document.id, ...document.data() }), 'utf8'))
+      return {
+        count: countSnapshot.data().count,
+        sampleCount: sizes.length,
+        averageDocumentBytes: sizes.length ? Math.round(sizes.reduce((sum, size) => sum + size, 0) / sizes.length) : 0,
+        minimumDocumentBytes: sizes.length ? Math.min(...sizes) : 0,
+        maximumDocumentBytes: sizes.length ? Math.max(...sizes) : 0,
+      }
     },
   }
 }
