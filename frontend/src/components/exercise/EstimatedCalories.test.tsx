@@ -10,7 +10,7 @@ const save = vi.fn(async () => undefined)
 function renderWithWeight(weight: number | null) {
   return render(<UserSettingsContext.Provider value={{
     settings: { ...emptyUserSettings, bodyWeightKg: weight }, status: 'loaded',
-    saveBodyWeight: save, saveMonthlyBudget: save, saveSavingsGoal: save,
+    saveBodyWeight: save, saveHeight: save, saveMonthlyBudget: save, saveSavingsGoal: save,
   }}><EstimatedCalories exercise={exercise} /></UserSettingsContext.Provider>)
 }
 
@@ -21,7 +21,7 @@ describe('Estimated Calories display', () => {
     expect(screen.queryByText(/kcal/)).toBeNull()
     rerender(<UserSettingsContext.Provider value={{
       settings: { ...emptyUserSettings, bodyWeightKg: 70 }, status: 'loaded',
-      saveBodyWeight: save, saveMonthlyBudget: save, saveSavingsGoal: save,
+      saveBodyWeight: save, saveHeight: save, saveMonthlyBudget: save, saveSavingsGoal: save,
     }}><EstimatedCalories exercise={exercise} /></UserSettingsContext.Provider>)
     expect(screen.getByText('Estimated Calories · 202 kcal')).toBeTruthy()
     expect(exercise).not.toHaveProperty('estimatedCalories')

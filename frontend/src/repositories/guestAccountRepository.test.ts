@@ -34,6 +34,7 @@ describe('authoritative Guest data summary', () => {
       incomesCount: 0,
       exercisesCount: 0,
       hasBodyWeight: false,
+      hasHeight: false,
       hasBudget: false,
       hasSavingsGoal: false,
       animeProgressCount: 0,
@@ -55,6 +56,7 @@ describe('authoritative Guest data summary', () => {
     ['Income', 0, 2, 0, null, { incomesCount: 2 }],
     ['Exercise', 0, 0, 1, null, { exercisesCount: 1 }],
     ['body weight', 0, 0, 0, { bodyWeightKg: 70 }, { hasBodyWeight: true }],
+    ['height', 0, 0, 0, { heightCm: 175 }, { hasHeight: true }],
     ['Budget', 0, 0, 0, { monthlyBudgetSen: 10000 }, { hasBudget: true }],
     ['Savings Goal', 0, 0, 0, { savingsGoalSen: 50000 }, { hasSavingsGoal: true }],
   ])('protects a Guest with %s', async (_name, expenses, incomes, exercises, settings, expected) => {
@@ -69,6 +71,7 @@ describe('authoritative Guest data summary', () => {
       incomesCount: 1,
       exercisesCount: 3,
       hasBodyWeight: true,
+      hasHeight: false,
       hasBudget: true,
       hasSavingsGoal: true,
       hasBlockingData: true,
@@ -85,7 +88,7 @@ describe('authoritative Guest data summary', () => {
   })
 
   it('ignores empty known preference placeholders but protects unknown saved data', async () => {
-    state(0, 0, 0, { updatedAt: {}, bodyWeightKg: null, monthlyBudgetSen: null, savingsGoalSen: null })
+    state(0, 0, 0, { updatedAt: {}, bodyWeightKg: null, heightCm: null, monthlyBudgetSen: null, savingsGoalSen: null })
     expect((await getGuestDataSummary(db, 'guest-uid')).hasBlockingData).toBe(false)
     vi.clearAllMocks()
     state(0, 0, 0, { futureDurableSetting: true })

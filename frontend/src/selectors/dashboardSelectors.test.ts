@@ -75,6 +75,8 @@ describe('Today summary', () => {
 
     expect(summary.exercise).toEqual({
       completedSessions: 3,
+      durationSeconds: 5400,
+      distanceMetres: 2400,
       latestActivity: { name: 'Sunday', distanceMetres: undefined, durationSeconds: 1800 },
     })
   })
@@ -84,6 +86,6 @@ describe('Today summary', () => {
       exercise('last-week', occurredAt(2026, 9, 10)),
     ], referenceDate)
 
-    expect(summary.exercise).toEqual({ completedSessions: 0, latestActivity: null })
+    expect(summary.exercise).toEqual({ completedSessions: 0, durationSeconds: 0, distanceMetres: 0, latestActivity: null })
   })
 })

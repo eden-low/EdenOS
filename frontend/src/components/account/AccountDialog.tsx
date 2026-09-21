@@ -26,6 +26,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
     ...(summary.incomesCount > 0 ? [`${summary.incomesCount} ${summary.incomesCount === 1 ? 'Income record' : 'Income records'}`] : []),
     ...(summary.exercisesCount > 0 ? [`${summary.exercisesCount} ${summary.exercisesCount === 1 ? 'Exercise' : 'Exercises'}`] : []),
     ...(summary.hasBodyWeight ? ['Body weight configured'] : []),
+    ...(summary.hasHeight ? ['Height configured'] : []),
     ...(summary.hasBudget ? ['Budget configured'] : []),
     ...(summary.hasSavingsGoal ? ['Savings Goal configured'] : []),
     ...(summary.otherBlockingData.length > 0 ? ['Other saved account data'] : []),

@@ -11,6 +11,7 @@ export interface ExerciseDashboardSummary {
   reportedCaloriesKcal: number
   estimatedCaloriesKcal: number
   activities: Array<{ activity: string; durationSeconds: number; percentage: number }>
+  dailyActivity: Array<{ day: string; durationSeconds: number; sessions: number }>
   recent: ExerciseRecord[]
 }
 
@@ -23,10 +24,20 @@ export function selectExerciseDashboard(records: ExerciseRecord[], bodyWeightKg:
   const durationSeconds = current.reduce((total, item) => total + item.durationSeconds, 0)
   const previousDurationSeconds = previous.reduce((total, item) => total + item.durationSeconds, 0)
   const grouped = new Map<string, number>()
+  const dailyActivity = Array.from({ length: 7 }, (_, index) => ({
+    day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index],
+    durationSeconds: 0,
+    sessions: 0,
+  }))
   let reportedCaloriesKcal = 0
   let estimatedCaloriesKcal = 0
   for (const item of current) {
     grouped.set(item.activity, (grouped.get(item.activity) ?? 0) + item.durationSeconds)
+    const dayIndex = (new Date(item.occurredAt).getDay() + 6) % 7
+    if (dayIndex >= 0 && dayIndex < dailyActivity.length) {
+      dailyActivity[dayIndex].durationSeconds += item.durationSeconds
+      dailyActivity[dayIndex].sessions += 1
+    }
     const reported = item.reportedActiveCaloriesKcal ?? item.reportedTotalCaloriesKcal
     if (reported !== undefined) reportedCaloriesKcal += reported
     else {
@@ -43,6 +54,7 @@ export function selectExerciseDashboard(records: ExerciseRecord[], bodyWeightKg:
     reportedCaloriesKcal,
     estimatedCaloriesKcal,
     activities: [...grouped.entries()].map(([activity, duration]) => ({ activity, durationSeconds: duration, percentage: durationSeconds > 0 ? duration / durationSeconds * 100 : 0 })).sort((a, b) => b.durationSeconds - a.durationSeconds),
+    dailyActivity,
     recent: [...records].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt)).slice(0, 5),
   }
 }

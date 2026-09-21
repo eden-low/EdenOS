@@ -1,9 +1,9 @@
 import { collection, doc, getCountFromServer, getDocFromServer, query, type Firestore } from 'firebase/firestore'
-import { isValidBodyWeightKg, isValidSettingsAmountSen } from '../domain/userSettings'
+import { isValidBodyWeightKg, isValidHeightCm, isValidSettingsAmountSen } from '../domain/userSettings'
 import type { GuestDataSummary } from '../types/account'
 
 const knownPreferenceFields = new Set([
-  'bodyWeightKg', 'monthlyBudgetSen', 'savingsGoalSen', 'updatedAt',
+  'bodyWeightKg', 'heightCm', 'monthlyBudgetSen', 'savingsGoalSen', 'updatedAt',
 ])
 
 function count(snapshot: Awaited<ReturnType<typeof getCountFromServer>>): number {
@@ -33,13 +33,14 @@ export async function getGuestDataSummary(
   const exercisesCount = count(exercises)
   const animeCloudProgressCount = count(animeProgress)
   const hasBodyWeight = isValidBodyWeightKg(data.bodyWeightKg)
+  const hasHeight = isValidHeightCm(data.heightCm)
   const hasBudget = isValidSettingsAmountSen(data.monthlyBudgetSen)
   const hasSavingsGoal = isValidSettingsAmountSen(data.savingsGoalSen)
   const otherBlockingData = Object.entries(data)
     .filter(([key, value]) => !knownPreferenceFields.has(key) && value !== null && value !== undefined)
     .map(([key]) => key)
     .sort()
-  const hasBlockingData = expensesCount > 0 || incomesCount > 0 || exercisesCount > 0 || hasBodyWeight || hasBudget ||
+  const hasBlockingData = expensesCount > 0 || incomesCount > 0 || exercisesCount > 0 || hasBodyWeight || hasHeight || hasBudget ||
     hasSavingsGoal || otherBlockingData.length > 0
 
   return {
@@ -47,6 +48,7 @@ export async function getGuestDataSummary(
     incomesCount,
     exercisesCount,
     hasBodyWeight,
+    hasHeight,
     hasBudget,
     hasSavingsGoal,
     animeProgressCount: Math.max(localAnimeProgressCount, animeCloudProgressCount),

@@ -5,6 +5,7 @@ import { ExerciseCard } from '../components/dashboard/ExerciseCard'
 import { RecentActivity } from '../components/dashboard/RecentActivity'
 import { SavingsGoalCard } from '../components/dashboard/SavingsGoalCard'
 import { SpendingCard } from '../components/dashboard/SpendingCard'
+import { CalendarCard } from '../components/dashboard/CalendarCard'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { selectDashboardSummary } from '../selectors/dashboardSelectors'
 import { useRecords } from '../state/useRecords'
@@ -82,6 +83,7 @@ export function TodayPage() {
           onRetry={retryExerciseSubscription}
         />
         <SavingsGoalCard />
+        <CalendarCard referenceDate={referenceDate} />
       </div>
     </div>
   )

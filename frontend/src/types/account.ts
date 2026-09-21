@@ -3,6 +3,7 @@ export interface GuestDataSummary {
   incomesCount: number
   exercisesCount: number
   hasBodyWeight: boolean
+  hasHeight: boolean
   hasBudget: boolean
   hasSavingsGoal: boolean
   animeProgressCount: number

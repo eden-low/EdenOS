@@ -17,5 +17,6 @@ describe('exercise dashboard selector', () => {
     expect(result.estimatedCaloriesKcal).toBeGreaterThan(0)
     expect(result.activities[0]).toMatchObject({ activity: 'Badminton', durationSeconds: 3600 })
     expect(result.durationComparisonPercent).toBe(200)
+    expect(result.dailyActivity.map((day) => day.sessions).reduce((sum, value) => sum + value, 0)).toBe(2)
   })
 })

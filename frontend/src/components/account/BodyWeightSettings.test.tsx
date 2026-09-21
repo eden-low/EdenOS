@@ -10,6 +10,7 @@ function Harness({ fail = false }: { fail?: boolean }) {
   return <UserSettingsContext.Provider value={{
     settings: { ...emptyUserSettings, bodyWeightKg: weight }, status: 'loaded',
     saveBodyWeight: async (value) => { if (fail) throw new Error('write failed'); setWeight(value) },
+    saveHeight: async () => undefined,
     saveMonthlyBudget: vi.fn(async () => undefined), saveSavingsGoal: vi.fn(async () => undefined),
   }}>
     <BodyWeightSettings />

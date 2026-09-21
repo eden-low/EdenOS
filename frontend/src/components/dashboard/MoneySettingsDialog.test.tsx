@@ -18,7 +18,7 @@ function Harness({ initial = emptyUserSettings, fail = false }: { initial?: User
     setSettings((current) => ({ ...current, savingsGoalSen: amountSen }))
   })
   return <UserSettingsContext.Provider value={{
-    settings, status: 'loaded', saveBodyWeight: vi.fn(async () => undefined), saveMonthlyBudget, saveSavingsGoal,
+    settings, status: 'loaded', saveBodyWeight: vi.fn(async () => undefined), saveHeight: vi.fn(async () => undefined), saveMonthlyBudget, saveSavingsGoal,
   }}>
     <SpendingCard spending={{ month: 'September', spentSen: 12345, spentTodaySen: 0 }} finance={{ incomeSen: 0, expenseSen: 12345, netCashflowSen: -12345 }} status="loaded" incomeStatus="loaded" error={null} incomeError={null} onRetry={vi.fn()} onRetryIncome={vi.fn()} />
     <SavingsGoalCard />
@@ -31,7 +31,7 @@ describe('Budget and Savings Goal configuration', () => {
     let finish: (() => void) | undefined
     const write = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
     render(<UserSettingsContext.Provider value={{
-      settings: emptyUserSettings, status: 'loaded', saveBodyWeight: vi.fn(async () => undefined),
+      settings: emptyUserSettings, status: 'loaded', saveBodyWeight: vi.fn(async () => undefined), saveHeight: vi.fn(async () => undefined),
       saveMonthlyBudget: write, saveSavingsGoal: vi.fn(async () => undefined),
     }}><MoneySettingsDialog kind="budget" /></UserSettingsContext.Provider>)
     fireEvent.click(screen.getByRole('button', { name: 'Configure Budget' }))

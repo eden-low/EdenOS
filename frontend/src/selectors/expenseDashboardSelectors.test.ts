@@ -8,7 +8,7 @@ describe('expense dashboard selector', () => {
   it('calculates current month, comparison, budget, categories, and recent records', () => {
     const result = selectExpenseDashboard([
       expense('current-a', 3000, '2026-09-18T08:00:00.000Z'), expense('current-b', 2000, '2026-09-17T08:00:00.000Z', 'transport'), expense('previous', 4000, '2026-08-17T08:00:00.000Z'),
-    ], { bodyWeightKg: null, monthlyBudgetSen: 10_000, savingsGoalSen: 50_000 }, new Date(2026, 8, 20, 12))
+    ], { bodyWeightKg: null, heightCm: null, monthlyBudgetSen: 10_000, savingsGoalSen: 50_000 }, new Date(2026, 8, 20, 12))
     expect(result.monthSpentSen).toBe(5000)
     expect(result.previousMonthSpentSen).toBe(4000)
     expect(result.monthComparisonPercent).toBe(25)
@@ -18,6 +18,6 @@ describe('expense dashboard selector', () => {
   })
 
   it('omits a fabricated comparison when no previous month data exists', () => {
-    expect(selectExpenseDashboard([], { bodyWeightKg: null, monthlyBudgetSen: null, savingsGoalSen: null }, new Date(2026, 8, 20)).monthComparisonPercent).toBeNull()
+    expect(selectExpenseDashboard([], { bodyWeightKg: null, heightCm: null, monthlyBudgetSen: null, savingsGoalSen: null }, new Date(2026, 8, 20)).monthComparisonPercent).toBeNull()
   })
 })
