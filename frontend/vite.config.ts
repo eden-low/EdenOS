@@ -47,6 +47,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{html,js,css}'],
+        // HLS playback already requires an online media source. Keep its large,
+        // dynamically imported runtime out of the app-shell precache.
+        globIgnores: ['assets/hls-*.js'],
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         clientsClaim: false,
