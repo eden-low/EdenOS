@@ -6,7 +6,7 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  external_node_modules = ["@google/genai"]
+  external_node_modules = ["firebase-admin", "@google/genai"]
 
 [[headers]]
   for = "/sw.js"
