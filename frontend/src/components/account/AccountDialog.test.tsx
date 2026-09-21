@@ -54,6 +54,8 @@ describe('Account dialog presentation', () => {
     expect(dialog.className).toContain('account-dialog')
     expect(dialog.textContent).toContain('Current status')
     expect(dialog.textContent).toContain('Guest')
+    expect(dialog.textContent).not.toContain('Body weight')
+    expect(screen.queryByRole('button', { name: /body weight/i })).toBeNull()
     expect(screen.getByRole('button', { name: 'Connect Google account' })).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))

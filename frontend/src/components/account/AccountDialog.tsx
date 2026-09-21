@@ -7,7 +7,6 @@ import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { InlineError } from '../ui/InlineError'
 import { triggerPressFeedback } from '../ui/pressFeedback'
-import { BodyWeightSettings } from './BodyWeightSettings'
 import { ThemeSettings } from './ThemeSettings'
 import { PrivacyLockSettings } from './PrivacyLockSettings'
 
@@ -117,7 +116,6 @@ export function AccountDialog({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <BodyWeightSettings />
         <ThemeSettings />
         <PrivacyLockSettings />
 
