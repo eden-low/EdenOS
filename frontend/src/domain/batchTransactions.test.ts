@@ -33,6 +33,14 @@ describe('Batch transaction parsing', () => {
     expect(candidateIssues(conflict).join(' ')).toMatch(/Choose Income or Expense/)
   })
 
+  it('uses an explicit direction for unsigned amounts', () => {
+    const result = parseBatchTransactions('expense Lunch 18.50\nincome Salary 5000', today)
+    expect(result.candidates).toEqual([
+      expect.objectContaining({ direction: 'expense', amountSen: 1850, description: 'Lunch' }),
+      expect.objectContaining({ direction: 'income', amountSen: 500000, description: 'Salary' }),
+    ])
+  })
+
   it('detects obvious duplicates without removing them', () => {
     const result = parseBatchTransactions('2026-09-02 Lunch -18.50\n2026-09-02  lunch  -18.50', today)
     expect(result.candidates).toHaveLength(2)

@@ -121,7 +121,8 @@ function parseTextLine(line: string) {
 function parseLine(line: string, sourceLine: number, today: string): BatchTransactionCandidate {
   const parsed = line.includes(',') || line.includes('\t') ? parseDelimitedLine(line) : parseTextLine(line)
   const money = parseSignedRinggit(parsed.rawAmount)
-  const conflict = Boolean(parsed.labelledDirection && money && parsed.labelledDirection !== money.direction)
+  const hasExplicitAmountSign = /^[+-]/.test(parsed.rawAmount.trim())
+  const conflict = Boolean(parsed.labelledDirection && money && hasExplicitAmountSign && parsed.labelledDirection !== money.direction)
   const direction = conflict ? null : (parsed.labelledDirection ?? money?.direction ?? null)
   const dateIsPresent = parsed.rawDate !== null
   const date = dateIsPresent ? (validDateKey(parsed.rawDate!) ? parsed.rawDate! : '') : today
