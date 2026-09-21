@@ -399,7 +399,7 @@ describe('Exercise text capture', () => {
     expect(select.value).toBe('moderate')
     fireEvent.change(select, { target: { value: 'vigorous' } })
     expect(screen.getByTestId('draft-intensity').textContent).toBe('vigorous')
-    expect(screen.getByText(/Add body weight in Account/)).toBeTruthy()
+    expect(screen.getByText(/Add weight in Exercise Body Metrics/)).toBeTruthy()
   })
 
   it('reviews a compact hour-minute duration without an automatic write', () => {
