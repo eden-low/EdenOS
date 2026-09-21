@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "analyze:bundle": "tsx scripts/analyzeBundle.ts",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "generate:pwa-assets": "pwa-assets-generator",
@@ -21,7 +22,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.19.0",
-    "firebase-admin": "13.10.0",
+    "firebase-admin": "14.4.0",
     "hls.js": "^1.7.3",
     "lucide-react": "^1.43.0",
     "react": "^19.2.8",
