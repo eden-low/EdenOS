@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { BatchTransactionCandidate } from '../domain/batchTransactions'
+import { combineLocalDateTime } from '../lib/date'
 import { confirmBatchTransactions } from './batchTransactionImport'
 
 function candidate(overrides: Partial<BatchTransactionCandidate> = {}): BatchTransactionCandidate {
@@ -49,5 +50,18 @@ describe('confirmBatchTransactions', () => {
     const results = await confirmBatchTransactions([candidate({ amountSen: null, amountInput: 'bad' })], { createExpense, createIncome: vi.fn() })
     expect(createExpense).not.toHaveBeenCalled()
     expect(results[0]).toEqual(expect.objectContaining({ status: 'failed' }))
+  })
+
+  it('settles Ignore / Transfer rows without any repository write', async () => {
+    const createExpense = vi.fn()
+    const createIncome = vi.fn()
+    const results = await confirmBatchTransactions([
+      candidate({ direction: 'ignore', description: 'GO+ Quick Cash In', amountSen: null, amountInput: '', date: '' }),
+      candidate({ tempId: 'batch-2', time: '08:35' }),
+    ], { createExpense, createIncome })
+    expect(results[0]).toEqual({ tempId: 'batch-1', status: 'ignored' })
+    expect(createIncome).not.toHaveBeenCalled()
+    expect(createExpense).toHaveBeenCalledOnce()
+    expect(createExpense).toHaveBeenCalledWith(expect.objectContaining({ occurredAt: combineLocalDateTime('2026-09-02', '08:35') }))
   })
 })

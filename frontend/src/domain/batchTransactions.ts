@@ -6,12 +6,13 @@ import type { ExpenseCategory, IncomeCategory } from '../types/records'
 export const MAX_BATCH_TRANSACTIONS = 100
 
 export type BatchTransactionDirection = 'income' | 'expense'
+export type BatchTransactionDisposition = BatchTransactionDirection | 'ignore'
 export type BatchTransactionCategory = ExpenseCategory | IncomeCategory
 
 export interface BatchTransactionCandidate {
   tempId: string
   sourceLine: number
-  direction: BatchTransactionDirection | null
+  direction: BatchTransactionDisposition | null
   amountSen: number | null
   amountInput: string
   date: string
@@ -20,6 +21,12 @@ export interface BatchTransactionCandidate {
   note: string
   dateDefaulted: boolean
   duplicate: boolean
+  time?: string | null
+  dateInferred?: boolean
+  extracted?: boolean
+  needsReview?: boolean
+  sourceText?: string
+  extractionIssues?: string[]
 }
 
 export interface BatchParseResult {
@@ -51,7 +58,7 @@ function normalizeDescription(value: string): string {
   return value.trim().replace(/\s+/g, ' ')
 }
 
-function suggestedCategory(direction: BatchTransactionDirection, description: string): BatchTransactionCategory {
+export function suggestedCategory(direction: BatchTransactionDirection, description: string): BatchTransactionCategory {
   const value = description.toLowerCase()
   if (direction === 'income') {
     if (/salary|payroll|wage/.test(value)) return 'salary'
@@ -143,7 +150,8 @@ function parseLine(line: string, sourceLine: number, today: string): BatchTransa
 
 function duplicateKey(candidate: BatchTransactionCandidate): string | null {
   if (!candidate.direction || candidate.amountSen === null || !validDateKey(candidate.date) || !candidate.description.trim()) return null
-  return [candidate.date, candidate.direction, candidate.amountSen, normalizeDescription(candidate.description).toLowerCase()].join('|')
+  return [candidate.date, candidate.time ?? '', candidate.direction, candidate.amountSen,
+    normalizeDescription(candidate.description).toLowerCase()].join('|')
 }
 
 export function markBatchDuplicates(candidates: BatchTransactionCandidate[]): BatchTransactionCandidate[] {
@@ -160,7 +168,8 @@ export function markBatchDuplicates(candidates: BatchTransactionCandidate[]): Ba
 
 export function candidateIssues(candidate: BatchTransactionCandidate): string[] {
   const issues: string[] = []
-  if (!candidate.direction) issues.push('Choose Income or Expense.')
+  if (candidate.direction === 'ignore') return issues
+  if (!candidate.direction) issues.push('Choose Income, Expense, or Ignore / Transfer.')
   if (candidate.amountSen === null) issues.push('Enter a valid amount greater than RM 0 with no more than 2 decimal places.')
   if (!validDateKey(candidate.date)) issues.push('Choose a valid date.')
   if (!candidate.description.trim()) issues.push('Add a description or source.')
@@ -185,7 +194,8 @@ export function parseBatchTransactions(input: string, today = toLocalDateInput(n
   return { candidates, inputRowCount: rows.length, error: null }
 }
 
-export function updateCandidateDirection(candidate: BatchTransactionCandidate, direction: BatchTransactionDirection): BatchTransactionCandidate {
+export function updateCandidateDirection(candidate: BatchTransactionCandidate, direction: BatchTransactionDisposition): BatchTransactionCandidate {
+  if (direction === 'ignore') return { ...candidate, direction }
   const category = direction === 'expense' && isExpenseCategory(candidate.category)
     ? candidate.category
     : direction === 'income' && isIncomeCategory(candidate.category)

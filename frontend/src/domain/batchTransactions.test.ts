@@ -30,7 +30,7 @@ describe('Batch transaction parsing', () => {
     const conflict = parseBatchTransactions('expense Lunch +18.50', today).candidates[0]
     expect(candidateIssues(malformed).join(' ')).toMatch(/valid amount/)
     expect(conflict.direction).toBeNull()
-    expect(candidateIssues(conflict).join(' ')).toMatch(/Choose Income or Expense/)
+    expect(candidateIssues(conflict).join(' ')).toMatch(/Choose Income, Expense, or Ignore/)
   })
 
   it('uses an explicit direction for unsigned amounts', () => {

@@ -2,7 +2,7 @@ import { candidateIssues, type BatchTransactionCandidate } from '../domain/batch
 import { combineLocalDateTime } from '../lib/date'
 import type { ExpenseCategory, ExpenseData, IncomeCategory, IncomeData } from '../types/records'
 
-export type BatchWriteStatus = 'success' | 'failed'
+export type BatchWriteStatus = 'success' | 'ignored' | 'failed'
 
 export interface BatchWriteResult {
   tempId: string
@@ -20,7 +20,7 @@ function safeMessage(error: unknown): string {
 }
 
 function occurredAt(candidate: BatchTransactionCandidate): string {
-  const value = combineLocalDateTime(candidate.date, '12:00')
+  const value = combineLocalDateTime(candidate.date, candidate.time ?? '12:00')
   if (!value) throw new Error('Choose a valid date before confirming.')
   return value
 }
@@ -33,6 +33,10 @@ export async function confirmBatchTransactions(
   const results: BatchWriteResult[] = []
   for (const candidate of candidates) {
     if (alreadySuccessful.has(candidate.tempId)) continue
+    if (candidate.direction === 'ignore') {
+      results.push({ tempId: candidate.tempId, status: 'ignored' })
+      continue
+    }
     const issues = candidateIssues(candidate)
     if (issues.length > 0 || candidate.amountSen === null || candidate.direction === null) {
       results.push({ tempId: candidate.tempId, status: 'failed', message: issues[0] ?? 'Resolve this row before confirming.' })
