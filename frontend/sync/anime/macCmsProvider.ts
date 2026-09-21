@@ -116,6 +116,9 @@ export function createMacCmsProvider(config: AnimeProviderConfig, overrides: Par
           hasDetail: detail !== null,
           hasPlayback: Boolean(detail?.item.vod_play_url),
           incrementalSupported: false,
+          catalogueTotal: page.total,
+          pageCount: page.pageCount,
+          pageSize: page.limit,
           message: 'Standard MacCMS list/detail API detected; no verified incremental parameter.',
         }
       } catch (error) {

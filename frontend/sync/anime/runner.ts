@@ -7,6 +7,8 @@ import { normalizeProviderAnime } from './normalize'
 import { probeMediaUrl } from './mediaProbe'
 import { classifyAnimeContent, discoverAnimeCategoryPolicies, type AnimeCategoryPolicy, type AnimeImportRegion } from './contentPolicy'
 import { AnimeRawCache, readCachedDetails, readFailureFile, type RawRunManifest } from './rawCache'
+import { fetchControlledCandidates } from './controlled'
+import { defaultMaxFirestoreReads, defaultMaxFirestoreWrites, defaultOperationSafetyMargin } from './config'
 import type { AnimeDetailStore } from './r2Store'
 import type { AnimeSyncStore } from './firebaseAdminStore'
 import type {
@@ -19,8 +21,11 @@ import type {
   ProviderAnimeRecord,
   SourceMapping,
   SyncFailure,
+  SyncCheckpoint,
+  SyncOperationCounts,
   SyncOptions,
   SyncSummary,
+  SyncStopReason,
 } from './types'
 import type { AnimeMediaType, AnimeRegion } from '../../src/types/anime'
 
@@ -55,8 +60,30 @@ function chunks<T>(items: T[], size: number): T[][] {
   return result
 }
 
+function emptyOperations(): SyncOperationCounts {
+  return {
+    firestoreReads: 0,
+    firestoreWrites: 0,
+    firestoreDeletes: 0,
+    sourceMapReads: 0,
+    sourceMapWrites: 0,
+    syncStateReads: 0,
+    syncStateWrites: 0,
+    checkpointReads: 0,
+    checkpointWrites: 0,
+    r2Reads: 0,
+    r2Writes: 0,
+    r2Deletes: 0,
+    r2UnchangedSkipped: 0,
+  }
+}
+
+function initialCheckpoint(now: number): SyncCheckpoint {
+  return { version: 1, providerIndex: 0, categoryIndex: 0, page: 1, offset: 0, updatedAtMs: now, complete: false }
+}
+
 function usesContentPolicy(options: SyncOptions): boolean {
-  return Boolean(options.contentTargets || options.contentGroupTargets)
+  return Boolean(options.applyContentPolicy || options.contentTargets || options.contentGroupTargets)
 }
 
 function targetForPolicy(options: SyncOptions, policy: AnimeCategoryPolicy): number {
@@ -245,6 +272,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   const id = runId(started)
   const log = dependencies.log ?? (() => undefined)
   const failures: SyncFailure[] = []
+  const operations = emptyOperations()
   const cache = new AnimeRawCache(dependencies.cacheRoot, id)
   const providers = selectedProviders(dependencies.providers, options.providerIds)
   if (!providers.length) throw new Error('No Anime sync providers are configured for this run')
@@ -253,7 +281,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     : await Promise.all(providers.map((provider) => provider.probe()))
   if (options.probeOnly) {
     return {
-      summary: { runId: id, mode: options.mode, providers: providers.map((provider) => provider.config.id), fetched: 0, normalized: 0, canonicalTitles: 0, mergedDuplicates: 0, r2Uploaded: 0, r2Skipped: 0, firestoreUpserted: 0, firestoreSkipped: 0, providerFailures: probes.filter((probe) => !probe.reachable).length, itemFailures: 0, ambiguousMatches: 0, unsupportedPlaybackUrls: 0, elapsedMs: (dependencies.now?.() ?? Date.now()) - started, contentAccepted: { japan: 0, china: 0, europe_us: 0, korea: 0, hong_kong_taiwan: 0, other: 0 }, mediaTypeAccepted: { anime: 0, movie: 0, tv_series: 0, documentary: 0 }, commentaryRejected: 0, otherRejected: 0, providerStats: Object.fromEntries(providers.map((provider) => [provider.config.id, provider.stats])) },
+      summary: { runId: id, mode: options.mode, providers: providers.map((provider) => provider.config.id), fetched: 0, normalized: 0, canonicalTitles: 0, mergedDuplicates: 0, r2Uploaded: 0, r2Skipped: 0, firestoreUpserted: 0, firestoreSkipped: 0, providerFailures: probes.filter((probe) => !probe.reachable).length, itemFailures: 0, ambiguousMatches: 0, unsupportedPlaybackUrls: 0, elapsedMs: (dependencies.now?.() ?? Date.now()) - started, contentAccepted: { japan: 0, china: 0, europe_us: 0, korea: 0, hong_kong_taiwan: 0, other: 0 }, mediaTypeAccepted: { anime: 0, movie: 0, tv_series: 0, documentary: 0 }, commentaryRejected: 0, otherRejected: 0, providerStats: Object.fromEntries(providers.map((provider) => [provider.config.id, provider.stats])), providerRowsScanned: 0, newCandidates: 0, existingCandidates: 0, canonicalCreated: 0, canonicalUpdated: 0, unchangedTitlesSkipped: 0, operations, plannedFirestoreWrites: 0, plannedR2Writes: 0, retryCount: providers.reduce((total, provider) => total + provider.stats.retries, 0), stopReason: 'complete' },
       failures,
       canonicals: [],
       probes,
@@ -265,7 +293,41 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   let commentaryRejected = 0
   let otherRejected = 0
   const manifest: RawRunManifest = { runId: id, mode: options.mode, startedAt: new Date(started).toISOString(), providers: {} }
-  for (const provider of providers) {
+  let controlledMappings = new Map<string, SourceMapping>()
+  let controlledCandidatePositions = new Map<string, SyncCheckpoint>()
+  let controlledCheckpoint: SyncCheckpoint | undefined
+  let providerRowsScanned = 0
+  let existingCandidates = 0
+  let stopReason: SyncStopReason = 'complete'
+  if (options.controlled) {
+    if (!dependencies.store?.getCheckpoint || !dependencies.store.saveCheckpoint) throw new Error('Controlled sync requires a checkpoint-capable Firebase store')
+    const checkpointId = options.checkpointId ?? 'controlled-v1'
+    const saved = await dependencies.store.getCheckpoint(checkpointId)
+    operations.firestoreReads += 1
+    operations.checkpointReads += 1
+    const controlled = await fetchControlledCandidates({
+      providers,
+      store: dependencies.store,
+      cache,
+      options,
+      operations,
+      failures,
+      start: saved ?? initialCheckpoint(started),
+      now: started,
+    })
+    controlledMappings = controlled.existingMappings
+    controlledCandidatePositions = controlled.candidatePositions
+    controlledCheckpoint = controlled.nextCheckpoint
+    providerRowsScanned = controlled.providerRowsScanned
+    existingCandidates = controlled.existingCandidates
+    stopReason = controlled.stopReason
+    for (const provider of providers) {
+      const items = controlled.itemsByProvider.get(provider.config.id) ?? []
+      rawByProvider.set(provider.config.id, items)
+      policiesByProvider.set(provider.config.id, discoverAnimeCategoryPolicies(await provider.fetchCategories()))
+      manifest.providers[provider.config.id] = { pages: controlled.pagesByProvider.get(provider.config.id) ?? 0, itemCount: items.length, failures: failures.filter((failure) => failure.provider === provider.config.id).length }
+    }
+  } else for (const provider of providers) {
     const beforeFailures = failures.length
     const cachedItems = cached.get(provider.config.id) ?? []
     const cachedPolicies = usesContentPolicy(options) ? discoverAnimeCategoryPolicies(cachedItems.flatMap((item) => item.type_id === undefined || item.type_id === null || !item.type_name ? [] : [{ id: String(item.type_id), name: String(item.type_name) }])) : []
@@ -304,15 +366,37 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       }
     }
   }
-  const mappingKeys = normalized.map((record) => ({ provider: record.providerId, providerItemId: record.providerItemId }))
-  const existingMappings = dependencies.store ? await dependencies.store.getSourceMappings(mappingKeys) : new Map<string, SourceMapping>()
-  const identity = resolveCanonicalIdentity(normalized, existingMappings)
-  const externalIds = [...identity.groups.keys()]
+  const readLimit = (options.maxFirestoreReads ?? defaultMaxFirestoreReads) - (options.operationSafetyMargin ?? defaultOperationSafetyMargin)
+  const maximumIdentityInputs = !options.controlled && dependencies.store
+    ? Math.max(0, Math.floor((readLimit - operations.firestoreReads) / 2))
+    : normalized.length
+  const identityInput = normalized.slice(0, maximumIdentityInputs)
+  if (identityInput.length < normalized.length) stopReason = 'read budget'
+  const mappingKeys = identityInput.map((record) => ({ provider: record.providerId, providerItemId: record.providerItemId }))
+  const existingMappings = options.controlled
+    ? controlledMappings
+    : dependencies.store ? await dependencies.store.getSourceMappings(mappingKeys) : new Map<string, SourceMapping>()
+  if (!options.controlled && dependencies.store) {
+    operations.firestoreReads += mappingKeys.length
+    operations.sourceMapReads += mappingKeys.length
+    existingCandidates = mappingKeys.filter((key) => existingMappings.has(sourceMappingId(key.provider, key.providerItemId))).length
+  }
+  const identity = resolveCanonicalIdentity(identityInput, existingMappings)
+  const availableStateReads = Math.max(0, readLimit - operations.firestoreReads)
+  const identityGroups = [...identity.groups.entries()]
+  const selectedGroups = identityGroups.slice(0, availableStateReads)
+  if (selectedGroups.length < identityGroups.length) stopReason = 'read budget'
+  const externalIds = selectedGroups.map(([externalId]) => externalId)
   const states = dependencies.store ? await dependencies.store.getStates(externalIds) : new Map()
+  if (dependencies.store) {
+    operations.firestoreReads += externalIds.length
+    operations.syncStateReads += externalIds.length
+  }
   const mergedCanonicals: CanonicalAnime[] = []
-  const mergeJobs = [...identity.groups.entries()]
+  const mergeJobs = selectedGroups
   const mergeResults = await mapConcurrent(mergeJobs, Math.min(3, options.concurrency), async ([externalId, records]) => {
     const prior = dependencies.detailStore && states.has(externalId) ? await dependencies.detailStore.get(externalId) : null
+    if (dependencies.detailStore && states.has(externalId)) operations.r2Reads += 1
     const matching = identity.mappings.find((mapping) => mapping.canonicalExternalId === externalId)
     return mergeCanonicalAnime(externalId, records, matching?.matchedBy ?? 'deterministic-new', prior ?? undefined)
   })
@@ -324,7 +408,9 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       failures.push({ provider: records[0].providerId, canonicalExternalId: externalId, stage: 'normalize', errorCode: 'canonical-output', message: safeMessage(result.reason) })
     }
   }
-  const canonicals = selectContentTargets(mergedCanonicals, options.contentTargets, options.contentGroupTargets)
+  const canonicals = options.controlled
+    ? mergedCanonicals
+    : selectContentTargets(mergedCanonicals, options.contentTargets, options.contentGroupTargets)
 
   if (!options.dryRun && (!dependencies.store || !dependencies.detailStore)) {
     throw new Error('Live sync requires Firebase Admin and R2 write configuration')
@@ -339,23 +425,13 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     const previous = states.get(canonical.externalId)
     const detailChanged = previous?.detailHash !== detailHash
     const indexChanged = previous?.indexHash !== indexHash
-    let r2Changed = detailChanged
-    if (!detailChanged && dependencies.detailStore) {
-      try { r2Changed = !(await dependencies.detailStore.exists(canonical.externalId)) }
-      catch (error) { throw new Error(`r2-head: ${safeMessage(error)}`) }
-    }
+    const r2Changed = detailChanged
     if (options.probeMedia) {
       const sample = canonical.detail.episodes.flatMap((episode) => episode.sources).slice(0, Math.min(3, remainingMediaProbes))
       remainingMediaProbes -= sample.length
       for (const source of sample) {
         const result = await (dependencies.mediaProbe ?? probeMediaUrl)(source.url)
         if (!result.ok) failures.push({ provider: canonical.records[0].providerId, canonicalExternalId: canonical.externalId, stage: 'media-probe', errorCode: 'unplayable', message: result.message })
-      }
-    }
-    if (r2Changed) {
-      if (!options.dryRun) {
-        try { await dependencies.detailStore!.put(canonical.detail) }
-        catch (error) { throw new Error(`r2-put: ${safeMessage(error)}`) }
       }
     }
     return {
@@ -376,7 +452,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
         provider: canonical.records[0].providerId,
         canonicalExternalId: canonical.externalId,
         stage: 'r2',
-        errorCode: message.startsWith('r2-head:') ? 'r2-head' : 'r2-put',
+        errorCode: 'r2-prepare',
         message,
       })
     }
@@ -387,8 +463,78 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     const existing = existingMappings.get(sourceMappingId(mapping.provider, mapping.providerItemId))
     return !existing || existing.canonicalExternalId !== mapping.canonicalExternalId || existing.matchedBy !== mapping.matchedBy
   })
-  const changedWrites = prepared.filter((write) => write.indexChanged || write.r2Changed)
-  if (!options.dryRun && (changedWrites.length || successfulMappings.length)) await dependencies.store!.publish(changedWrites, successfulMappings)
+  const maxWrites = options.maxFirestoreWrites ?? defaultMaxFirestoreWrites
+  const writeLimit = maxWrites - (options.operationSafetyMargin ?? defaultOperationSafetyMargin)
+  const mappingsByCanonical = new Map<string, SourceMapping[]>()
+  for (const mapping of successfulMappings) mappingsByCanonical.set(mapping.canonicalExternalId, [...(mappingsByCanonical.get(mapping.canonicalExternalId) ?? []), mapping])
+  const selectedWrites: PreparedCanonicalWrite[] = []
+  const selectedMappings: SourceMapping[] = []
+  let plannedFirestoreWrites = 0
+  for (const write of prepared) {
+    const mappings = mappingsByCanonical.get(write.canonical.externalId) ?? []
+    const cost = (write.indexChanged || write.r2Changed ? 2 : 0) + mappings.length
+    if (operations.firestoreWrites + plannedFirestoreWrites + cost > writeLimit) {
+      stopReason = 'write budget'
+      if (options.controlled) {
+        const position = write.canonical.records
+          .map((record) => controlledCandidatePositions.get(sourceMappingId(record.providerId, record.providerItemId)))
+          .find((candidate): candidate is SyncCheckpoint => Boolean(candidate))
+        if (position) controlledCheckpoint = position
+      }
+      break
+    }
+    selectedWrites.push(write)
+    selectedMappings.push(...mappings)
+    plannedFirestoreWrites += cost
+  }
+  const changedWrites = selectedWrites.filter((write) => write.indexChanged || write.r2Changed)
+  const plannedR2Writes = changedWrites.filter((write) => write.r2Changed).length
+  const successfulR2Writes: PreparedCanonicalWrite[] = []
+  for (const write of changedWrites) {
+    if (!write.r2Changed || options.dryRun) {
+      successfulR2Writes.push(write)
+      continue
+    }
+    try {
+      await dependencies.detailStore!.put(write.canonical.detail)
+      operations.r2Writes += 1
+      successfulR2Writes.push(write)
+    } catch (error) {
+      failures.push({ provider: write.canonical.records[0].providerId, canonicalExternalId: write.canonical.externalId, stage: 'r2', errorCode: 'r2-put', message: safeMessage(error) })
+      if (options.controlled) {
+        const position = write.canonical.records
+          .map((record) => controlledCandidatePositions.get(sourceMappingId(record.providerId, record.providerItemId)))
+          .find((candidate): candidate is SyncCheckpoint => Boolean(candidate))
+        if (position) controlledCheckpoint = position
+      }
+      stopReason = 'error threshold'
+      break
+    }
+  }
+  const publishedIds = new Set(successfulR2Writes.map((write) => write.canonical.externalId))
+  const publishMappings = selectedMappings.filter((mapping) => publishedIds.has(mapping.canonicalExternalId) || !changedWrites.some((write) => write.canonical.externalId === mapping.canonicalExternalId))
+  if (!options.dryRun && (successfulR2Writes.length || publishMappings.length)) {
+    await dependencies.store!.publish(successfulR2Writes, publishMappings)
+    const catalogueAndStateWrites = successfulR2Writes.length * 2
+    operations.firestoreWrites += catalogueAndStateWrites + publishMappings.length
+    operations.syncStateWrites += successfulR2Writes.length
+    operations.sourceMapWrites += publishMappings.length
+  }
+  if (options.controlled && controlledCheckpoint && !options.dryRun) {
+    await dependencies.store!.saveCheckpoint!(options.checkpointId ?? 'controlled-v1', { ...controlledCheckpoint, updatedAtMs: dependencies.now?.() ?? Date.now() })
+    operations.firestoreWrites += 1
+    operations.checkpointWrites += 1
+  }
+  r2Uploaded = options.dryRun ? plannedR2Writes : operations.r2Writes
+  r2Skipped = selectedWrites.length - plannedR2Writes
+  operations.r2UnchangedSkipped += r2Skipped
+  const committedIds = options.dryRun
+    ? new Set(selectedWrites.map((write) => write.canonical.externalId))
+    : new Set([...successfulR2Writes.map((write) => write.canonical.externalId), ...publishMappings.map((mapping) => mapping.canonicalExternalId)])
+  const committedWrites = selectedWrites.filter((write) => committedIds.has(write.canonical.externalId))
+  const canonicalCreated = committedWrites.filter((write) => !states.has(write.canonical.externalId)).length
+  const canonicalUpdated = committedWrites.filter((write) => states.has(write.canonical.externalId) && (write.indexChanged || write.r2Changed)).length
+  const unchangedTitlesSkipped = committedWrites.filter((write) => !(write.indexChanged || write.r2Changed)).length
   const summary: SyncSummary = {
     runId: id,
     mode: options.mode,
@@ -396,10 +542,10 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     fetched: [...rawByProvider.values()].reduce((total, items) => total + items.length, 0),
     normalized: normalized.length,
     canonicalTitles: canonicals.length,
-    mergedDuplicates: Math.max(0, normalized.length - identity.groups.size),
+    mergedDuplicates: Math.max(0, identityInput.length - identity.groups.size),
     r2Uploaded,
     r2Skipped,
-    firestoreUpserted: changedWrites.length,
+    firestoreUpserted: options.dryRun ? changedWrites.length : successfulR2Writes.length,
     firestoreSkipped: prepared.length - changedWrites.length,
     providerFailures: new Set([...probes.filter((probe) => !probe.reachable).map((probe) => probe.providerId), ...failures.filter((failure) => failure.stage === 'list').map((failure) => failure.provider)]).size,
     itemFailures: failures.filter((failure) => failure.stage !== 'list' && failure.stage !== 'probe').length,
@@ -411,6 +557,18 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     commentaryRejected,
     otherRejected,
     providerStats: Object.fromEntries(providers.map((provider) => [provider.config.id, { ...provider.stats }])),
+    providerRowsScanned: options.controlled ? providerRowsScanned : [...rawByProvider.values()].reduce((total, items) => total + items.length, 0),
+    newCandidates: identityInput.length,
+    existingCandidates,
+    canonicalCreated,
+    canonicalUpdated,
+    unchangedTitlesSkipped,
+    operations,
+    plannedFirestoreWrites,
+    plannedR2Writes,
+    retryCount: providers.reduce((total, provider) => total + provider.stats.retries, 0),
+    stopReason,
+    ...(controlledCheckpoint ? { checkpoint: controlledCheckpoint } : {}),
   }
   const failureFile = await cache.writeFailures(failures)
   log(`Failure report: ${failureFile}`)

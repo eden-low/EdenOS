@@ -21,6 +21,9 @@ export interface ProviderProbeResult {
   hasDetail: boolean
   hasPlayback: boolean
   incrementalSupported: boolean
+  catalogueTotal?: number
+  pageCount?: number
+  pageSize?: number
   message: string
 }
 
@@ -167,7 +170,53 @@ export interface SyncOptions {
   concurrency: number
   contentTargets?: Record<'japan' | 'china' | 'europe_us', number>
   contentGroupTargets?: Record<AnimeContentGroup, number>
+  /** Preserve approved-category normalization during an exact raw-cache replay without reapplying title caps. */
+  applyContentPolicy?: boolean
   cleanup: 'none' | 'plan' | 'apply'
+  controlled?: boolean
+  maxTitles?: number
+  maxFirestoreReads?: number
+  maxFirestoreWrites?: number
+  operationSafetyMargin?: number
+  checkpointId?: string
+  catalogueStats?: boolean
+  verifyIdempotency?: boolean
+}
+
+export type SyncStopReason = 'write budget' | 'read budget' | 'title cap' | 'provider exhausted' | 'error threshold' | 'complete'
+
+export interface SyncCheckpoint {
+  version: 1
+  providerIndex: number
+  categoryIndex: number
+  page: number
+  offset: number
+  updatedAtMs: number
+  complete: boolean
+}
+
+export interface SyncOperationCounts {
+  firestoreReads: number
+  firestoreWrites: number
+  firestoreDeletes: number
+  sourceMapReads: number
+  sourceMapWrites: number
+  syncStateReads: number
+  syncStateWrites: number
+  checkpointReads: number
+  checkpointWrites: number
+  r2Reads: number
+  r2Writes: number
+  r2Deletes: number
+  r2UnchangedSkipped: number
+}
+
+export interface CatalogueStorageMetrics {
+  count: number
+  sampleCount: number
+  averageDocumentBytes: number
+  minimumDocumentBytes: number
+  maximumDocumentBytes: number
 }
 
 export interface SyncSummary {
@@ -192,6 +241,18 @@ export interface SyncSummary {
   commentaryRejected: number
   otherRejected: number
   providerStats: Record<string, ProviderRuntimeStats>
+  providerRowsScanned: number
+  newCandidates: number
+  existingCandidates: number
+  canonicalCreated: number
+  canonicalUpdated: number
+  unchangedTitlesSkipped: number
+  operations: SyncOperationCounts
+  plannedFirestoreWrites: number
+  plannedR2Writes: number
+  retryCount: number
+  stopReason: SyncStopReason
+  checkpoint?: SyncCheckpoint
 }
 
 export interface ExistingCanonical {

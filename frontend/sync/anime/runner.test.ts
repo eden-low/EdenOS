@@ -30,6 +30,32 @@ function provider() {
   return createMacCmsProvider(providerConfig(), { fetcher })
 }
 
+const controlledContentGroups = {
+  china_anime: 0,
+  east_asia_anime: 1,
+  western_anime: 0,
+  hong_kong_taiwan_anime: 0,
+  overseas_anime: 0,
+  animation_movie: 0,
+} as const
+
+function controlledProvider(items = [vodItem({ vod_id: 'new-1', vod_name: 'New One', type_id: 30, type_name: '\u65e5\u97e9\u52a8\u6f2b', vod_area: '\u65e5\u672c' })]) {
+  const byId = new Map(items.map((item) => [String(item.vod_id), item]))
+  const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+    const url = new URL(String(input))
+    const selected = url.searchParams.get('ac') === 'detail'
+      ? (url.searchParams.get('ids') ?? '').split(',').flatMap((id) => byId.get(id) ?? [])
+      : items.map((item) => ({ ...item, vod_play_url: null }))
+    return new Response(JSON.stringify(envelope(selected, {
+      page: 1,
+      pagecount: 1,
+      total: items.length,
+      class: [{ type_id: 30, type_pid: 4, type_name: '\u65e5\u97e9\u52a8\u6f2b' }],
+    })))
+  })
+  return createMacCmsProvider(providerConfig(), { fetcher })
+}
+
 function memoryStore(states = new Map<string, SyncState>(), events: string[] = [], mappings = new Map<string, SourceMapping>()) {
   const publish = vi.fn(async (_writes: PreparedCanonicalWrite[], _mappings: SourceMapping[]) => { events.push('firestore') })
   const store: AnimeSyncStore = {
@@ -94,17 +120,18 @@ describe('Anime sync runner', () => {
     expect(publish).not.toHaveBeenCalled()
   })
 
-  it('records a transient R2 existence-check failure without aborting the run', async () => {
+  it('trusts an unchanged sync-state hash without an unnecessary R2 existence request', async () => {
     const first = await runAnimeSync(options, { providers: [provider()], cacheRoot: await temporaryDirectory() })
     const canonical = first.canonicals[0]
     const states = new Map([[canonical.externalId, { externalId: canonical.externalId, indexHash: contentHash(canonical.index), detailHash: contentHash(canonical.detail), updatedAtMs: 1_700_000_000_000 }]])
     const mapping: SourceMapping = { provider: 'provider-a', providerItemId: '101', canonicalExternalId: canonical.externalId, matchedBy: 'deterministic-new' }
     const { store, publish } = memoryStore(states, [], new Map([[sourceMappingId('provider-a', '101'), mapping]]))
     const { detailStore } = memoryR2([], new Map([[canonical.externalId, canonical.detail]]))
-    detailStore.exists = vi.fn(async () => { throw new Error('fetch failed') })
+    detailStore.exists = vi.fn(async () => { throw new Error('must not perform an unchanged HEAD request') })
     const result = await runAnimeSync({ ...options, dryRun: false }, { providers: [provider()], cacheRoot: await temporaryDirectory(), store, detailStore })
-    expect(result.failures).toEqual(expect.arrayContaining([expect.objectContaining({ stage: 'r2', errorCode: 'r2-head', canonicalExternalId: canonical.externalId })]))
-    expect(result.summary.itemFailures).toBe(1)
+    expect(result.failures).toEqual([])
+    expect(result.summary.operations).toMatchObject({ r2Reads: 1, r2Writes: 0, r2UnchangedSkipped: 1 })
+    expect(detailStore.exists).not.toHaveBeenCalled()
     expect(publish).not.toHaveBeenCalled()
   })
 
@@ -142,6 +169,21 @@ describe('Anime sync runner', () => {
     expect(upstream.probe).not.toHaveBeenCalled()
     expect(upstream.fetchPage).not.toHaveBeenCalled()
     expect(upstream.fetchDetail).not.toHaveBeenCalled()
+  })
+
+  it('preserves approved-category normalization in an uncapped raw-cache replay', async () => {
+    const root = await temporaryDirectory()
+    const raw = new AnimeRawCache(root, 'controlled-cache')
+    const categoryName = '\u56fd\u4ea7\u52a8\u6f2b'
+    await raw.writeDetail('provider-a', '201', envelope([vodItem({ vod_id: '201', vod_name: 'China One', type_id: 24, type_name: categoryName, vod_area: '' })]))
+    await raw.writeDetail('provider-a', '202', envelope([vodItem({ vod_id: '202', vod_name: 'China Two', type_id: 24, type_name: categoryName, vod_area: '' })]))
+    const result = await runAnimeSync({
+      ...options,
+      fromCache: path.join(root, 'raw', 'controlled-cache'),
+      applyContentPolicy: true,
+    }, { providers: [provider()], cacheRoot: root })
+    expect(result.canonicals).toHaveLength(2)
+    expect(result.canonicals.map((canonical) => canonical.index.region)).toEqual(['china', 'china'])
   })
 
   it('does not publish Firestore when R2 upload fails', async () => {
@@ -199,5 +241,198 @@ describe('Anime sync runner', () => {
       expect.objectContaining({ title: 'Animation Movie', mediaType: 'movie', region: 'europe_us', genres: expect.arrayContaining(['Animation']) }),
     ]))
     expect(result.summary).toMatchObject({ contentAccepted: { korea: 1, europe_us: 1 }, mediaTypeAccepted: { anime: 1, movie: 1 } })
+  })
+
+  it('reports a controlled dry run without Firestore, source-map, checkpoint, or R2 writes', async () => {
+    const candidates = [
+      vodItem({ vod_id: 'new-1', vod_name: 'New One', type_id: 30, type_name: '\u65e5\u97e9\u52a8\u6f2b', vod_area: '\u65e5\u672c' }),
+      vodItem({ vod_id: 'new-2', vod_name: 'New Two', type_id: 30, type_name: '\u65e5\u97e9\u52a8\u6f2b', vod_area: '\u65e5\u672c' }),
+    ]
+    const publish = vi.fn(async () => undefined)
+    const saveCheckpoint = vi.fn(async () => undefined)
+    const store: AnimeSyncStore = {
+      getSourceMappings: async () => new Map(),
+      getStates: async () => new Map(),
+      publish,
+      getCheckpoint: async () => null,
+      saveCheckpoint,
+      listCatalogue: async () => [],
+      listAllSourceMappings: async () => [],
+      findProgressExternalIds: async () => [],
+      deleteCatalogue: async () => undefined,
+      deleteInternalMetadata: async () => undefined,
+    }
+    const { detailStore, put } = memoryR2()
+    const result = await runAnimeSync({
+      ...options,
+      controlled: true,
+      maxTitles: 2,
+      contentGroupTargets: controlledContentGroups,
+      maxFirestoreReads: 30_000,
+      maxFirestoreWrites: 12_000,
+      operationSafetyMargin: 100,
+    }, { providers: [controlledProvider(candidates)], cacheRoot: await temporaryDirectory(), store, detailStore })
+    expect(result.summary).toMatchObject({ canonicalCreated: 2, canonicalTitles: 2, plannedFirestoreWrites: 6, plannedR2Writes: 2, stopReason: 'title cap' })
+    expect(result.summary.operations).toMatchObject({ firestoreReads: 5, firestoreWrites: 0, sourceMapWrites: 0, syncStateWrites: 0, checkpointWrites: 0, r2Writes: 0 })
+    expect(publish).not.toHaveBeenCalled()
+    expect(saveCheckpoint).not.toHaveBeenCalled()
+    expect(put).not.toHaveBeenCalled()
+  })
+
+  it('stops before the write budget and leaves the checkpoint on the uncommitted title', async () => {
+    const publish = vi.fn(async () => undefined)
+    const saveCheckpoint = vi.fn(async () => undefined)
+    const store: AnimeSyncStore = {
+      getSourceMappings: async () => new Map(),
+      getStates: async () => new Map(),
+      publish,
+      getCheckpoint: async () => null,
+      saveCheckpoint,
+      listCatalogue: async () => [],
+      listAllSourceMappings: async () => [],
+      findProgressExternalIds: async () => [],
+      deleteCatalogue: async () => undefined,
+      deleteInternalMetadata: async () => undefined,
+    }
+    const { detailStore, put } = memoryR2()
+    const result = await runAnimeSync({
+      ...options,
+      dryRun: false,
+      controlled: true,
+      maxTitles: 1,
+      contentGroupTargets: controlledContentGroups,
+      maxFirestoreReads: 30_000,
+      maxFirestoreWrites: 3,
+      operationSafetyMargin: 1,
+    }, { providers: [controlledProvider()], cacheRoot: await temporaryDirectory(), store, detailStore })
+    expect(result.summary.stopReason).toBe('write budget')
+    expect(result.summary.operations).toMatchObject({ firestoreWrites: 1, checkpointWrites: 1, r2Writes: 0 })
+    expect(saveCheckpoint).toHaveBeenCalledWith('controlled-v1', expect.objectContaining({ page: 1, offset: 0, complete: false }))
+    expect(publish).not.toHaveBeenCalled()
+    expect(put).not.toHaveBeenCalled()
+  })
+
+  it('publishes a new controlled title within budget and checkpoints once', async () => {
+    const publish = vi.fn(async () => undefined)
+    const saveCheckpoint = vi.fn(async () => undefined)
+    const store: AnimeSyncStore = {
+      getSourceMappings: async () => new Map(),
+      getStates: async () => new Map(),
+      publish,
+      getCheckpoint: async () => null,
+      saveCheckpoint,
+      listCatalogue: async () => [],
+      listAllSourceMappings: async () => [],
+      findProgressExternalIds: async () => [],
+      deleteCatalogue: async () => undefined,
+      deleteInternalMetadata: async () => undefined,
+    }
+    const { detailStore, put } = memoryR2()
+    const result = await runAnimeSync({
+      ...options,
+      dryRun: false,
+      controlled: true,
+      maxTitles: 1,
+      contentGroupTargets: controlledContentGroups,
+      maxFirestoreReads: 30_000,
+      maxFirestoreWrites: 12_000,
+      operationSafetyMargin: 100,
+    }, { providers: [controlledProvider()], cacheRoot: await temporaryDirectory(), store, detailStore })
+    expect(result.summary.operations).toMatchObject({ firestoreWrites: 4, sourceMapWrites: 1, syncStateWrites: 1, checkpointWrites: 1, r2Writes: 1 })
+    expect(publish).toHaveBeenCalledWith([expect.objectContaining({ indexChanged: true, r2Changed: true })], [expect.objectContaining({ providerItemId: 'new-1' })])
+    expect(put).toHaveBeenCalledOnce()
+    expect(saveCheckpoint).toHaveBeenCalledOnce()
+  })
+
+  it('stops a controlled scan before exceeding the read budget', async () => {
+    const store: AnimeSyncStore = {
+      getSourceMappings: vi.fn(async () => new Map()),
+      getStates: vi.fn(async () => new Map()),
+      publish: vi.fn(async () => undefined),
+      getCheckpoint: async () => null,
+      saveCheckpoint: vi.fn(async () => undefined),
+      listCatalogue: async () => [],
+      listAllSourceMappings: async () => [],
+      findProgressExternalIds: async () => [],
+      deleteCatalogue: async () => undefined,
+      deleteInternalMetadata: async () => undefined,
+    }
+    const result = await runAnimeSync({
+      ...options,
+      controlled: true,
+      maxTitles: 1,
+      contentGroupTargets: controlledContentGroups,
+      maxFirestoreReads: 2,
+      maxFirestoreWrites: 12_000,
+      operationSafetyMargin: 0,
+    }, { providers: [controlledProvider()], cacheRoot: await temporaryDirectory(), store, detailStore: memoryR2().detailStore })
+    expect(result.summary).toMatchObject({ stopReason: 'read budget', canonicalTitles: 0 })
+    expect(result.summary.operations).toMatchObject({ firestoreReads: 1, checkpointReads: 1, sourceMapReads: 0 })
+    expect(store.getSourceMappings).not.toHaveBeenCalled()
+  })
+
+  it('resumes a controlled page from its persisted item offset', async () => {
+    const first = vodItem({ vod_id: 'new-1', vod_name: 'First', type_id: 30, type_name: '\u65e5\u97e9\u52a8\u6f2b', vod_area: '\u65e5\u672c' })
+    const second = vodItem({ vod_id: 'new-2', vod_name: 'Second', type_id: 30, type_name: '\u65e5\u97e9\u52a8\u6f2b', vod_area: '\u65e5\u672c' })
+    const publish = vi.fn(async () => undefined)
+    const store: AnimeSyncStore = {
+      getSourceMappings: async () => new Map(),
+      getStates: async () => new Map(),
+      publish,
+      getCheckpoint: async () => ({ version: 1, providerIndex: 0, categoryIndex: 0, page: 1, offset: 1, updatedAtMs: 1, complete: false }),
+      saveCheckpoint: vi.fn(async () => undefined),
+      listCatalogue: async () => [],
+      listAllSourceMappings: async () => [],
+      findProgressExternalIds: async () => [],
+      deleteCatalogue: async () => undefined,
+      deleteInternalMetadata: async () => undefined,
+    }
+    await runAnimeSync({
+      ...options,
+      dryRun: false,
+      controlled: true,
+      maxTitles: 1,
+      contentGroupTargets: controlledContentGroups,
+      maxFirestoreReads: 30_000,
+      maxFirestoreWrites: 12_000,
+      operationSafetyMargin: 100,
+    }, { providers: [controlledProvider([first, second])], cacheRoot: await temporaryDirectory(), store, detailStore: memoryR2().detailStore })
+    expect(publish).toHaveBeenCalledWith(expect.any(Array), [expect.objectContaining({ providerItemId: 'new-2' })])
+  })
+
+  it('rewinds the controlled checkpoint when an R2 write fails', async () => {
+    const publish = vi.fn(async () => undefined)
+    const saveCheckpoint = vi.fn(async () => undefined)
+    const store: AnimeSyncStore = {
+      getSourceMappings: async () => new Map(),
+      getStates: async () => new Map(),
+      publish,
+      getCheckpoint: async () => null,
+      saveCheckpoint,
+      listCatalogue: async () => [],
+      listAllSourceMappings: async () => [],
+      findProgressExternalIds: async () => [],
+      deleteCatalogue: async () => undefined,
+      deleteInternalMetadata: async () => undefined,
+    }
+    const detailStore: AnimeDetailStore = {
+      get: async () => null,
+      exists: async () => false,
+      put: async () => { throw new Error('R2 unavailable') },
+      remove: async () => undefined,
+    }
+    const result = await runAnimeSync({
+      ...options,
+      dryRun: false,
+      controlled: true,
+      maxTitles: 1,
+      contentGroupTargets: controlledContentGroups,
+      maxFirestoreReads: 30_000,
+      maxFirestoreWrites: 12_000,
+      operationSafetyMargin: 100,
+    }, { providers: [controlledProvider()], cacheRoot: await temporaryDirectory(), store, detailStore })
+    expect(result.summary.stopReason).toBe('error threshold')
+    expect(publish).not.toHaveBeenCalled()
+    expect(saveCheckpoint).toHaveBeenCalledWith('controlled-v1', expect.objectContaining({ page: 1, offset: 0, complete: false }))
   })
 })

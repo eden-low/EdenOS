@@ -57,6 +57,7 @@ npm run sync:animes -- --retry-failed=.cache/anime-sync/failed/RUN_ID.json --dry
 npm run sync:animes -- --probe-media --limit=5 --dry-run
 npm run sync:animes -- --dry-run --cleanup=plan --providers=providerA,providerB --content-targets=japan:300,china:200,europe_us:100 --concurrency=3
 npm run sync:animes -- --dry-run --providers=providerA,providerB --content-groups=china_anime:250,east_asia_anime:550,western_anime:150,hong_kong_taiwan_anime:20,overseas_anime:20,animation_movie:10 --concurrency=3
+npm run sync:animes -- --controlled --dry-run --content-groups=china_anime:1,east_asia_anime:1,western_anime:1,hong_kong_taiwan_anime:1,overseas_anime:1,animation_movie:1 --max-titles=100 --checkpoint-id=canary-v1 --catalogue-stats
 ```
 
 ## Anime content-quality import
@@ -121,3 +122,12 @@ For each changed canonical title the consistency order is:
 Unchanged hashes skip R2 and Firestore writes. Provider failures preserve
 existing objects and last-known playback sources; the sync does not interpret a
 failed provider as deletion evidence.
+
+Controlled runs default to `MAX_FIRESTORE_WRITES=12000`,
+`MAX_FIRESTORE_READS=30000`, and a 100-operation safety margin. These limits are
+authoritative; `--max-titles` is secondary. A single Firestore checkpoint per
+controlled job stores provider/category/page/offset so the next run resumes
+without scanning again from page 1. Dry runs never update the checkpoint.
+
+See [Anime Scale Optimization V1](anime-scale-v1.md) for the measured provider
+sizes, operation model, idempotency replay, and browser pagination review.

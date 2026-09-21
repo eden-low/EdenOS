@@ -4,6 +4,9 @@ import type { AnimeProviderConfig, SyncOptions } from './types'
 
 const defaultTimeoutMs = 10_000
 const defaultRetries = 2
+export const defaultMaxFirestoreWrites = 12_000
+export const defaultMaxFirestoreReads = 30_000
+export const defaultOperationSafetyMargin = 100
 
 function positiveInteger(value: string | undefined, fallback: number): number {
   const parsed = value ? Number(value) : Number.NaN
@@ -61,7 +64,7 @@ function valueAfterEquals(argument: string): string | undefined {
   return index < 0 ? undefined : argument.slice(index + 1)
 }
 
-export function parseSyncOptions(arguments_: string[]): SyncOptions {
+export function parseSyncOptions(arguments_: string[], env: NodeJS.ProcessEnv = process.env): SyncOptions {
   const modeArgument = arguments_.find((item) => item.startsWith('--mode='))
   const modeValue = modeArgument ? valueAfterEquals(modeArgument) : 'incremental'
   if (modeValue !== 'full' && modeValue !== 'incremental') throw new Error('--mode must be full or incremental')
@@ -73,9 +76,22 @@ export function parseSyncOptions(arguments_: string[]): SyncOptions {
   const targetsArgument = arguments_.find((item) => item.startsWith('--content-targets='))
   const groupTargetsArgument = arguments_.find((item) => item.startsWith('--content-groups='))
   const cleanupArgument = arguments_.find((item) => item.startsWith('--cleanup='))
+  const maxTitlesArgument = arguments_.find((item) => item.startsWith('--max-titles='))
+  const maxReadsArgument = arguments_.find((item) => item.startsWith('--max-firestore-reads='))
+  const maxWritesArgument = arguments_.find((item) => item.startsWith('--max-firestore-writes='))
+  const safetyMarginArgument = arguments_.find((item) => item.startsWith('--operation-safety-margin='))
+  const checkpointArgument = arguments_.find((item) => item.startsWith('--checkpoint-id='))
   const cleanup = cleanupArgument ? valueAfterEquals(cleanupArgument) : 'none'
+  const maxTitles = maxTitlesArgument ? Number(valueAfterEquals(maxTitlesArgument)) : undefined
+  const maxFirestoreReads = Number(maxReadsArgument ? valueAfterEquals(maxReadsArgument) : env.MAX_FIRESTORE_READS ?? defaultMaxFirestoreReads)
+  const maxFirestoreWrites = Number(maxWritesArgument ? valueAfterEquals(maxWritesArgument) : env.MAX_FIRESTORE_WRITES ?? defaultMaxFirestoreWrites)
+  const operationSafetyMargin = Number(safetyMarginArgument ? valueAfterEquals(safetyMarginArgument) : env.ANIME_SYNC_OPERATION_SAFETY_MARGIN ?? defaultOperationSafetyMargin)
   if (targetsArgument && groupTargetsArgument) throw new Error('Use either --content-targets or --content-groups, not both')
   if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) throw new Error('--limit must be a positive integer')
+  if (maxTitles !== undefined && (!Number.isInteger(maxTitles) || maxTitles <= 0)) throw new Error('--max-titles must be a positive integer')
+  if (!Number.isInteger(maxFirestoreReads) || maxFirestoreReads < 1) throw new Error('--max-firestore-reads must be a positive integer')
+  if (!Number.isInteger(maxFirestoreWrites) || maxFirestoreWrites < 1) throw new Error('--max-firestore-writes must be a positive integer')
+  if (!Number.isInteger(operationSafetyMargin) || operationSafetyMargin < 0 || operationSafetyMargin >= Math.min(maxFirestoreReads, maxFirestoreWrites)) throw new Error('--operation-safety-margin must be smaller than both operation budgets')
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 10) throw new Error('--concurrency must be between 1 and 10')
   if (cleanup !== 'none' && cleanup !== 'plan' && cleanup !== 'apply') throw new Error('--cleanup must be none, plan, or apply')
   return {
@@ -91,6 +107,14 @@ export function parseSyncOptions(arguments_: string[]): SyncOptions {
     ...(targetsArgument ? { contentTargets: animeContentTargets(valueAfterEquals(targetsArgument)) } : {}),
     ...(groupTargetsArgument ? { contentGroupTargets: animeContentGroupTargets(valueAfterEquals(groupTargetsArgument)) } : {}),
     cleanup,
+    controlled: arguments_.includes('--controlled'),
+    ...(maxTitles !== undefined ? { maxTitles } : {}),
+    maxFirestoreReads,
+    maxFirestoreWrites,
+    operationSafetyMargin,
+    checkpointId: checkpointArgument ? valueAfterEquals(checkpointArgument) : env.ANIME_SYNC_CHECKPOINT_ID ?? 'controlled-v1',
+    catalogueStats: arguments_.includes('--catalogue-stats'),
+    verifyIdempotency: arguments_.includes('--verify-idempotency'),
   }
 }
 
