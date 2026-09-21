@@ -29,7 +29,7 @@ vi.mock('../repositories/firestoreAnimeProgressRepository', () => ({
 const guest: AuthIdentity = { uid: 'guest-uid', isAnonymous: true, email: null }
 const linked: AuthIdentity = { uid: 'guest-uid', isAnonymous: false, email: 'user@example.com' }
 const emptyGuestSummary: GuestDataSummary = {
-  expensesCount: 0, incomesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasBudget: false,
+  expensesCount: 0, incomesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasHeight: false, hasBudget: false,
   hasSavingsGoal: false, animeProgressCount: 0, animeCloudProgressCount: 0,
   otherBlockingData: [], hasBlockingData: false,
 }
@@ -50,7 +50,7 @@ function Workspace() {
       <button type="button" onClick={() => setSessionValue('guest-state')}>Create session state</button>
       <UserSettingsContext.Provider value={{
         settings: emptyUserSettings, status: 'loaded',
-        saveBodyWeight: vi.fn(async () => undefined), saveMonthlyBudget: vi.fn(async () => undefined), saveSavingsGoal: vi.fn(async () => undefined),
+        saveBodyWeight: vi.fn(async () => undefined), saveHeight: vi.fn(async () => undefined), saveMonthlyBudget: vi.fn(async () => undefined), saveSavingsGoal: vi.fn(async () => undefined),
       }}><AccountDialog><button type="button">Account</button></AccountDialog></UserSettingsContext.Provider>
     </>
   )

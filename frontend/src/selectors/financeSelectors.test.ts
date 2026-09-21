@@ -5,7 +5,7 @@ import { selectFinanceSummary } from './financeSelectors'
 const at = (year: number, month: number, day: number) => new Date(year, month - 1, day, 12).toISOString()
 const expense = (id: string, amountSen: number, date: string, category: ExpenseRecord['category'] = 'food'): ExpenseRecord => ({ id, amountSen, category, title: id, occurredAt: date, createdAt: date, updatedAt: date, source: 'manual' })
 const income = (id: string, amountSen: number, date: string): IncomeRecord => ({ id, amountSen, category: 'salary', description: id, occurredAt: date, createdAt: date, updatedAt: date })
-const settings = { bodyWeightKg: null, monthlyBudgetSen: 10_000, savingsGoalSen: 50_000 }
+const settings = { bodyWeightKg: null, heightCm: null, monthlyBudgetSen: 10_000, savingsGoalSen: 50_000 }
 
 describe('finance calculations', () => {
   it('calculates mixed monthly income, expenses, and net cashflow in integer sen', () => {

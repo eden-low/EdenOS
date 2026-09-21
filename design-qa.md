@@ -1,4 +1,4 @@
-# Finance UI design QA
+# Finance and Exercise UI design QA
 
 - Source visual truth path: unavailable in the current session; the user referenced a FINCHECK screenshot, but no readable image attachment or local file was exposed.
 - Implementation screenshot path: unavailable because the configured in-app browser surface is not available in this session.
@@ -31,3 +31,17 @@
 - Copy and content: reviewed against the requested financial semantics.
 
 final result: blocked
+
+## Exercise refresh addendum — 2026-09-21
+
+- Source visual truth path: unavailable in the current session; the fitness-dashboard screenshot is referenced in the brief but is not exposed as an attachment or local file.
+- Implementation screenshot path: unavailable; the computer-use state reports no browser surfaces.
+- Viewports: desktop and mobile captures unavailable.
+- States requiring review: `/exercise` with data and zero data; Today calendar and Exercise overview; Light, Dark, and System themes.
+- Automated evidence: BMI and height domain tests, component interaction tests, selector tests, calendar navigation test, full frontend suite, lint, typecheck/build, and Firestore emulator rules all pass.
+- Code-level review: Exercise uses 4/2/1-column responsive card grids, token-based gradients and surfaces, real record-derived chart/donut values, explicit reported/estimated calorie labels, and no new raster assets.
+- [P1] Rendered fitness-reference comparison and responsive/theme inspection remain unavailable.
+  - Impact: pixel-level hierarchy, card density, chart legibility, and theme contrast cannot be certified from screenshots.
+  - Required follow-up: owner review on staging with desktop/mobile and Light/Dark/System.
+
+final exercise result: blocked

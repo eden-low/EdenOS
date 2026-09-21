@@ -30,6 +30,7 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
       settings: current.settings,
       status: current.status,
       saveBodyWeight: (value) => saveConfirmed('bodyWeightKg', value, () => repository.saveBodyWeight(value)),
+      saveHeight: (value) => saveConfirmed('heightCm', value, () => repository.saveHeight(value)),
       saveMonthlyBudget: (value) => saveConfirmed('monthlyBudgetSen', value, () => repository.saveMonthlyBudget(value)),
       saveSavingsGoal: (value) => saveConfirmed('savingsGoalSen', value, () => repository.saveSavingsGoal(value)),
     }}>

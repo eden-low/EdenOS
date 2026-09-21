@@ -96,6 +96,8 @@ export function selectDashboardSummary(
     },
     exercise: {
       completedSessions: weeklyExercise.length,
+      durationSeconds: weeklyExercise.reduce((total, item) => total + item.durationSeconds, 0),
+      distanceMetres: weeklyExercise.reduce((total, item) => total + (item.distanceMetres ?? 0), 0),
       latestActivity: latestExercise
         ? {
             name: latestExercise.activity,

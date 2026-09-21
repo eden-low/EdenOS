@@ -210,7 +210,7 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow create, update: if isOwner(userId)
         && request.resource.data.keys().hasOnly([
-          'bodyWeightKg', 'monthlyBudgetSen', 'savingsGoalSen', 'updatedAt'
+          'bodyWeightKg', 'heightCm', 'monthlyBudgetSen', 'savingsGoalSen', 'updatedAt'
         ])
         && request.resource.data.keys().hasAll(['updatedAt'])
         && request.resource.data.updatedAt == request.time
@@ -218,6 +218,10 @@ service cloud.firestore {
           || (request.resource.data.bodyWeightKg is number
             && request.resource.data.bodyWeightKg >= 20
             && request.resource.data.bodyWeightKg <= 500))
+        && (!('heightCm' in request.resource.data)
+          || (request.resource.data.heightCm is int
+            && request.resource.data.heightCm >= 80
+            && request.resource.data.heightCm <= 250))
         && (!('monthlyBudgetSen' in request.resource.data)
           || (request.resource.data.monthlyBudgetSen is int
             && request.resource.data.monthlyBudgetSen > 0

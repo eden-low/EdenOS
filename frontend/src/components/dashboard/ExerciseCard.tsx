@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { getExerciseActivityIcon } from '../../lib/exerciseIcon'
-import { formatExerciseMetrics } from '../../lib/format'
+import { formatDistance, formatDuration, formatExerciseMetrics } from '../../lib/format'
 import type { ExerciseSummary } from '../../types/dashboard'
 import type { RecordDomainStatus } from '../../types/records'
 import { Button } from '../ui/button'
@@ -18,16 +18,11 @@ export function ExerciseCard({ exercise, status, error, onRetry }: ExerciseCardP
   const ExerciseIcon = getExerciseActivityIcon(latestActivity?.name ?? '')
 
   return (
-    <section aria-label="Weekly exercise" className="dashboard-card order-5 col-span-2 p-5 sm:p-6 md:col-span-6 xl:order-4 xl:col-span-5 xl:p-7">
+    <section aria-label="Weekly exercise" className="dashboard-card order-5 col-span-2 p-5 sm:p-6 md:col-span-6 xl:order-5 xl:col-span-7 xl:p-7">
       <div>
         <p className="section-label">This Week</p>
         {status === 'loaded' ? (
-          <p className="metric-value mt-4 text-3xl font-semibold">
-            {exercise.completedSessions}{' '}
-            <span className="text-lg font-medium tracking-[-0.02em] text-[var(--text-muted)]">
-              {exercise.completedSessions === 1 ? 'session' : 'sessions'} this week
-            </span>
-          </p>
+          <div className="mt-4 grid grid-cols-3 gap-2"><OverviewMetric value={String(exercise.completedSessions)} label={exercise.completedSessions === 1 ? 'workout' : 'workouts'} /><OverviewMetric value={formatDuration(exercise.durationSeconds)} label="duration" /><OverviewMetric value={exercise.distanceMetres ? formatDistance(exercise.distanceMetres) : '0 m'} label="distance" /></div>
         ) : (
           <p className="mt-4 text-xl font-semibold text-[var(--text-primary)]">
             {status === 'loading' ? 'Loading exercise…' : 'Exercise unavailable'}
@@ -76,4 +71,8 @@ export function ExerciseCard({ exercise, status, error, onRetry }: ExerciseCardP
       </div>
     </section>
   )
+}
+
+function OverviewMetric({ value, label }: { value: string; label: string }) {
+  return <div className="rounded-2xl bg-[var(--surface-secondary)] p-3"><strong className="block truncate text-lg tracking-[-0.03em]">{value}</strong><span className="mt-1 block text-[11px] text-[var(--text-muted)]">{label}</span></div>
 }

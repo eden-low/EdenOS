@@ -163,6 +163,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
               incomesCount: summary.incomesCount,
               exercisesCount: summary.exercisesCount,
               hasBodyWeight: summary.hasBodyWeight,
+              hasHeight: summary.hasHeight,
               hasBudget: summary.hasBudget,
               hasSavingsGoal: summary.hasSavingsGoal,
               animeProgressCount: summary.animeProgressCount,

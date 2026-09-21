@@ -25,7 +25,7 @@ describe('expense amounts', () => {
 describe('exercise metrics', () => {
   it('keeps metres optional while formatting seconds as minutes', () => {
     expect(formatExerciseMetrics(1800)).toBe('30 min')
-    expect(formatExerciseMetrics(1800, 2400)).toContain('2,400 m')
+    expect(formatExerciseMetrics(1800, 2400)).toContain('2.4 km')
   })
 
   it.each([

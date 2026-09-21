@@ -19,6 +19,8 @@ export interface ExerciseActivity {
 
 export interface ExerciseSummary {
   completedSessions: number
+  durationSeconds: number
+  distanceMetres: number
   latestActivity: ExerciseActivity | null
 }
 

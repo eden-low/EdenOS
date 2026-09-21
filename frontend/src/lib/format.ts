@@ -34,7 +34,9 @@ export function parseRinggitToSen(value: string): number | null {
 }
 
 export function formatDistance(distanceMetres: number): string {
-  return `${wholeNumber.format(distanceMetres)} m`
+  if (distanceMetres < 1000) return `${wholeNumber.format(distanceMetres)} m`
+  const kilometres = distanceMetres / 1000
+  return `${new Intl.NumberFormat('en-MY', { maximumFractionDigits: kilometres < 10 ? 1 : 0 }).format(kilometres)} km`
 }
 
 export function formatDuration(durationSeconds: number): string {

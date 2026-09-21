@@ -15,7 +15,7 @@ const signOutGoogle = vi.fn()
 const continueWithExistingGoogle = vi.fn()
 const discardExistingGoogleChoice = vi.fn()
 const emptySummary: GuestDataSummary = {
-  expensesCount: 0, incomesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasBudget: false,
+  expensesCount: 0, incomesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasHeight: false, hasBudget: false,
   hasSavingsGoal: false, animeProgressCount: 0, animeCloudProgressCount: 0,
   otherBlockingData: [], hasBlockingData: false,
 }
@@ -31,7 +31,7 @@ function renderAccount(isAnonymous = true, email: string | null = null) {
   } as unknown as ReturnType<typeof useFirebaseAuth>)
   render(<UserSettingsContext.Provider value={{
     settings: emptyUserSettings, status: 'loaded',
-    saveBodyWeight: vi.fn(async () => undefined), saveMonthlyBudget: vi.fn(async () => undefined), saveSavingsGoal: vi.fn(async () => undefined),
+    saveBodyWeight: vi.fn(async () => undefined), saveHeight: vi.fn(async () => undefined), saveMonthlyBudget: vi.fn(async () => undefined), saveSavingsGoal: vi.fn(async () => undefined),
   }}><AccountDialog><button type="button">Open account</button></AccountDialog></UserSettingsContext.Provider>)
   const trigger = screen.getByRole('button', { name: 'Open account' })
   fireEvent.click(trigger)

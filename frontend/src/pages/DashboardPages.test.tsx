@@ -17,7 +17,7 @@ const retryExerciseSubscription = vi.fn()
 
 beforeEach(() => {
   vi.mocked(useLocalReferenceDate).mockReturnValue(new Date(2026, 8, 20, 12))
-  vi.mocked(useUserSettings).mockReturnValue({ settings: { bodyWeightKg: 70, monthlyBudgetSen: 20_000, savingsGoalSen: 50_000 }, status: 'loaded' } as ReturnType<typeof useUserSettings>)
+  vi.mocked(useUserSettings).mockReturnValue({ settings: { bodyWeightKg: 70, heightCm: 175, monthlyBudgetSen: 20_000, savingsGoalSen: 50_000 }, status: 'loaded', saveBodyWeight: vi.fn(), saveHeight: vi.fn(), saveMonthlyBudget: vi.fn(), saveSavingsGoal: vi.fn() } as ReturnType<typeof useUserSettings>)
   vi.mocked(useRecords).mockReturnValue({
     expenses: [{ id: 'lunch', title: 'Lunch', category: 'food', amountSen: 2500, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z', source: 'manual' }],
     incomes: [{ id: 'salary', description: 'Salary', category: 'salary', amountSen: 250000, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z' }],
@@ -42,10 +42,11 @@ describe('dedicated dashboards', () => {
 
   it('keeps reported calories separate from estimates on Exercise', () => {
     render(<ExercisePage onOpenRecords={vi.fn()} />)
-    expect(screen.getByText('Reported Calories')).toBeTruthy()
+    expect(screen.getByText('Calories')).toBeTruthy()
     expect(screen.getAllByText('240 kcal')[0]).toBeTruthy()
-    expect(screen.getByText('MET Estimated Calories')).toBeTruthy()
-    expect(screen.getByText(/Kept separate from device-reported values/)).toBeTruthy()
+    expect(screen.getByText(/Reported and estimated stay separate|Estimated separately/)).toBeTruthy()
+    expect(screen.getByText('Body Metrics')).toBeTruthy()
+    expect(screen.getByText('22.9')).toBeTruthy()
   })
 
   it('shows a scoped retry for an Expense subscription error', () => {
