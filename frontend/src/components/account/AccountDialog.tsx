@@ -23,6 +23,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
 
   const blockingSummaryItems = summary ? [
     ...(summary.expensesCount > 0 ? [`${summary.expensesCount} ${summary.expensesCount === 1 ? 'Expense' : 'Expenses'}`] : []),
+    ...(summary.incomesCount > 0 ? [`${summary.incomesCount} ${summary.incomesCount === 1 ? 'Income record' : 'Income records'}`] : []),
     ...(summary.exercisesCount > 0 ? [`${summary.exercisesCount} ${summary.exercisesCount === 1 ? 'Exercise' : 'Exercises'}`] : []),
     ...(summary.hasBodyWeight ? ['Body weight configured'] : []),
     ...(summary.hasBudget ? ['Budget configured'] : []),

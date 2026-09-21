@@ -2,6 +2,7 @@ import type {
   ExpenseData,
   ExpenseDraft,
   ExpenseRecord,
+  IncomeRecord,
   ExerciseData,
   ExerciseDraft,
   ExerciseRecord,
@@ -11,10 +12,13 @@ import type {
 
 export interface RecordsState {
   expenses: ExpenseRecord[]
+  incomes: IncomeRecord[]
   exerciseRecords: ExerciseRecord[]
   drafts: RecordDraft[]
   expenseStatus: RecordDomainStatus
   expenseError: string | null
+  incomeStatus: RecordDomainStatus
+  incomeError: string | null
   exerciseStatus: RecordDomainStatus
   exerciseError: string | null
 }
@@ -24,6 +28,9 @@ export type RecordsAction =
   | { type: 'expenses/loading' }
   | { type: 'expenses/loaded'; expenses: ExpenseRecord[] }
   | { type: 'expenses/failed'; message: string }
+  | { type: 'incomes/loading' }
+  | { type: 'incomes/loaded'; incomes: IncomeRecord[] }
+  | { type: 'incomes/failed'; message: string }
   | { type: 'exercises/loading' }
   | { type: 'exercises/loaded'; exercises: ExerciseRecord[] }
   | { type: 'exercises/failed'; message: string }
@@ -55,6 +62,15 @@ export function recordsReducer(state: RecordsState, action: RecordsAction): Reco
 
     case 'expenses/failed':
       return { ...state, expenseStatus: 'error', expenseError: action.message }
+
+    case 'incomes/loading':
+      return { ...state, incomeStatus: 'loading', incomeError: null }
+
+    case 'incomes/loaded':
+      return { ...state, incomes: action.incomes, incomeStatus: 'loaded', incomeError: null }
+
+    case 'incomes/failed':
+      return { ...state, incomeStatus: 'error', incomeError: action.message }
 
     case 'exercises/loading':
       return { ...state, exerciseStatus: 'loading', exerciseError: null }

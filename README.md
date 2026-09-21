@@ -18,6 +18,7 @@ The frontend runs locally against the configured Firebase project and includes:
 - Cloud Firestore as the authoritative source for confirmed expenses and exercises
 - Realtime expense and exercise synchronization across Today and Records on the same Firebase user
 - Firestore-backed expense creation, editing, and deletion
+- Additive UID-scoped Income records with manual create, edit, delete, monthly cashflow reporting, and unified finance history
 - Firestore-backed Exercise creation, reading, editing, and deletion, with distance stored in metres and duration stored in seconds
 - Installable PWA manifest and EdenOS application icons
 - Offline-capable application shell after one successful online load
@@ -287,7 +288,7 @@ To enable Google sign-in, open **Firebase Console > Authentication > Sign-in met
 
 ## Firestore Security Rules
 
-The prepared rules are in `firestore.rules`. They allow an authenticated user to access only their own expense and exercise collections, validate each domain separately, preserve `createdAt` on updates, and deny every unrelated path by default.
+The prepared rules are in `firestore.rules`. They allow an authenticated user to access only their own expense, income, and exercise collections, validate each domain separately, preserve `createdAt` on updates, and deny every unrelated path by default.
 
 Rules are deployed automatically when relevant rule or Firebase configuration files change on `main`, using `.github/workflows/deploy-firestore-rules.yml` and the `FIREBASE_SERVICE_ACCOUNT` repository secret. To apply them manually in Firebase Console instead:
 

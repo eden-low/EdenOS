@@ -38,7 +38,7 @@ export function classifyFirebaseWriteError(error: unknown): FirebaseWriteErrorKi
 }
 
 export function logFirebaseWriteError(
-  domain: 'expense' | 'exercise',
+  domain: 'expense' | 'exercise' | 'income',
   action: 'create' | 'update' | 'delete',
   error: unknown,
 ) {

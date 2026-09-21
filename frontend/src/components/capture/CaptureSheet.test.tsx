@@ -28,8 +28,9 @@ const confirmExerciseDraft = vi.fn(async (): Promise<void> => undefined)
 function Harness() {
   const [drafts, setDrafts] = useState<RecordDraft[]>([])
   const value = {
-    expenses: [], exerciseRecords: [], drafts,
+    expenses: [], incomes: [], exerciseRecords: [], drafts,
     expenseStatus: 'loaded', expenseError: null,
+    incomeStatus: 'loaded', incomeError: null,
     exerciseStatus: 'loaded', exerciseError: null,
     createExpenseDraft(data: ExpenseData) {
       const draft: ExpenseDraft = {
@@ -63,9 +64,14 @@ function Harness() {
     },
     confirmExerciseDraft,
     retryExpenseSubscription: vi.fn(),
+    retryIncomeSubscription: vi.fn(),
     retryExerciseSubscription: vi.fn(),
     updateExpense: vi.fn(async () => undefined),
+    createExpense: vi.fn(async () => undefined),
     deleteExpense: vi.fn(async () => undefined),
+    createIncome: vi.fn(async () => undefined),
+    updateIncome: vi.fn(async () => undefined),
+    deleteIncome: vi.fn(async () => undefined),
     updateExercise: vi.fn(async () => undefined),
     deleteExercise: vi.fn(async () => undefined),
   } as RecordsContextValue

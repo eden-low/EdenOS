@@ -19,8 +19,9 @@ export async function getGuestDataSummary(
   localAnimeProgressCount = 0,
 ): Promise<GuestDataSummary> {
   const user = ['users', uid] as const
-  const [expenses, exercises, animeProgress, preferences] = await Promise.all([
+  const [expenses, incomes, exercises, animeProgress, preferences] = await Promise.all([
     getCountFromServer(query(collection(firestore, ...user, 'expenses'))),
+    getCountFromServer(query(collection(firestore, ...user, 'incomes'))),
     getCountFromServer(query(collection(firestore, ...user, 'exercises'))),
     getCountFromServer(query(collection(firestore, ...user, 'animeWatchProgress'))),
     getDocFromServer(doc(firestore, ...user, 'settings', 'preferences')),
@@ -28,6 +29,7 @@ export async function getGuestDataSummary(
 
   const data = preferences.exists() ? preferences.data() : {}
   const expensesCount = count(expenses)
+  const incomesCount = count(incomes)
   const exercisesCount = count(exercises)
   const animeCloudProgressCount = count(animeProgress)
   const hasBodyWeight = isValidBodyWeightKg(data.bodyWeightKg)
@@ -37,11 +39,12 @@ export async function getGuestDataSummary(
     .filter(([key, value]) => !knownPreferenceFields.has(key) && value !== null && value !== undefined)
     .map(([key]) => key)
     .sort()
-  const hasBlockingData = expensesCount > 0 || exercisesCount > 0 || hasBodyWeight || hasBudget ||
+  const hasBlockingData = expensesCount > 0 || incomesCount > 0 || exercisesCount > 0 || hasBodyWeight || hasBudget ||
     hasSavingsGoal || otherBlockingData.length > 0
 
   return {
     expensesCount,
+    incomesCount,
     exercisesCount,
     hasBodyWeight,
     hasBudget,

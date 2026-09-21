@@ -14,11 +14,12 @@ vi.mock('firebase/firestore', () => sdk)
 const db = {} as Firestore
 function state(
   expensesCount = 0,
+  incomesCount = 0,
   exercisesCount = 0,
   settings: Record<string, unknown> | null = null,
   animeCloudProgressCount = 0,
 ) {
-  for (const value of [expensesCount, exercisesCount, animeCloudProgressCount]) {
+  for (const value of [expensesCount, incomesCount, exercisesCount, animeCloudProgressCount]) {
     sdk.getCountFromServer.mockResolvedValueOnce({ data: () => ({ count: value }) })
   }
   sdk.getDocFromServer.mockResolvedValue({ exists: () => settings !== null, data: () => settings })
@@ -30,6 +31,7 @@ describe('authoritative Guest data summary', () => {
     state()
     expect(await getGuestDataSummary(db, 'guest-uid')).toEqual({
       expensesCount: 0,
+      incomesCount: 0,
       exercisesCount: 0,
       hasBodyWeight: false,
       hasBudget: false,
@@ -41,6 +43,7 @@ describe('authoritative Guest data summary', () => {
     })
     expect(sdk.collection.mock.calls.map((call) => call.slice(1))).toEqual([
       ['users', 'guest-uid', 'expenses'],
+      ['users', 'guest-uid', 'incomes'],
       ['users', 'guest-uid', 'exercises'],
       ['users', 'guest-uid', 'animeWatchProgress'],
     ])
@@ -48,20 +51,22 @@ describe('authoritative Guest data summary', () => {
   })
 
   it.each([
-    ['Expense', 2, 0, null, { expensesCount: 2 }],
-    ['Exercise', 0, 1, null, { exercisesCount: 1 }],
-    ['body weight', 0, 0, { bodyWeightKg: 70 }, { hasBodyWeight: true }],
-    ['Budget', 0, 0, { monthlyBudgetSen: 10000 }, { hasBudget: true }],
-    ['Savings Goal', 0, 0, { savingsGoalSen: 50000 }, { hasSavingsGoal: true }],
-  ])('protects a Guest with %s', async (_name, expenses, exercises, settings, expected) => {
-    state(expenses as number, exercises as number, settings as Record<string, unknown> | null)
+    ['Expense', 2, 0, 0, null, { expensesCount: 2 }],
+    ['Income', 0, 2, 0, null, { incomesCount: 2 }],
+    ['Exercise', 0, 0, 1, null, { exercisesCount: 1 }],
+    ['body weight', 0, 0, 0, { bodyWeightKg: 70 }, { hasBodyWeight: true }],
+    ['Budget', 0, 0, 0, { monthlyBudgetSen: 10000 }, { hasBudget: true }],
+    ['Savings Goal', 0, 0, 0, { savingsGoalSen: 50000 }, { hasSavingsGoal: true }],
+  ])('protects a Guest with %s', async (_name, expenses, incomes, exercises, settings, expected) => {
+    state(expenses as number, incomes as number, exercises as number, settings as Record<string, unknown> | null)
     expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({ ...expected, hasBlockingData: true })
   })
 
   it('reports multiple blocking categories together', async () => {
-    state(2, 3, { bodyWeightKg: 72, monthlyBudgetSen: 10000, savingsGoalSen: 50000 })
+    state(2, 1, 3, { bodyWeightKg: 72, monthlyBudgetSen: 10000, savingsGoalSen: 50000 })
     expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({
       expensesCount: 2,
+      incomesCount: 1,
       exercisesCount: 3,
       hasBodyWeight: true,
       hasBudget: true,
@@ -71,7 +76,7 @@ describe('authoritative Guest data summary', () => {
   })
 
   it('treats local and legacy cloud Anime progress as non-blocking', async () => {
-    state(0, 0, null, 2)
+    state(0, 0, 0, null, 2)
     expect(await getGuestDataSummary(db, 'guest-uid', 3)).toMatchObject({
       animeProgressCount: 3,
       animeCloudProgressCount: 2,
@@ -80,10 +85,10 @@ describe('authoritative Guest data summary', () => {
   })
 
   it('ignores empty known preference placeholders but protects unknown saved data', async () => {
-    state(0, 0, { updatedAt: {}, bodyWeightKg: null, monthlyBudgetSen: null, savingsGoalSen: null })
+    state(0, 0, 0, { updatedAt: {}, bodyWeightKg: null, monthlyBudgetSen: null, savingsGoalSen: null })
     expect((await getGuestDataSummary(db, 'guest-uid')).hasBlockingData).toBe(false)
     vi.clearAllMocks()
-    state(0, 0, { futureDurableSetting: true })
+    state(0, 0, 0, { futureDurableSetting: true })
     expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({
       otherBlockingData: ['futureDurableSetting'],
       hasBlockingData: true,

@@ -1,12 +1,14 @@
-import { CircleAlert, LoaderCircle, Plus, ReceiptText } from 'lucide-react'
+import { ArrowDownLeft, CircleAlert, LoaderCircle, Plus, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CaptureSheet } from '../components/capture/CaptureSheet'
 import { triggerPressFeedback } from '../components/ui/pressFeedback'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
+import { IncomeRecordDialog } from '../components/finance/IncomeRecordDialog'
 import { ExerciseRecordDialog } from '../components/records/ExerciseRecordDialog'
 import { ExerciseCalories } from '../components/exercise/ExerciseCalories'
 import { Button } from '../components/ui/button'
 import { expenseCategoryLabels } from '../domain/expense'
+import { incomeCategoryLabels } from '../domain/income'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { formatTime, relativeDayLabel } from '../lib/date'
 import { getExerciseActivityIcon } from '../lib/exerciseIcon'
@@ -19,6 +21,7 @@ import type { RecordDomainStatus, RecordFilter } from '../types/records'
 const filters: Array<{ value: RecordFilter; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'expenses', label: 'Expenses' },
+  { value: 'income', label: 'Income' },
   { value: 'exercise', label: 'Exercise' },
 ]
 
@@ -67,16 +70,21 @@ function DomainStatusNotice({
 export function RecordsPage() {
   const {
     expenses,
+    incomes,
     exerciseRecords,
     expenseStatus,
     expenseError,
+    incomeStatus,
+    incomeError,
     exerciseStatus,
     exerciseError,
     retryExpenseSubscription,
+    retryIncomeSubscription,
     retryExerciseSubscription,
   } = useRecords()
   const [filter, setFilter] = useState<RecordFilter>('all')
   const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null)
+  const [selectedIncomeId, setSelectedIncomeId] = useState<string | null>(null)
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null)
   const referenceDate = useLocalReferenceDate()
   const groups = useMemo(
@@ -85,15 +93,19 @@ export function RecordsPage() {
         expenseStatus === 'loaded' ? expenses : [],
         exerciseStatus === 'loaded' ? exerciseRecords : [],
         filter,
+        incomeStatus === 'loaded' ? incomes : [],
       ),
-    [exerciseRecords, exerciseStatus, expenseStatus, expenses, filter],
+    [exerciseRecords, exerciseStatus, expenseStatus, expenses, filter, incomeStatus, incomes],
   )
   const selectedExpense = expenses.find((expense) => expense.id === selectedExpenseId)
   const selectedExercise = exerciseRecords.find((exercise) => exercise.id === selectedExerciseId)
-  const showExpenseStatus = filter !== 'exercise'
-  const showExerciseStatus = filter !== 'expenses'
+  const selectedIncome = incomes.find((income) => income.id === selectedIncomeId)
+  const showExpenseStatus = filter === 'all' || filter === 'expenses'
+  const showIncomeStatus = filter === 'all' || filter === 'income'
+  const showExerciseStatus = filter === 'all' || filter === 'exercise'
   const relevantStatuses = [
     ...(showExpenseStatus ? [expenseStatus] : []),
+    ...(showIncomeStatus ? [incomeStatus] : []),
     ...(showExerciseStatus ? [exerciseStatus] : []),
   ]
   const hasRelevantLoading = relevantStatuses.includes('loading')
@@ -156,6 +168,9 @@ export function RecordsPage() {
             error={exerciseError}
             onRetry={retryExerciseSubscription}
           />
+        )}
+        {showIncomeStatus && (
+          <DomainStatusNotice label="Income" status={incomeStatus} error={incomeError} onRetry={retryIncomeSubscription} />
         )}
         {groups.length === 0 ? (
           <div className="mx-auto flex max-w-md flex-col items-center py-14 text-center sm:py-18">
@@ -225,6 +240,15 @@ export function RecordsPage() {
                     )
                   }
 
+                  if (item.kind === 'income') {
+                    const income = item.record
+                    return <button key={income.id} type="button" {...triggerPressFeedback} onClick={() => setSelectedIncomeId(income.id)} aria-label={`Open ${income.description} income`} className="press-feedback group flex min-h-20 w-full items-center gap-3 rounded-xl px-2 py-4 text-left outline-none hover:bg-[var(--surface-secondary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:gap-4 sm:px-3">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--positive)]"><ArrowDownLeft aria-hidden="true" size={19} strokeWidth={1.8} /></span>
+                      <div className="min-w-0"><p className="truncate font-semibold text-[var(--text-primary)]">{income.description}</p><p className="mt-1 text-sm text-[var(--text-secondary)]">Income · {incomeCategoryLabels[income.category]}</p></div>
+                      <div className="ml-auto min-w-0 shrink-0 text-right"><FinancialAmount amountSen={income.amountSen} prefix="+" interactive={false} className="font-semibold text-[var(--positive)]" /><p className="mt-1 text-xs text-[var(--text-muted)]">{relativeDayLabel(income.occurredAt, referenceDate)} · {formatTime(income.occurredAt)}</p></div>
+                    </button>
+                  }
+
                   const exercise = item.record
                   const ExerciseIcon = getExerciseActivityIcon(exercise.activity)
                   return (
@@ -268,6 +292,7 @@ export function RecordsPage() {
         record={selectedExercise}
         onClose={() => setSelectedExerciseId(null)}
       />
+      <IncomeRecordDialog key={`income-${selectedIncomeId ?? 'closed'}`} record={selectedIncome} onClose={() => setSelectedIncomeId(null)} />
     </div>
   )
 }

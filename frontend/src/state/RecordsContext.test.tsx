@@ -3,12 +3,15 @@ import { useEffect } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { OfflineExerciseWriteError } from '../lib/exerciseWriteError'
 import { OfflineExpenseWriteError } from '../lib/expenseWriteError'
+import { OfflineIncomeWriteError } from '../lib/incomeWriteError'
 import { useConnectivity } from '../providers/useConnectivity'
 import { createFirestoreExerciseRepository } from '../repositories/firestoreExerciseRepository'
 import { createFirestoreExpenseRepository } from '../repositories/firestoreExpenseRepository'
+import { createFirestoreIncomeRepository } from '../repositories/firestoreIncomeRepository'
 import type { ExerciseRepository } from '../repositories/exerciseRepository'
 import type { ExpenseRepository } from '../repositories/expenseRepository'
-import type { ExpenseData, ExerciseData } from '../types/records'
+import type { IncomeRepository } from '../repositories/incomeRepository'
+import type { ExpenseData, ExerciseData, IncomeData } from '../types/records'
 import { RecordsProvider } from './RecordsContext'
 import type { RecordsContextValue } from './recordsContextDefinition'
 import { useFirebaseAuth } from './useFirebaseAuth'
@@ -22,6 +25,9 @@ vi.mock('../repositories/firestoreExpenseRepository', () => ({
 vi.mock('../repositories/firestoreExerciseRepository', () => ({
   createFirestoreExerciseRepository: vi.fn(),
 }))
+vi.mock('../repositories/firestoreIncomeRepository', () => ({
+  createFirestoreIncomeRepository: vi.fn(),
+}))
 
 const at = '2026-09-17T10:00:00.000Z'
 const expenseData: ExpenseData = {
@@ -30,9 +36,11 @@ const expenseData: ExpenseData = {
 const exerciseData: ExerciseData = {
   activity: 'Walk', durationSeconds: 1800, occurredAt: at, source: 'manual',
 }
+const incomeData: IncomeData = { amountSen: 500000, category: 'salary', description: 'Salary', occurredAt: at }
 
 let expenseRepository: ExpenseRepository
 let exerciseRepository: ExerciseRepository
+let incomeRepository: IncomeRepository
 let records: RecordsContextValue
 
 function Observer() {
@@ -46,6 +54,7 @@ async function renderRecords() {
   await waitFor(() => {
     expect(records.expenseStatus).toBe('loaded')
     expect(records.exerciseStatus).toBe('loaded')
+    expect(records.incomeStatus).toBe('loaded')
   })
 }
 
@@ -70,8 +79,15 @@ beforeEach(() => {
     updateExercise: vi.fn(async () => undefined),
     deleteExercise: vi.fn(async () => undefined),
   }
+  incomeRepository = {
+    subscribeIncomes: vi.fn((observer) => { observer.next([]); return () => undefined }),
+    createIncome: vi.fn(async () => undefined),
+    updateIncome: vi.fn(async () => undefined),
+    deleteIncome: vi.fn(async () => undefined),
+  }
   vi.mocked(createFirestoreExpenseRepository).mockReturnValue(expenseRepository)
   vi.mocked(createFirestoreExerciseRepository).mockReturnValue(exerciseRepository)
+  vi.mocked(createFirestoreIncomeRepository).mockReturnValue(incomeRepository)
 })
 
 describe('Records provider mutations', () => {
@@ -122,6 +138,16 @@ describe('Records provider mutations', () => {
     expect(records.expenses).toEqual([])
   })
 
+  it('creates, edits, and deletes Income through its independent repository', async () => {
+    await renderRecords()
+    await act(async () => { await records.createIncome(incomeData) })
+    expect(incomeRepository.createIncome).toHaveBeenCalledWith(expect.stringMatching(/^income-/), incomeData)
+    await act(async () => { await records.updateIncome('income-1', incomeData) })
+    expect(incomeRepository.updateIncome).toHaveBeenCalledWith('income-1', incomeData)
+    await act(async () => { await records.deleteIncome('income-1') })
+    expect(incomeRepository.deleteIncome).toHaveBeenCalledWith('income-1')
+  })
+
   it('rejects offline create, update, and delete before calling either repository', async () => {
     vi.mocked(useConnectivity).mockReturnValue('offline')
     await renderRecords()
@@ -135,12 +161,18 @@ describe('Records provider mutations', () => {
     await expect(records.confirmExpenseDraft(expenseId)).rejects.toBeInstanceOf(OfflineExpenseWriteError)
     await expect(records.updateExpense('expense', expenseData)).rejects.toBeInstanceOf(OfflineExpenseWriteError)
     await expect(records.deleteExpense('expense')).rejects.toBeInstanceOf(OfflineExpenseWriteError)
+    await expect(records.createIncome(incomeData)).rejects.toBeInstanceOf(OfflineIncomeWriteError)
+    await expect(records.updateIncome('income', incomeData)).rejects.toBeInstanceOf(OfflineIncomeWriteError)
+    await expect(records.deleteIncome('income')).rejects.toBeInstanceOf(OfflineIncomeWriteError)
     await expect(records.confirmExerciseDraft(exerciseId)).rejects.toBeInstanceOf(OfflineExerciseWriteError)
     await expect(records.updateExercise('exercise', exerciseData)).rejects.toBeInstanceOf(OfflineExerciseWriteError)
     await expect(records.deleteExercise('exercise')).rejects.toBeInstanceOf(OfflineExerciseWriteError)
     expect(expenseRepository.createExpense).not.toHaveBeenCalled()
     expect(expenseRepository.updateExpense).not.toHaveBeenCalled()
     expect(expenseRepository.deleteExpense).not.toHaveBeenCalled()
+    expect(incomeRepository.createIncome).not.toHaveBeenCalled()
+    expect(incomeRepository.updateIncome).not.toHaveBeenCalled()
+    expect(incomeRepository.deleteIncome).not.toHaveBeenCalled()
     expect(exerciseRepository.createExercise).not.toHaveBeenCalled()
     expect(exerciseRepository.updateExercise).not.toHaveBeenCalled()
     expect(exerciseRepository.deleteExercise).not.toHaveBeenCalled()

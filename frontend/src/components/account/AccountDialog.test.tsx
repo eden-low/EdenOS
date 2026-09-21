@@ -15,7 +15,7 @@ const signOutGoogle = vi.fn()
 const continueWithExistingGoogle = vi.fn()
 const discardExistingGoogleChoice = vi.fn()
 const emptySummary: GuestDataSummary = {
-  expensesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasBudget: false,
+  expensesCount: 0, incomesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasBudget: false,
   hasSavingsGoal: false, animeProgressCount: 0, animeCloudProgressCount: 0,
   otherBlockingData: [], hasBlockingData: false,
 }

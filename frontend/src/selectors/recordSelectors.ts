@@ -2,6 +2,7 @@ import { formatDateHeading, localDateKey } from '../lib/date'
 import type {
   ExpenseRecord,
   ExerciseRecord,
+  IncomeRecord,
   RecordFilter,
   TimelineGroup,
   TimelineRecord,
@@ -11,19 +12,27 @@ export function selectTimelineGroups(
   expenses: ExpenseRecord[],
   exerciseRecords: ExerciseRecord[],
   filter: RecordFilter,
+  incomes: IncomeRecord[] = [],
 ): TimelineGroup[] {
   const records: TimelineRecord[] = [
-    ...(filter === 'exercise'
+    ...(filter !== 'all' && filter !== 'expenses'
       ? []
       : expenses.map((record) => ({
           kind: 'expense' as const,
           occurredAt: record.occurredAt,
           record,
         }))),
-    ...(filter === 'expenses'
+    ...(filter !== 'all' && filter !== 'exercise'
       ? []
       : exerciseRecords.map((record) => ({
           kind: 'exercise' as const,
+          occurredAt: record.occurredAt,
+          record,
+        }))),
+    ...(filter !== 'all' && filter !== 'income'
+      ? []
+      : incomes.map((record) => ({
+          kind: 'income' as const,
           occurredAt: record.occurredAt,
           record,
         }))),
