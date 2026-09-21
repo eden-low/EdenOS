@@ -17,7 +17,7 @@ function renderWithWeight(weight: number | null) {
 describe('Estimated Calories display', () => {
   it('shows an estimate only when weight and a supported activity exist', () => {
     const { rerender } = renderWithWeight(null)
-    expect(screen.getByText(/Add body weight in Account/)).toBeTruthy()
+    expect(screen.getByText(/Add weight in Exercise Body Metrics/)).toBeTruthy()
     expect(screen.queryByText(/kcal/)).toBeNull()
     rerender(<UserSettingsContext.Provider value={{
       settings: { ...emptyUserSettings, bodyWeightKg: 70 }, status: 'loaded',

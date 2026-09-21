@@ -16,7 +16,7 @@ export function EstimatedCalories({ exercise, compact = false }: {
   }
   if (compact) return null
   const message = result.status === 'missing-weight'
-    ? 'Add body weight in Account to estimate calories.'
+    ? 'Add weight in Exercise Body Metrics to estimate calories.'
     : result.status === 'unsupported-activity'
       ? 'Estimated Calories unavailable for this activity.'
       : result.status === 'unsupported-intensity'
