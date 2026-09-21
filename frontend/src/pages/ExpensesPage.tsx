@@ -1,9 +1,10 @@
-import { ArrowDownLeft, ArrowUpRight, CalendarDays, CircleAlert, Landmark, ReceiptText, Target, WalletCards } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, CalendarDays, CircleAlert, FileInput, Landmark, ReceiptText, Target, WalletCards } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { CashflowChart } from '../components/finance/CashflowChart'
 import { ExpenseActivityDonut } from '../components/finance/ExpenseActivityDonut'
 import { FinanceEntryDialog } from '../components/finance/FinanceEntryDialogs'
 import { IncomeRecordDialog } from '../components/finance/IncomeRecordDialog'
+import { BatchImportDialog } from '../components/finance/BatchImportDialog'
 import { MoneySettingsDialog } from '../components/dashboard/MoneySettingsDialog'
 import { FinancialAmount } from '../components/privacy/FinancialAmount'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
@@ -33,6 +34,7 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
   const privacy = usePrivacyLock()
   const [selectedMonth, setSelectedMonth] = useState(() => new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1, 12))
   const [entryKind, setEntryKind] = useState<EntryKind | null>(null)
+  const [batchImportOpen, setBatchImportOpen] = useState(false)
   const [selection, setSelection] = useState<Selection>(null)
   const [oldestFirst, setOldestFirst] = useState(false)
   const summary = useMemo(() => selectFinanceSummary(
@@ -50,10 +52,15 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
     else setEntryKind(kind)
   }
 
+  function openBatchImport() {
+    if (privacy.locked) privacy.requestUnlock()
+    else setBatchImportOpen(true)
+  }
+
   return <Page>
     <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><p className="section-label text-[var(--accent-soft)]">Finance</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Expenses</h1><p className="mt-2 text-sm text-[var(--text-secondary)]">Income, expenses, budget, and goals—without pretending to be a bank balance.</p></div>
-      <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => openEntry('expense')}><ArrowUpRight size={17} />Add Expense</Button><Button onClick={() => openEntry('income')}><ArrowDownLeft size={17} />Add Income</Button></div>
+      <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => openEntry('expense')}><ArrowUpRight size={17} />Add Expense</Button><Button variant="secondary" onClick={() => openEntry('income')}><ArrowDownLeft size={17} />Add Income</Button><Button onClick={openBatchImport}><FileInput size={17} />Batch Import</Button></div>
     </header>
 
     <div className="mt-5 flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4 py-3 sm:w-fit">
@@ -87,6 +94,7 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
     </div>
 
     {entryKind && <FinanceEntryDialog key={entryKind} kind={entryKind} open onClose={() => setEntryKind(null)} />}
+    <BatchImportDialog key={batchImportOpen ? 'batch-open' : 'batch-closed'} open={batchImportOpen} onClose={() => setBatchImportOpen(false)} />
     <ExpenseRecordDialog key={`expense-${selection?.id ?? 'closed'}`} record={selectedExpense} onClose={() => setSelection(null)} />
     <IncomeRecordDialog key={`income-${selection?.id ?? 'closed'}`} record={selectedIncome} onClose={() => setSelection(null)} />
   </Page>
