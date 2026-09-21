@@ -13,7 +13,7 @@ const record = { version: 1 as const, kdf: 'PBKDF2-SHA-256' as const, iterations
 
 function Harness() {
   const privacy = usePrivacyLock()
-  return <><output>{privacy.enabled ? privacy.locked ? 'locked' : 'unlocked' : 'disabled'}</output><button onClick={() => void privacy.setup('123456')}>Setup</button><button onClick={() => void privacy.unlock('123456')}>Unlock</button><button onClick={privacy.lock}>Lock</button></>
+  return <><output>{privacy.enabled ? privacy.locked ? 'locked' : 'unlocked' : 'disabled'}</output><button onClick={() => void privacy.setup('123456')}>Setup</button><button onClick={() => void privacy.unlock('123456')}>Unlock</button><button onClick={privacy.requestUnlock}>Open unlock dialog</button><button onClick={privacy.lock}>Lock</button></>
 }
 
 describe('PrivacyLockProvider', () => {
@@ -38,6 +38,32 @@ describe('PrivacyLockProvider', () => {
     expect(screen.getByText('locked')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Unlock' }))
     await waitFor(() => expect(screen.getByText('unlocked')).toBeTruthy())
+  })
+
+  it('masks the numeric PIN in the unlock dialog and preserves valid and invalid submit behavior', async () => {
+    vi.mocked(lockService.readPrivacyLockRecord).mockReturnValue(record)
+    vi.mocked(lockService.verifyPrivacyPin).mockImplementation(async (pin) => pin === '123456')
+    render(<PrivacyLockProvider><Harness /></PrivacyLockProvider>)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open unlock dialog' }))
+    const input = screen.getByLabelText('PIN') as HTMLInputElement
+    expect(input.type).toBe('password')
+    expect(input.inputMode).toBe('numeric')
+    expect(input.maxLength).toBe(6)
+    expect(input.pattern).toBe('[0-9]{6}')
+    expect(document.activeElement).toBe(input)
+
+    fireEvent.change(input, { target: { value: '65a4321' } })
+    expect(input.value).toBe('654321')
+    fireEvent.submit(input.closest('form')!)
+    expect((await screen.findByRole('alert')).textContent).toBe('That PIN is incorrect.')
+    expect(screen.getByText('locked')).toBeTruthy()
+
+    fireEvent.change(input, { target: { value: '123456' } })
+    fireEvent.submit(input.closest('form')!)
+    await waitFor(() => expect(screen.getByText('unlocked')).toBeTruthy())
+    expect(screen.queryByRole('dialog', { name: 'Unlock financial values' })).toBeNull()
+    expect(Object.values(localStorage).join('')).not.toContain('123456')
   })
 
   it('locks after the app returns from an extended background period', async () => {

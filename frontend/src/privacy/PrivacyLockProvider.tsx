@@ -78,7 +78,7 @@ export function PrivacyLockProvider({ children }: { children: ReactNode }) {
         <DialogDescription id="privacy-unlock-description" className="mt-2 text-sm text-[var(--text-secondary)]">Enter your 6-digit device PIN.</DialogDescription>
         <form className="mt-5" onSubmit={(event) => void submitUnlock(event)}>
           <label className="form-label" htmlFor="privacy-unlock-pin">PIN</label>
-          <input id="privacy-unlock-pin" className="form-control" inputMode="numeric" autoComplete="off" maxLength={6} pattern="[0-9]{6}" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))} autoFocus />
+          <input id="privacy-unlock-pin" className="form-control" type="password" inputMode="numeric" autoComplete="off" maxLength={6} pattern="[0-9]{6}" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 6))} autoFocus />
           {unlockError && <p role="alert" className="mt-2 text-sm text-[var(--danger)]">{unlockError}</p>}
           <Button type="submit" className="mt-4 w-full" disabled={pin.length !== 6}>Unlock</Button>
         </form>
