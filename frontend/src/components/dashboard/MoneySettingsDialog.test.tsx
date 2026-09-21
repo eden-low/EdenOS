@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { emptyUserSettings, type UserSettings } from '../../domain/userSettings'
 import { UserSettingsContext } from '../../state/userSettingsContextDefinition'
-import { DailySpendingCards, SpendingCard } from './SpendingCard'
+import { SpendingCard } from './SpendingCard'
 import { SavingsGoalCard } from './SavingsGoalCard'
 import { MoneySettingsDialog } from './MoneySettingsDialog'
 
@@ -20,8 +20,7 @@ function Harness({ initial = emptyUserSettings, fail = false }: { initial?: User
   return <UserSettingsContext.Provider value={{
     settings, status: 'loaded', saveBodyWeight: vi.fn(async () => undefined), saveMonthlyBudget, saveSavingsGoal,
   }}>
-    <SpendingCard spending={{ month: 'September', spentSen: 12345, spentTodaySen: 0 }} status="loaded" error={null} onRetry={vi.fn()} />
-    <DailySpendingCards spending={{ month: 'September', spentSen: 12345, spentTodaySen: 0 }} status="loaded" />
+    <SpendingCard spending={{ month: 'September', spentSen: 12345, spentTodaySen: 0 }} finance={{ incomeSen: 0, expenseSen: 12345, netCashflowSen: -12345 }} status="loaded" incomeStatus="loaded" error={null} incomeError={null} onRetry={vi.fn()} onRetryIncome={vi.fn()} />
     <SavingsGoalCard />
     <output data-testid="persisted">{`${settings.monthlyBudgetSen ?? 'none'}:${settings.savingsGoalSen ?? 'none'}`}</output>
   </UserSettingsContext.Provider>
@@ -47,12 +46,11 @@ describe('Budget and Savings Goal configuration', () => {
 
   it('creates and edits a monthly budget in integer sen', async () => {
     render(<Harness />)
-    expect(screen.getAllByText('Budget not configured')).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'Configure Budget' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Configure Budget' }))
     fireEvent.change(screen.getByLabelText('Budget amount (RM)'), { target: { value: '200.25' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save Budget' }))
     await waitFor(() => expect(screen.getByTestId('persisted').textContent).toBe('20025:none'))
-    expect(screen.getByText('Monthly budget RM 200.25')).toBeTruthy()
     expect(screen.getByText('RM 76.80')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit Budget' }))

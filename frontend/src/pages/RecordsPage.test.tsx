@@ -10,12 +10,16 @@ vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
 function provideRecords(status: 'loaded' | 'loading' | 'error' = 'loaded') {
   vi.mocked(useRecords).mockReturnValue({
     expenses: [],
+    incomes: [],
     exerciseRecords: [],
     expenseStatus: status,
     expenseError: status === 'error' ? 'Expense records unavailable.' : null,
+    incomeStatus: status,
+    incomeError: status === 'error' ? 'Income records unavailable.' : null,
     exerciseStatus: status,
     exerciseError: status === 'error' ? 'Exercise records unavailable.' : null,
     retryExpenseSubscription: vi.fn(),
+    retryIncomeSubscription: vi.fn(),
     retryExerciseSubscription: vi.fn(),
     drafts: [],
   } as unknown as ReturnType<typeof useRecords>)
@@ -44,6 +48,6 @@ describe('Records page empty state', () => {
     provideRecords('error')
     rerender(<RecordsPage />)
     expect(screen.queryByRole('button', { name: 'Capture a record' })).toBeNull()
-    expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(3)
   })
 })

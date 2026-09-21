@@ -1,5 +1,6 @@
 export interface GuestDataSummary {
   expensesCount: number
+  incomesCount: number
   exercisesCount: number
   hasBodyWeight: boolean
   hasBudget: boolean

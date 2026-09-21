@@ -2,6 +2,7 @@ import type { Firestore } from 'firebase/firestore'
 import { describe, expect, it, vi } from 'vitest'
 import { createFirestoreExerciseRepository } from './firestoreExerciseRepository'
 import { createFirestoreExpenseRepository } from './firestoreExpenseRepository'
+import { createFirestoreIncomeRepository } from './firestoreIncomeRepository'
 
 const firestoreMock = vi.hoisted(() => {
   const deletedField = { deleted: true }
@@ -9,6 +10,7 @@ const firestoreMock = vi.hoisted(() => {
     get: vi.fn(async () => ({ exists: (): boolean => true })),
     set: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
   }
   return { deletedField, transaction }
 })
@@ -97,5 +99,37 @@ describe('Firestore optional-field updates', () => {
       expect.anything(),
       expect.objectContaining({ amountSen: 1234, note: firestoreMock.deletedField }),
     )
+  })
+
+  it('creates Income as a separate positive integer-sen record', async () => {
+    firestoreMock.transaction.get.mockResolvedValueOnce({ exists: () => false })
+    firestoreMock.transaction.set.mockClear()
+    const repository = createFirestoreIncomeRepository(firestore, 'user')
+    await repository.createIncome('income', {
+      amountSen: 250_000, category: 'salary', description: 'Monthly salary', occurredAt,
+    })
+    expect(firestoreMock.transaction.set).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      amountSen: 250_000, category: 'salary', description: 'Monthly salary',
+    }))
+  })
+
+  it('edits and deletes Income without touching Expense storage', async () => {
+    const repository = createFirestoreIncomeRepository(firestore, 'user')
+    firestoreMock.transaction.update.mockClear()
+    firestoreMock.transaction.delete.mockClear()
+    await repository.updateIncome('income', {
+      amountSen: 260_000, category: 'business', description: 'Client payment', occurredAt,
+    })
+    await repository.deleteIncome('income')
+    expect(firestoreMock.transaction.update).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ amountSen: 260_000, note: firestoreMock.deletedField }))
+    expect(firestoreMock.transaction.delete).toHaveBeenCalledOnce()
+  })
+
+  it('rejects non-positive or fractional Income amounts before Firestore', async () => {
+    const repository = createFirestoreIncomeRepository(firestore, 'user')
+    const invalid = { amountSen: -1, category: 'salary' as const, description: 'Salary', occurredAt }
+    firestoreMock.transaction.get.mockResolvedValue({ exists: () => false })
+    await expect(repository.createIncome('bad', invalid)).rejects.toThrow('positive integer')
+    await expect(repository.createIncome('fractional', { ...invalid, amountSen: 12.5 })).rejects.toThrow('positive integer')
   })
 })

@@ -60,6 +60,19 @@ try {
   await assertSucceeds(setDoc(doc(alice, 'users/alice/expenses/lunch'), expense))
   await assertFails(setDoc(doc(bob, 'users/alice/expenses/other'), expense))
 
+  const income = {
+    amountSen: 500000, category: 'salary', description: 'Monthly salary',
+    occurredAt: Timestamp.now(), createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+  }
+  const incomePath = 'users/alice/incomes/salary'
+  await assertSucceeds(setDoc(doc(alice, incomePath), income))
+  await assertSucceeds(getDoc(doc(alice, incomePath)))
+  await assertFails(getDoc(doc(bob, incomePath)))
+  await assertFails(setDoc(doc(bob, 'users/alice/incomes/foreign'), income))
+  await assertFails(setDoc(doc(alice, 'users/alice/incomes/negative'), { ...income, amountSen: -1 }))
+  await assertFails(setDoc(doc(alice, 'users/alice/incomes/fractional'), { ...income, amountSen: 12.5 }))
+  await assertFails(setDoc(doc(alice, 'users/alice/incomes/bad-category'), { ...income, category: 'food' }))
+
   await environment.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), 'animes/sample-anime'), {
       externalId: 'sample-anime', title: 'Sample Anime', titleNormalized: 'sample anime',

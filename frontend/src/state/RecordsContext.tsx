@@ -2,9 +2,11 @@ import { useEffect, useMemo, useReducer, useState, type ReactNode } from 'react'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { OfflineExerciseWriteError } from '../lib/exerciseWriteError'
 import { OfflineExpenseWriteError } from '../lib/expenseWriteError'
+import { OfflineIncomeWriteError } from '../lib/incomeWriteError'
 import { useConnectivity } from '../providers/useConnectivity'
 import { createFirestoreExerciseRepository } from '../repositories/firestoreExerciseRepository'
 import { createFirestoreExpenseRepository } from '../repositories/firestoreExpenseRepository'
+import { createFirestoreIncomeRepository } from '../repositories/firestoreIncomeRepository'
 import type { ExpenseDraft, ExerciseDraft } from '../types/records'
 import { RecordsContext, type RecordsContextValue } from './recordsContextDefinition'
 import { recordsReducer, type RecordsState } from './recordsReducer'
@@ -18,10 +20,13 @@ function createId(prefix: string): string {
 function createInitialState(): RecordsState {
   return {
     expenses: [],
+    incomes: [],
     exerciseRecords: [],
     drafts: [],
     expenseStatus: 'loading',
     expenseError: null,
+    incomeStatus: 'loading',
+    incomeError: null,
     exerciseStatus: 'loading',
     exerciseError: null,
   }
@@ -31,6 +36,7 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
   const { firestore, uid } = useFirebaseAuth()
   const connectivity = useConnectivity()
   const [expenseSubscriptionVersion, setExpenseSubscriptionVersion] = useState(0)
+  const [incomeSubscriptionVersion, setIncomeSubscriptionVersion] = useState(0)
   const [exerciseSubscriptionVersion, setExerciseSubscriptionVersion] = useState(0)
   const [state, dispatch] = useReducer(recordsReducer, undefined, createInitialState)
   const expenseRepository = useMemo(
@@ -41,6 +47,22 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
     () => createFirestoreExerciseRepository(firestore, uid),
     [firestore, uid],
   )
+  const incomeRepository = useMemo(
+    () => createFirestoreIncomeRepository(firestore, uid),
+    [firestore, uid],
+  )
+
+  useEffect(() => {
+    dispatch({ type: 'incomes/loading' })
+    return incomeRepository.subscribeIncomes({
+      next(incomes) {
+        dispatch({ type: 'incomes/loaded', incomes })
+      },
+      error() {
+        dispatch({ type: 'incomes/failed', message: 'Income records are temporarily unavailable.' })
+      },
+    })
+  }, [incomeRepository, incomeSubscriptionVersion])
 
   useEffect(() => {
     dispatch({ type: 'expenses/loading' })
@@ -78,6 +100,9 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       retryExpenseSubscription() {
         setExpenseSubscriptionVersion((version) => version + 1)
       },
+      retryIncomeSubscription() {
+        setIncomeSubscriptionVersion((version) => version + 1)
+      },
       retryExerciseSubscription() {
         setExerciseSubscriptionVersion((version) => version + 1)
       },
@@ -110,6 +135,10 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         await expenseRepository.createExpense(draft.id, draft.data)
         dispatch({ type: 'expenseDraft/confirmed', draftId: id })
       },
+      async createExpense(data) {
+        if (connectivity === 'offline') throw new OfflineExpenseWriteError()
+        await expenseRepository.createExpense(createId('expense'), data)
+      },
       async updateExpense(id, data) {
         if (connectivity === 'offline') throw new OfflineExpenseWriteError()
         await expenseRepository.updateExpense(id, data)
@@ -117,6 +146,18 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
       async deleteExpense(id) {
         if (connectivity === 'offline') throw new OfflineExpenseWriteError()
         await expenseRepository.deleteExpense(id)
+      },
+      async createIncome(data) {
+        if (connectivity === 'offline') throw new OfflineIncomeWriteError()
+        await incomeRepository.createIncome(createId('income'), data)
+      },
+      async updateIncome(id, data) {
+        if (connectivity === 'offline') throw new OfflineIncomeWriteError()
+        await incomeRepository.updateIncome(id, data)
+      },
+      async deleteIncome(id) {
+        if (connectivity === 'offline') throw new OfflineIncomeWriteError()
+        await incomeRepository.deleteIncome(id)
       },
       createExerciseDraft(data) {
         const now = new Date().toISOString()
@@ -153,10 +194,10 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         await exerciseRepository.deleteExercise(id)
       },
     }),
-    [connectivity, exerciseRepository, expenseRepository, state],
+    [connectivity, exerciseRepository, expenseRepository, incomeRepository, state],
   )
 
-  if (state.expenseStatus === 'loading' && state.exerciseStatus === 'loading') {
+  if (state.expenseStatus === 'loading' && state.incomeStatus === 'loading' && state.exerciseStatus === 'loading') {
     if (connectivity === 'offline') {
       return (
         <AppStatusScreen

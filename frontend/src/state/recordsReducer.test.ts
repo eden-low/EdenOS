@@ -12,8 +12,9 @@ const exercise: ExerciseRecord = {
   occurredAt: at, createdAt: at, updatedAt: at, source: 'manual',
 }
 const initial: RecordsState = {
-  expenses: [], exerciseRecords: [], drafts: [],
+  expenses: [], incomes: [], exerciseRecords: [], drafts: [],
   expenseStatus: 'loading', expenseError: null,
+  incomeStatus: 'loading', incomeError: null,
   exerciseStatus: 'loading', exerciseError: null,
 }
 

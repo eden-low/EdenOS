@@ -50,6 +50,11 @@ export interface DashboardSummary {
   greeting: string
   displayDate: string
   monthlySpending: MonthlySpendingSummary
+  monthlyFinance: {
+    incomeSen: MoneyInSen
+    expenseSen: MoneyInSen
+    netCashflowSen: MoneyInSen
+  }
   exercise: ExerciseSummary
   recentActivity: RecentActivityItem[]
 }

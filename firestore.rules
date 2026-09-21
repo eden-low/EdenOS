@@ -48,6 +48,26 @@ service cloud.firestore {
         && data.source in ['manual', 'text', 'photo'];
     }
 
+    function isValidIncome(data) {
+      return data.keys().hasAll([
+          'amountSen', 'category', 'description', 'occurredAt', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'amountSen', 'category', 'description', 'note', 'occurredAt', 'createdAt', 'updatedAt'
+        ])
+        && data.amountSen is int
+        && data.amountSen > 0
+        && data.amountSen <= 9007199254740991
+        && data.category in ['salary', 'freelance', 'business', 'investment', 'gift', 'refund', 'other']
+        && data.description is string
+        && data.description.size() > 0
+        && data.description.size() <= 120
+        && (!('note' in data) || (data.note is string && data.note.size() <= 500))
+        && data.occurredAt is timestamp
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     function isValidExercise(data) {
       return data.keys().hasAll([
           'activity',
@@ -155,6 +175,19 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
       allow update: if isOwner(userId)
         && isValidExpense(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/incomes/{incomeId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidIncome(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidIncome(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time;
       allow delete: if isOwner(userId);

@@ -14,6 +14,17 @@ export const expenseCategories = [
 
 export type ExpenseCategory = (typeof expenseCategories)[number]
 export type ExpenseSource = 'manual' | 'text' | 'photo'
+export const incomeCategories = [
+  'salary',
+  'freelance',
+  'business',
+  'investment',
+  'gift',
+  'refund',
+  'other',
+] as const
+
+export type IncomeCategory = (typeof incomeCategories)[number]
 export type DraftStatus = 'draft' | 'confirmed'
 
 export interface ExpenseData {
@@ -26,6 +37,20 @@ export interface ExpenseData {
 }
 
 export interface ExpenseRecord extends ExpenseData {
+  id: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface IncomeData {
+  amountSen: MoneyInSen
+  category: IncomeCategory
+  description: string
+  note?: string
+  occurredAt: string
+}
+
+export interface IncomeRecord extends IncomeData {
   id: string
   createdAt: string
   updatedAt: string
@@ -63,11 +88,12 @@ export interface CaptureDraft<TKind extends string, TData> {
 export type ExpenseDraft = CaptureDraft<'expense', ExpenseData>
 export type ExerciseDraft = CaptureDraft<'exercise', ExerciseData>
 export type RecordDraft = ExpenseDraft | ExerciseDraft
-export type RecordFilter = 'all' | 'expenses' | 'exercise'
+export type RecordFilter = 'all' | 'expenses' | 'income' | 'exercise'
 export type RecordDomainStatus = 'loading' | 'loaded' | 'error'
 
 export type TimelineRecord =
   | { kind: 'expense'; occurredAt: string; record: ExpenseRecord }
+  | { kind: 'income'; occurredAt: string; record: IncomeRecord }
   | { kind: 'exercise'; occurredAt: string; record: ExerciseRecord }
 
 export interface TimelineGroup {

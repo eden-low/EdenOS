@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ExpenseRecord, ExerciseRecord } from '../types/records'
+import type { ExpenseRecord, ExerciseRecord, IncomeRecord } from '../types/records'
 import { selectDashboardSummary } from './dashboardSelectors'
 
 const occurredAt = (year: number, month: number, day: number, hour = 12) =>
@@ -31,6 +31,10 @@ function exercise(id: string, at: string, distanceMetres?: number): ExerciseReco
   }
 }
 
+function income(id: string, amountSen: number, at: string): IncomeRecord {
+  return { id, amountSen, category: 'salary', description: id, occurredAt: at, createdAt: at, updatedAt: at }
+}
+
 describe('Today summary', () => {
   const referenceDate = new Date(2026, 8, 17, 12)
 
@@ -48,6 +52,16 @@ describe('Today summary', () => {
       spentSen: 1934,
       spentTodaySen: 1234,
     })
+  })
+
+  it('adds a current-month finance overview without treating net cashflow as savings', () => {
+    const summary = selectDashboardSummary(
+      [expense('expense', 1200, occurredAt(2026, 9, 17))],
+      [],
+      referenceDate,
+      [income('salary', 5000, occurredAt(2026, 9, 1)), income('old', 9999, occurredAt(2026, 8, 1))],
+    )
+    expect(summary.monthlyFinance).toEqual({ incomeSen: 5000, expenseSen: 1200, netCashflowSen: 3800 })
   })
 
   it('counts Monday through Sunday and picks the latest exercise in that week', () => {

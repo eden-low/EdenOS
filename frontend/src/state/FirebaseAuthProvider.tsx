@@ -160,6 +160,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
             accountDiagnostic(summary.hasBlockingData ? 'guest-blocked' : 'guest-safe', {
               uid: maskedUid(identity.uid),
               expensesCount: summary.expensesCount,
+              incomesCount: summary.incomesCount,
               exercisesCount: summary.exercisesCount,
               hasBodyWeight: summary.hasBodyWeight,
               hasBudget: summary.hasBudget,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { ExpenseRecord, ExerciseRecord } from '../types/records'
+import type { ExpenseRecord, ExerciseRecord, IncomeRecord } from '../types/records'
 import { selectTimelineGroups } from './recordSelectors'
 
 const morning = new Date(2026, 8, 17, 9).toISOString()
@@ -35,5 +35,15 @@ describe('Records timeline', () => {
       .flatMap((group) => group.records.map((item) => item.record.id))).toEqual(['lunch'])
     expect(selectTimelineGroups(expenses, exercises, 'exercise')
       .flatMap((group) => group.records.map((item) => item.record.id))).toEqual(['walk', 'run'])
+  })
+
+  it('includes Income in All and isolates the Income filter', () => {
+    const income: IncomeRecord = {
+      id: 'salary', amountSen: 100000, category: 'salary', description: 'Salary',
+      occurredAt: evening, createdAt: evening, updatedAt: evening,
+    }
+    expect(selectTimelineGroups([], [], 'all', [income])[0].records[0].kind).toBe('income')
+    expect(selectTimelineGroups(expenses, exercises, 'income', [income])
+      .flatMap((group) => group.records.map((item) => item.record.id))).toEqual(['salary'])
   })
 })

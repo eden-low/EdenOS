@@ -178,6 +178,32 @@ button:not(:disabled) {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.018) inset;
 }
 
+.finance-summary-card {
+  min-width: 0;
+  min-height: 9.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--card-radius);
+  padding: 1.25rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+}
+
+.finance-summary-card-violet { background: color-mix(in srgb, var(--accent-wash-strong) 72%, var(--surface-primary)); }
+.finance-summary-card-green { background: color-mix(in srgb, var(--positive-wash) 78%, var(--surface-primary)); }
+.finance-summary-card-blue { background: color-mix(in srgb, var(--accent-blue-wash) 78%, var(--surface-primary)); }
+.finance-summary-card-amber { background: color-mix(in srgb, var(--accent-amber-wash) 82%, var(--surface-primary)); }
+
+.finance-summary-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+  color: var(--text-secondary);
+}
+
 .section-label {
   font-size: 0.75rem;
   font-weight: 650;

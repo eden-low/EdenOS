@@ -8,7 +8,7 @@ import {
   startOfLocalWeek,
 } from '../lib/date'
 import type { DashboardSummary, RecentActivityItem } from '../types/dashboard'
-import type { ExpenseRecord, ExerciseRecord } from '../types/records'
+import type { ExpenseRecord, ExerciseRecord, IncomeRecord } from '../types/records'
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' })
 
@@ -54,6 +54,7 @@ export function selectDashboardSummary(
   expenses: ExpenseRecord[],
   exerciseRecords: ExerciseRecord[],
   referenceDate: Date,
+  incomes: IncomeRecord[] = [],
 ): DashboardSummary {
   const monthlyExpenses = expenses.filter((expense) =>
     isSameLocalMonth(new Date(expense.occurredAt), referenceDate),
@@ -62,6 +63,9 @@ export function selectDashboardSummary(
   const spentTodaySen = monthlyExpenses
     .filter((expense) => isSameLocalDay(new Date(expense.occurredAt), referenceDate))
     .reduce((total, expense) => total + expense.amountSen, 0)
+  const incomeSen = incomes
+    .filter((income) => isSameLocalMonth(new Date(income.occurredAt), referenceDate))
+    .reduce((total, income) => total + income.amountSen, 0)
 
   const weekStart = startOfLocalWeek(referenceDate)
   const nextWeek = addLocalWeeks(weekStart, 1)
@@ -84,6 +88,11 @@ export function selectDashboardSummary(
       month: monthFormatter.format(referenceDate),
       spentSen,
       spentTodaySen,
+    },
+    monthlyFinance: {
+      incomeSen,
+      expenseSen: spentSen,
+      netCashflowSen: incomeSen - spentSen,
     },
     exercise: {
       completedSessions: weeklyExercise.length,

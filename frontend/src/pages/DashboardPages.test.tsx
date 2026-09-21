@@ -5,12 +5,14 @@ import { useRecords } from '../state/useRecords'
 import { useUserSettings } from '../state/useUserSettings'
 import { ExpensesPage } from './ExpensesPage'
 import { ExercisePage } from './ExercisePage'
+import { PrivacyLockContext, unlockedPrivacyLock } from '../privacy/privacyLockContext'
 
 vi.mock('../hooks/useLocalReferenceDate', () => ({ useLocalReferenceDate: vi.fn() }))
 vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
 vi.mock('../state/useUserSettings', () => ({ useUserSettings: vi.fn() }))
 
 const retryExpenseSubscription = vi.fn()
+const retryIncomeSubscription = vi.fn()
 const retryExerciseSubscription = vi.fn()
 
 beforeEach(() => {
@@ -18,9 +20,10 @@ beforeEach(() => {
   vi.mocked(useUserSettings).mockReturnValue({ settings: { bodyWeightKg: 70, monthlyBudgetSen: 20_000, savingsGoalSen: 50_000 }, status: 'loaded' } as ReturnType<typeof useUserSettings>)
   vi.mocked(useRecords).mockReturnValue({
     expenses: [{ id: 'lunch', title: 'Lunch', category: 'food', amountSen: 2500, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z', source: 'manual' }],
+    incomes: [{ id: 'salary', description: 'Salary', category: 'salary', amountSen: 250000, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z' }],
     exerciseRecords: [{ id: 'run', activity: 'Running', durationSeconds: 1800, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z', source: 'manual', reportedActiveCaloriesKcal: 240 }],
-    expenseStatus: 'loaded', expenseError: null, exerciseStatus: 'loaded', exerciseError: null,
-    retryExpenseSubscription, retryExerciseSubscription,
+    expenseStatus: 'loaded', expenseError: null, incomeStatus: 'loaded', incomeError: null, exerciseStatus: 'loaded', exerciseError: null,
+    retryExpenseSubscription, retryIncomeSubscription, retryExerciseSubscription,
   } as unknown as ReturnType<typeof useRecords>)
 })
 
@@ -31,9 +34,9 @@ describe('dedicated dashboards', () => {
     expect(screen.getAllByText('RM 25')[0]).toBeTruthy()
     expect(screen.getByText('Food')).toBeTruthy()
     expect(screen.getByText('Lunch')).toBeTruthy()
-    expect(screen.getByText('Monthly Spending Trend')).toBeTruthy()
-    expect(screen.getByRole('img', { name: 'Monthly cumulative spending line chart' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'View Records' }))
+    expect(screen.getByText('Cashflow activity')).toBeTruthy()
+    expect(screen.getByRole('img', { name: 'Cumulative income and expense line chart' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'View all EdenOS records' }))
     expect(openRecords).toHaveBeenCalledOnce()
   })
 
@@ -46,10 +49,19 @@ describe('dedicated dashboards', () => {
   })
 
   it('shows a scoped retry for an Expense subscription error', () => {
-    vi.mocked(useRecords).mockReturnValue({ expenses: [], exerciseRecords: [], expenseStatus: 'error', expenseError: 'Permission denied', retryExpenseSubscription } as unknown as ReturnType<typeof useRecords>)
+    vi.mocked(useRecords).mockReturnValue({ expenses: [], incomes: [], exerciseRecords: [], expenseStatus: 'error', expenseError: 'Permission denied', incomeStatus: 'loaded', incomeError: null, retryExpenseSubscription, retryIncomeSubscription } as unknown as ReturnType<typeof useRecords>)
     render(<ExpensesPage onOpenRecords={vi.fn()} />)
     expect(screen.getByRole('alert').textContent).toContain('Permission denied')
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
     expect(retryExpenseSubscription).toHaveBeenCalled()
+  })
+
+  it('masks Income, Expenses, Net Cashflow, chart values, and unified transaction amounts while locked', () => {
+    render(<PrivacyLockContext.Provider value={{ ...unlockedPrivacyLock, enabled: true, locked: true, requestUnlock: vi.fn() }}><ExpensesPage onOpenRecords={vi.fn()} /></PrivacyLockContext.Provider>)
+    expect(screen.getByText('Unlock to view finance trend')).toBeTruthy()
+    expect(screen.queryByText('RM 2,500')).toBeNull()
+    expect(screen.queryByText('RM 25')).toBeNull()
+    expect(screen.queryByText('RM 2,475')).toBeNull()
+    expect(screen.getAllByText(/RM/).length).toBeGreaterThan(3)
   })
 })

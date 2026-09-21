@@ -29,7 +29,7 @@ vi.mock('../repositories/firestoreAnimeProgressRepository', () => ({
 const guest: AuthIdentity = { uid: 'guest-uid', isAnonymous: true, email: null }
 const linked: AuthIdentity = { uid: 'guest-uid', isAnonymous: false, email: 'user@example.com' }
 const emptyGuestSummary: GuestDataSummary = {
-  expensesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasBudget: false,
+  expensesCount: 0, incomesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasBudget: false,
   hasSavingsGoal: false, animeProgressCount: 0, animeCloudProgressCount: 0,
   otherBlockingData: [], hasBlockingData: false,
 }

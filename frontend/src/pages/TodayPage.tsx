@@ -4,7 +4,7 @@ import { DailyContext } from '../components/dashboard/DailyContext'
 import { ExerciseCard } from '../components/dashboard/ExerciseCard'
 import { RecentActivity } from '../components/dashboard/RecentActivity'
 import { SavingsGoalCard } from '../components/dashboard/SavingsGoalCard'
-import { DailySpendingCards, SpendingCard } from '../components/dashboard/SpendingCard'
+import { SpendingCard } from '../components/dashboard/SpendingCard'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { selectDashboardSummary } from '../selectors/dashboardSelectors'
 import { useRecords } from '../state/useRecords'
@@ -12,12 +12,16 @@ import { useRecords } from '../state/useRecords'
 export function TodayPage() {
   const {
     expenses,
+    incomes,
     exerciseRecords,
     expenseStatus,
     expenseError,
+    incomeStatus,
+    incomeError,
     exerciseStatus,
     exerciseError,
     retryExpenseSubscription,
+    retryIncomeSubscription,
     retryExerciseSubscription,
   } = useRecords()
   const referenceDate = useLocalReferenceDate()
@@ -27,8 +31,9 @@ export function TodayPage() {
         expenseStatus === 'loaded' ? expenses : [],
         exerciseStatus === 'loaded' ? exerciseRecords : [],
         referenceDate,
+        incomeStatus === 'loaded' ? incomes : [],
       ),
-    [exerciseRecords, exerciseStatus, expenseStatus, expenses, referenceDate],
+    [exerciseRecords, exerciseStatus, expenseStatus, expenses, incomeStatus, incomes, referenceDate],
   )
   const recentActivitySource =
     expenseStatus === 'loaded' && exerciseStatus === 'loaded'
@@ -57,16 +62,19 @@ export function TodayPage() {
       <div className="mt-4 grid grid-cols-2 items-stretch gap-3 sm:mt-5 sm:gap-4 md:grid-cols-6 xl:grid-cols-12">
         <SpendingCard
           spending={dashboard.monthlySpending}
+          finance={dashboard.monthlyFinance}
           status={expenseStatus}
+          incomeStatus={incomeStatus}
           error={expenseError}
+          incomeError={incomeError}
           onRetry={retryExpenseSubscription}
+          onRetryIncome={retryIncomeSubscription}
         />
         <RecentActivity
           items={dashboard.recentActivity}
           sourceLabel={recentActivitySource}
           emptyMessage={recentActivityEmptyMessage}
         />
-        <DailySpendingCards spending={dashboard.monthlySpending} status={expenseStatus} />
         <ExerciseCard
           exercise={dashboard.exercise}
           status={exerciseStatus}
