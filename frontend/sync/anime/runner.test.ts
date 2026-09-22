@@ -342,6 +342,61 @@ describe('Anime sync runner', () => {
     expect(publish).toHaveBeenCalledWith([expect.objectContaining({ indexChanged: true, r2Changed: true })], [expect.objectContaining({ providerItemId: 'new-1' })])
     expect(put).toHaveBeenCalledOnce()
     expect(saveCheckpoint).toHaveBeenCalledOnce()
+    expect(saveCheckpoint).toHaveBeenCalledWith('controlled-v1', expect.objectContaining({ complete: true }))
+  })
+
+  it('retains the checkpoint and logs source diagnostics when canonical output fails before a write-budget stop', async () => {
+    const candidates = [
+      vodItem({ vod_id: 'broken-1', vod_name: 'Broken Title', type_id: 30, type_name: '\u65e5\u97e9\u52a8\u6f2b', vod_area: '\u65e5\u672c' }),
+      vodItem({ vod_id: 'next-2', vod_name: 'Next Title', type_id: 30, type_name: '\u65e5\u97e9\u52a8\u6f2b', vod_area: '\u65e5\u672c' }),
+    ]
+    const publish = vi.fn(async () => undefined)
+    const saveCheckpoint = vi.fn(async () => undefined)
+    const store: AnimeSyncStore = {
+      getSourceMappings: async () => new Map(),
+      getStates: async (ids) => new Map([[ids[0], { externalId: ids[0], indexHash: 'old', detailHash: 'old', updatedAtMs: 1 }]]),
+      publish,
+      getCheckpoint: async () => ({ version: 1, providerIndex: 0, categoryIndex: 0, page: 1, offset: 0, updatedAtMs: 1, complete: false }),
+      saveCheckpoint,
+      listCatalogue: async () => [],
+      listAllSourceMappings: async () => [],
+      findProgressExternalIds: async () => [],
+      deleteCatalogue: async () => undefined,
+      deleteInternalMetadata: async () => undefined,
+    }
+    const detailStore: AnimeDetailStore = {
+      get: async () => { throw new Error('R2 GET failed at https://private.example/detail?token=hidden') },
+      exists: async () => false,
+      put: vi.fn(async () => undefined),
+      remove: async () => undefined,
+    }
+    const log = vi.fn()
+    const result = await runAnimeSync({
+      ...options,
+      dryRun: false,
+      controlled: true,
+      maxTitles: 2,
+      contentGroupTargets: controlledContentGroups,
+      maxFirestoreReads: 30_000,
+      maxFirestoreWrites: 3,
+      operationSafetyMargin: 1,
+    }, { providers: [controlledProvider(candidates)], cacheRoot: await temporaryDirectory(), store, detailStore, log })
+    expect(result.summary.stopReason).toBe('error threshold')
+    expect(result.summary.checkpoint).toMatchObject({ providerIndex: 0, categoryIndex: 0, page: 1, offset: 0 })
+    expect(result.summary.operations.checkpointWrites).toBe(0)
+    expect(saveCheckpoint).not.toHaveBeenCalled()
+    expect(publish).not.toHaveBeenCalled()
+    expect(result.failures).toEqual([expect.objectContaining({
+      provider: 'provider-a', providerItemId: 'broken-1', stage: 'normalize', errorCode: 'canonical-output',
+      sources: [expect.objectContaining({ providerItemId: 'broken-1', title: 'Broken Title', cursor: { providerIndex: 0, categoryIndex: 0, page: 1, offset: 0 } })],
+      message: 'R2 GET failed at [redacted-url]', errorName: 'Error',
+    })])
+    const diagnostic = log.mock.calls.map(([message]) => String(message)).find((message) => message.startsWith('Canonical-output failure:'))
+    expect(diagnostic).toContain('broken-1')
+    expect(diagnostic).toContain('Broken Title')
+    expect(diagnostic).toContain('canonical-output')
+    expect(diagnostic).not.toContain('private.example')
+    expect(diagnostic).not.toContain('hidden')
   })
 
   it('stops a controlled scan before exceeding the read budget', async () => {
@@ -433,6 +488,7 @@ describe('Anime sync runner', () => {
     }, { providers: [controlledProvider()], cacheRoot: await temporaryDirectory(), store, detailStore })
     expect(result.summary.stopReason).toBe('error threshold')
     expect(publish).not.toHaveBeenCalled()
-    expect(saveCheckpoint).toHaveBeenCalledWith('controlled-v1', expect.objectContaining({ page: 1, offset: 0, complete: false }))
+    expect(saveCheckpoint).not.toHaveBeenCalled()
+    expect(result.summary.operations.checkpointWrites).toBe(0)
   })
 })

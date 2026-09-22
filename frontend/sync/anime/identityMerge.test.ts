@@ -43,6 +43,16 @@ describe('canonical identity and merge', () => {
     const resolution = resolveCanonicalIdentity([a, b, third], mappings)
     expect(resolution.groups.size).toBe(3)
     expect(resolution.ambiguousMatches).toBe(1)
+    const incomingMapping = resolution.mappings.find((mapping) => mapping.providerItemId === third.providerItemId)
+    expect(incomingMapping?.matchedBy).toBe('deterministic-new')
+    expect(incomingMapping?.canonicalExternalId).not.toBe('one-piece-a')
+    expect(incomingMapping?.canonicalExternalId).not.toBe('one-piece-b')
+    expect(resolution.ambiguities).toEqual([expect.objectContaining({
+      provider: third.providerId,
+      providerItemId: third.providerItemId,
+      candidateCanonicalIds: ['one-piece-a', 'one-piece-b'],
+      assignedCanonicalId: incomingMapping?.canonicalExternalId,
+    })])
   })
 
   it('prefers one exact primary-title match over a competing alternate-title match', () => {

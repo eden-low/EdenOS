@@ -47,7 +47,14 @@ export interface AnimeSyncResult {
 }
 
 function safeMessage(error: unknown): string {
-  return error instanceof Error ? error.message.slice(0, 300) : 'Unknown sync error'
+  return error instanceof Error ? safeDiagnostic(error.message) : 'Unknown sync error'
+}
+
+function safeDiagnostic(value: string): string {
+  return value
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[redacted-url]')
+    .replace(/\b(token|api[_-]?key|secret|password|authorization)\b\s*[:=]\s*[^\s,;]+/gi, '$1=[redacted]')
+    .slice(0, 300)
 }
 
 function runId(now: number): string {
@@ -296,6 +303,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   let controlledMappings = new Map<string, SourceMapping>()
   let controlledCandidatePositions = new Map<string, SyncCheckpoint>()
   let controlledCheckpoint: SyncCheckpoint | undefined
+  let controlledStartCheckpoint: SyncCheckpoint | undefined
   let providerRowsScanned = 0
   let existingCandidates = 0
   let stopReason: SyncStopReason = 'complete'
@@ -303,6 +311,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     if (!dependencies.store?.getCheckpoint || !dependencies.store.saveCheckpoint) throw new Error('Controlled sync requires a checkpoint-capable Firebase store')
     const checkpointId = options.checkpointId ?? 'controlled-v1'
     const saved = await dependencies.store.getCheckpoint(checkpointId)
+    controlledStartCheckpoint = saved ?? initialCheckpoint(started)
     operations.firestoreReads += 1
     operations.checkpointReads += 1
     const controlled = await fetchControlledCandidates({
@@ -312,7 +321,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       options,
       operations,
       failures,
-      start: saved ?? initialCheckpoint(started),
+      start: controlledStartCheckpoint,
       now: started,
     })
     controlledMappings = controlled.existingMappings
@@ -382,6 +391,17 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     existingCandidates = mappingKeys.filter((key) => existingMappings.has(sourceMappingId(key.provider, key.providerItemId))).length
   }
   const identity = resolveCanonicalIdentity(identityInput, existingMappings)
+  for (const ambiguity of identity.ambiguities) {
+    const position = controlledCandidatePositions.get(sourceMappingId(ambiguity.provider, ambiguity.providerItemId))
+    log(`Ambiguous match: ${JSON.stringify({
+      provider: safeDiagnostic(ambiguity.provider),
+      providerItemId: safeDiagnostic(ambiguity.providerItemId),
+      title: safeDiagnostic(ambiguity.title),
+      candidateCanonicalIds: ambiguity.candidateCanonicalIds,
+      assignedCanonicalId: ambiguity.assignedCanonicalId,
+      ...(position ? { cursor: { providerIndex: position.providerIndex, categoryIndex: position.categoryIndex, page: position.page, offset: position.offset } } : {}),
+    })}`)
+  }
   const availableStateReads = Math.max(0, readLimit - operations.firestoreReads)
   const identityGroups = [...identity.groups.entries()]
   const selectedGroups = identityGroups.slice(0, availableStateReads)
@@ -405,7 +425,27 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     if (result.status === 'fulfilled') mergedCanonicals.push(result.value)
     else {
       const [externalId, records] = mergeJobs[index]
-      failures.push({ provider: records[0].providerId, canonicalExternalId: externalId, stage: 'normalize', errorCode: 'canonical-output', message: safeMessage(result.reason) })
+      const sources = records.map((record) => {
+        const position = controlledCandidatePositions.get(sourceMappingId(record.providerId, record.providerItemId))
+        return {
+          provider: safeDiagnostic(record.providerId),
+          providerItemId: safeDiagnostic(record.providerItemId),
+          title: safeDiagnostic(record.title),
+          ...(position ? { cursor: { providerIndex: position.providerIndex, categoryIndex: position.categoryIndex, page: position.page, offset: position.offset } } : {}),
+        }
+      })
+      const failure: SyncFailure = {
+        provider: sources[0].provider,
+        providerItemId: sources[0].providerItemId,
+        canonicalExternalId: externalId,
+        sources,
+        stage: 'normalize',
+        errorCode: 'canonical-output',
+        message: safeMessage(result.reason),
+        ...(result.reason instanceof Error ? { errorName: safeDiagnostic(result.reason.name) } : {}),
+      }
+      failures.push(failure)
+      log(`Canonical-output failure: ${JSON.stringify(failure)}`)
     }
   }
   const canonicals = options.controlled
@@ -520,7 +560,12 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     operations.syncStateWrites += successfulR2Writes.length
     operations.sourceMapWrites += publishMappings.length
   }
-  if (options.controlled && controlledCheckpoint && !options.dryRun) {
+  if (options.controlled && failures.length && controlledStartCheckpoint) {
+    controlledCheckpoint = controlledStartCheckpoint
+    stopReason = 'error threshold'
+    log(`Checkpoint retained due to ${failures.length} unresolved failure(s)`)
+  }
+  if (options.controlled && controlledCheckpoint && !options.dryRun && !failures.length) {
     await dependencies.store!.saveCheckpoint!(options.checkpointId ?? 'controlled-v1', { ...controlledCheckpoint, updatedAtMs: dependencies.now?.() ?? Date.now() })
     operations.firestoreWrites += 1
     operations.checkpointWrites += 1

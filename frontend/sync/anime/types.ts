@@ -153,9 +153,16 @@ export interface SyncFailure {
   provider: string
   providerItemId?: string
   canonicalExternalId?: string
+  sources?: Array<{
+    provider: string
+    providerItemId: string
+    title: string
+    cursor?: Pick<SyncCheckpoint, 'providerIndex' | 'categoryIndex' | 'page' | 'offset'>
+  }>
   stage: 'probe' | 'list' | 'detail' | 'normalize' | 'identity' | 'r2' | 'firestore' | 'media-probe'
   errorCode: string
   message: string
+  errorName?: string
 }
 
 export interface SyncOptions {
