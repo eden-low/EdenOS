@@ -265,6 +265,7 @@ describe('Anime sync runner', () => {
     const { detailStore, put } = memoryR2()
     const result = await runAnimeSync({
       ...options,
+      mode: 'full',
       controlled: true,
       maxTitles: 2,
       contentGroupTargets: controlledContentGroups,
@@ -298,6 +299,7 @@ describe('Anime sync runner', () => {
     const result = await runAnimeSync({
       ...options,
       dryRun: false,
+      mode: 'full',
       controlled: true,
       maxTitles: 1,
       contentGroupTargets: controlledContentGroups,
@@ -331,6 +333,7 @@ describe('Anime sync runner', () => {
     const result = await runAnimeSync({
       ...options,
       dryRun: false,
+      mode: 'full',
       controlled: true,
       maxTitles: 1,
       contentGroupTargets: controlledContentGroups,
@@ -374,6 +377,7 @@ describe('Anime sync runner', () => {
     const result = await runAnimeSync({
       ...options,
       dryRun: false,
+      mode: 'full',
       controlled: true,
       maxTitles: 2,
       contentGroupTargets: controlledContentGroups,
@@ -414,6 +418,7 @@ describe('Anime sync runner', () => {
     }
     const result = await runAnimeSync({
       ...options,
+      mode: 'full',
       controlled: true,
       maxTitles: 1,
       contentGroupTargets: controlledContentGroups,
@@ -445,6 +450,7 @@ describe('Anime sync runner', () => {
     await runAnimeSync({
       ...options,
       dryRun: false,
+      mode: 'full',
       controlled: true,
       maxTitles: 1,
       contentGroupTargets: controlledContentGroups,
@@ -479,6 +485,7 @@ describe('Anime sync runner', () => {
     const result = await runAnimeSync({
       ...options,
       dryRun: false,
+      mode: 'full',
       controlled: true,
       maxTitles: 1,
       contentGroupTargets: controlledContentGroups,

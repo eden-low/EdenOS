@@ -7,6 +7,8 @@ const defaultRetries = 2
 export const defaultMaxFirestoreWrites = 12_000
 export const defaultMaxFirestoreReads = 30_000
 export const defaultOperationSafetyMargin = 100
+export const defaultIncrementalMaxPages = 5
+export const defaultIncrementalKnownPages = 2
 
 function positiveInteger(value: string | undefined, fallback: number): number {
   const parsed = value ? Number(value) : Number.NaN
@@ -81,11 +83,16 @@ export function parseSyncOptions(arguments_: string[], env: NodeJS.ProcessEnv = 
   const maxWritesArgument = arguments_.find((item) => item.startsWith('--max-firestore-writes='))
   const safetyMarginArgument = arguments_.find((item) => item.startsWith('--operation-safety-margin='))
   const checkpointArgument = arguments_.find((item) => item.startsWith('--checkpoint-id='))
+  const incrementalStateArgument = arguments_.find((item) => item.startsWith('--incremental-state-id='))
+  const incrementalMaxPagesArgument = arguments_.find((item) => item.startsWith('--incremental-max-pages='))
+  const incrementalKnownPagesArgument = arguments_.find((item) => item.startsWith('--incremental-known-pages='))
   const cleanup = cleanupArgument ? valueAfterEquals(cleanupArgument) : 'none'
   const maxTitles = maxTitlesArgument ? Number(valueAfterEquals(maxTitlesArgument)) : undefined
   const maxFirestoreReads = Number(maxReadsArgument ? valueAfterEquals(maxReadsArgument) : env.MAX_FIRESTORE_READS ?? defaultMaxFirestoreReads)
   const maxFirestoreWrites = Number(maxWritesArgument ? valueAfterEquals(maxWritesArgument) : env.MAX_FIRESTORE_WRITES ?? defaultMaxFirestoreWrites)
   const operationSafetyMargin = Number(safetyMarginArgument ? valueAfterEquals(safetyMarginArgument) : env.ANIME_SYNC_OPERATION_SAFETY_MARGIN ?? defaultOperationSafetyMargin)
+  const incrementalMaxPages = Number(incrementalMaxPagesArgument ? valueAfterEquals(incrementalMaxPagesArgument) : env.ANIME_SYNC_INCREMENTAL_MAX_PAGES ?? defaultIncrementalMaxPages)
+  const incrementalKnownPages = Number(incrementalKnownPagesArgument ? valueAfterEquals(incrementalKnownPagesArgument) : env.ANIME_SYNC_INCREMENTAL_KNOWN_PAGES ?? defaultIncrementalKnownPages)
   if (targetsArgument && groupTargetsArgument) throw new Error('Use either --content-targets or --content-groups, not both')
   if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) throw new Error('--limit must be a positive integer')
   if (maxTitles !== undefined && (!Number.isInteger(maxTitles) || maxTitles <= 0)) throw new Error('--max-titles must be a positive integer')
@@ -93,6 +100,8 @@ export function parseSyncOptions(arguments_: string[], env: NodeJS.ProcessEnv = 
   if (!Number.isInteger(maxFirestoreWrites) || maxFirestoreWrites < 1) throw new Error('--max-firestore-writes must be a positive integer')
   if (!Number.isInteger(operationSafetyMargin) || operationSafetyMargin < 0 || operationSafetyMargin >= Math.min(maxFirestoreReads, maxFirestoreWrites)) throw new Error('--operation-safety-margin must be smaller than both operation budgets')
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 10) throw new Error('--concurrency must be between 1 and 10')
+  if (!Number.isInteger(incrementalMaxPages) || incrementalMaxPages < 1 || incrementalMaxPages > 50) throw new Error('--incremental-max-pages must be between 1 and 50')
+  if (!Number.isInteger(incrementalKnownPages) || incrementalKnownPages < 1 || incrementalKnownPages > incrementalMaxPages) throw new Error('--incremental-known-pages must be between 1 and --incremental-max-pages')
   if (cleanup !== 'none' && cleanup !== 'plan' && cleanup !== 'apply') throw new Error('--cleanup must be none, plan, or apply')
   return {
     mode: modeValue,
@@ -113,6 +122,9 @@ export function parseSyncOptions(arguments_: string[], env: NodeJS.ProcessEnv = 
     maxFirestoreWrites,
     operationSafetyMargin,
     checkpointId: checkpointArgument ? valueAfterEquals(checkpointArgument) : env.ANIME_SYNC_CHECKPOINT_ID ?? 'controlled-v1',
+    incrementalStateId: incrementalStateArgument ? valueAfterEquals(incrementalStateArgument) : env.ANIME_SYNC_INCREMENTAL_STATE_ID ?? 'anime-incremental-v1',
+    incrementalMaxPages,
+    incrementalKnownPages,
     catalogueStats: arguments_.includes('--catalogue-stats'),
     verifyIdempotency: arguments_.includes('--verify-idempotency'),
   }

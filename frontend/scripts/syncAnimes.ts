@@ -32,6 +32,7 @@ function printSummary(summary: Awaited<ReturnType<typeof runAnimeSync>>['summary
     `Source-map reads/writes: ${summary.operations.sourceMapReads}/${summary.operations.sourceMapWrites}`,
     `Sync-state reads/writes: ${summary.operations.syncStateReads}/${summary.operations.syncStateWrites}`,
     `Checkpoint reads/writes: ${summary.operations.checkpointReads}/${summary.operations.checkpointWrites}`,
+    `Incremental-state reads/writes: ${summary.operations.incrementalStateReads}/${summary.operations.incrementalStateWrites}`,
     `Planned R2 writes: ${summary.plannedR2Writes}`,
     `Actual R2 reads/writes/deletes: ${summary.operations.r2Reads}/${summary.operations.r2Writes}/${summary.operations.r2Deletes}`,
     `R2 unchanged/skipped: ${summary.operations.r2UnchangedSkipped}`,
@@ -51,8 +52,11 @@ function printSummary(summary: Awaited<ReturnType<typeof runAnimeSync>>['summary
     `Other content rejected: ${summary.otherRejected}`,
     ...Object.entries(summary.providerStats).map(([provider, stats]) => `${provider} requests/retries/failures: ${stats.requests}/${stats.retries}/${stats.failures}`),
     `Retry count: ${summary.retryCount}`,
+    ...(summary.knownSourceRowsSkipped !== undefined ? [`Known source rows skipped: ${summary.knownSourceRowsSkipped}`] : []),
+    ...(summary.incrementalCategories ?? []).map((category) => `Incremental category ${category.provider}/${category.contentGroup}/${category.categoryId}: pages=${category.pagesScanned} rows=${category.rowsScanned} knownSkipped=${category.knownRowsSkipped} candidates=${category.candidates} stop=${category.stopReason}`),
     `Stop reason: ${summary.stopReason}`,
     ...(summary.checkpoint ? [`Checkpoint: provider=${summary.checkpoint.providerIndex} category=${summary.checkpoint.categoryIndex} page=${summary.checkpoint.page} offset=${summary.checkpoint.offset} complete=${summary.checkpoint.complete}`] : []),
+    ...(summary.incrementalState ? [`Incremental state: ${JSON.stringify(summary.incrementalState)}`] : []),
     `Elapsed: ${summary.elapsedMs}ms`,
   ].join('\n'))
 }
