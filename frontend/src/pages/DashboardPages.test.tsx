@@ -6,10 +6,15 @@ import { useUserSettings } from '../state/useUserSettings'
 import { ExpensesPage } from './ExpensesPage'
 import { ExercisePage } from './ExercisePage'
 import { PrivacyLockContext, unlockedPrivacyLock } from '../privacy/privacyLockContext'
+import { useFinancePlanning } from '../state/useFinancePlanning'
+import { useGoalAllocations } from '../state/useGoalAllocations'
 
 vi.mock('../hooks/useLocalReferenceDate', () => ({ useLocalReferenceDate: vi.fn() }))
 vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
 vi.mock('../state/useUserSettings', () => ({ useUserSettings: vi.fn() }))
+vi.mock('../state/useFinanceRules', () => ({ useFinanceRules: () => ({ rules: [], status: 'loaded', createRule: vi.fn(), setRuleEnabled: vi.fn(), deleteRule: vi.fn() }) }))
+vi.mock('../state/useFinancePlanning', () => ({ useFinancePlanning: vi.fn() }))
+vi.mock('../state/useGoalAllocations', () => ({ useGoalAllocations: vi.fn() }))
 
 const retryExpenseSubscription = vi.fn()
 const retryIncomeSubscription = vi.fn()
@@ -18,6 +23,8 @@ const retryExerciseSubscription = vi.fn()
 beforeEach(() => {
   vi.mocked(useLocalReferenceDate).mockReturnValue(new Date(2026, 8, 20, 12))
   vi.mocked(useUserSettings).mockReturnValue({ settings: { bodyWeightKg: 70, heightCm: 175, monthlyBudgetSen: 20_000, savingsGoalSen: 50_000 }, status: 'loaded', saveBodyWeight: vi.fn(), saveHeight: vi.fn(), saveMonthlyBudget: vi.fn(), saveSavingsGoal: vi.fn() } as ReturnType<typeof useUserSettings>)
+  vi.mocked(useFinancePlanning).mockReturnValue({ goals: [], budgets: [], status: 'loaded', createGoal: vi.fn(), updateGoal: vi.fn(), setGoalArchived: vi.fn(), contributeToGoal: vi.fn(), createBudget: vi.fn(), updateBudget: vi.fn(), setBudgetArchived: vi.fn() })
+  vi.mocked(useGoalAllocations).mockReturnValue({ allocations: [], status: 'loaded' })
   vi.mocked(useRecords).mockReturnValue({
     expenses: [{ id: 'lunch', title: 'Lunch', category: 'food', amountSen: 2500, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z', source: 'manual' }],
     incomes: [{ id: 'salary', description: 'Salary', category: 'salary', amountSen: 250000, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z' }],
@@ -32,7 +39,7 @@ describe('dedicated dashboards', () => {
     const openRecords = vi.fn(); render(<ExpensesPage onOpenRecords={openRecords} />)
     expect(screen.getByRole('heading', { name: 'Expenses' })).toBeTruthy()
     expect(screen.getAllByText('RM 25')[0]).toBeTruthy()
-    expect(screen.getByText('Food')).toBeTruthy()
+    expect(screen.getAllByText('Food')[0]).toBeTruthy()
     expect(screen.getByText('Lunch')).toBeTruthy()
     expect(screen.getByText('Cashflow activity')).toBeTruthy()
     expect(screen.getByRole('img', { name: 'Cumulative income and expense line chart' })).toBeTruthy()

@@ -1,7 +1,7 @@
 export const animeMediaTypes = ['anime', 'movie', 'tv_series', 'documentary'] as const
 export const animeStatuses = ['airing', 'completed'] as const
 export const animeRegions = ['japan', 'china', 'europe_us', 'korea', 'hong_kong_taiwan', 'other'] as const
-export const animeTrackingStatuses = ['watching', 'completed'] as const
+export const animeTrackingStatuses = ['planned', 'watching', 'completed'] as const
 
 export type AnimeMediaType = (typeof animeMediaTypes)[number]
 export type AnimeStatus = (typeof animeStatuses)[number]
@@ -24,7 +24,14 @@ export interface AnimeSummary {
   year?: number
   totalEpisodes?: number
   updatedAt: number
+  firstPublishedAt?: number
+  lastSyncedAt?: number
   filterKeys: string[]
+}
+
+export interface AnimeCatalogueStatus {
+  catalogueCount: number
+  lastSuccessfulSyncAt: number
 }
 
 export interface AnimeCatalogueFilters {

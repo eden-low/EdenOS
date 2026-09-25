@@ -153,9 +153,16 @@ export interface SyncFailure {
   provider: string
   providerItemId?: string
   canonicalExternalId?: string
+  sources?: Array<{
+    provider: string
+    providerItemId: string
+    title: string
+    cursor?: Pick<SyncCheckpoint, 'providerIndex' | 'categoryIndex' | 'page' | 'offset'>
+  }>
   stage: 'probe' | 'list' | 'detail' | 'normalize' | 'identity' | 'r2' | 'firestore' | 'media-probe'
   errorCode: string
   message: string
+  errorName?: string
 }
 
 export interface SyncOptions {
@@ -179,11 +186,14 @@ export interface SyncOptions {
   maxFirestoreWrites?: number
   operationSafetyMargin?: number
   checkpointId?: string
+  incrementalStateId?: string
+  incrementalMaxPages?: number
+  incrementalKnownPages?: number
   catalogueStats?: boolean
   verifyIdempotency?: boolean
 }
 
-export type SyncStopReason = 'write budget' | 'read budget' | 'title cap' | 'provider exhausted' | 'error threshold' | 'complete'
+export type SyncStopReason = 'write budget' | 'read budget' | 'title cap' | 'provider exhausted' | 'incremental caught up' | 'scan window' | 'error threshold' | 'complete'
 
 export interface SyncCheckpoint {
   version: 1
@@ -193,6 +203,31 @@ export interface SyncCheckpoint {
   offset: number
   updatedAtMs: number
   complete: boolean
+}
+
+export interface IncrementalCategoryState {
+  provider: string
+  categoryId: string
+  contentGroup: AnimeContentGroup
+  watermarkUpdatedAtMs: number
+  watermarkProviderItemIds: string[]
+}
+
+export interface IncrementalSyncState {
+  version: 1
+  updatedAtMs: number
+  categories: Record<string, IncrementalCategoryState>
+}
+
+export interface IncrementalCategoryScan {
+  provider: string
+  categoryId: string
+  contentGroup: AnimeContentGroup
+  pagesScanned: number
+  rowsScanned: number
+  knownRowsSkipped: number
+  candidates: number
+  stopReason: 'known boundary' | 'provider exhausted' | 'scan window' | 'read budget' | 'title cap' | 'error'
 }
 
 export interface SyncOperationCounts {
@@ -205,6 +240,8 @@ export interface SyncOperationCounts {
   syncStateWrites: number
   checkpointReads: number
   checkpointWrites: number
+  incrementalStateReads: number
+  incrementalStateWrites: number
   r2Reads: number
   r2Writes: number
   r2Deletes: number
@@ -253,6 +290,9 @@ export interface SyncSummary {
   retryCount: number
   stopReason: SyncStopReason
   checkpoint?: SyncCheckpoint
+  incrementalState?: IncrementalSyncState
+  incrementalCategories?: IncrementalCategoryScan[]
+  knownSourceRowsSkipped?: number
 }
 
 export interface ExistingCanonical {
@@ -267,4 +307,5 @@ export interface PreparedCanonicalWrite {
   updatedAtMs: number
   r2Changed: boolean
   indexChanged: boolean
+  isNew?: boolean
 }

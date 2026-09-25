@@ -62,4 +62,16 @@ describe('Anime sync configuration', () => {
     })
     expect(() => parseSyncOptions(['--max-firestore-writes=100', '--operation-safety-margin=100'], {})).toThrow('smaller')
   })
+
+  it('parses bounded incremental state and discovery-window options', () => {
+    expect(parseSyncOptions([
+      '--mode=incremental',
+      '--incremental-state-id=daily-v1',
+      '--incremental-max-pages=7',
+      '--incremental-known-pages=3',
+    ], {})).toMatchObject({
+      incrementalStateId: 'daily-v1', incrementalMaxPages: 7, incrementalKnownPages: 3,
+    })
+    expect(() => parseSyncOptions(['--incremental-max-pages=2', '--incremental-known-pages=3'], {})).toThrow('incremental-known-pages')
+  })
 })

@@ -11,14 +11,15 @@ interface ExerciseCardProps {
   status: RecordDomainStatus
   error: string | null
   onRetry: () => void
+  onOpen?: () => void
 }
 
-export function ExerciseCard({ exercise, status, error, onRetry }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, status, error, onRetry, onOpen }: ExerciseCardProps) {
   const { latestActivity } = exercise
   const ExerciseIcon = getExerciseActivityIcon(latestActivity?.name ?? '')
 
   return (
-    <section aria-label="Weekly exercise" className="dashboard-card order-5 col-span-2 p-5 sm:p-6 md:col-span-6 xl:order-5 xl:col-span-7 xl:p-7">
+    <section aria-label="Weekly exercise" className="dashboard-card p-5 sm:p-6">
       <div>
         <p className="section-label">This Week</p>
         {status === 'loaded' ? (
@@ -69,6 +70,7 @@ export function ExerciseCard({ exercise, status, error, onRetry }: ExerciseCardP
           </div>
         )}
       </div>
+      {onOpen && <div className="mt-4 border-t border-[var(--border-subtle)] pt-3 text-right"><Button type="button" variant="ghost" onClick={onOpen}>Open Exercise</Button></div>}
     </section>
   )
 }

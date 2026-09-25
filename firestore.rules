@@ -151,7 +151,7 @@ service cloud.firestore {
             && data.watchedEpisodes[0] > 0
             && data.watchedEpisodes[data.watchedEpisodes.size() - 1] is int
             && data.watchedEpisodes[data.watchedEpisodes.size() - 1] > 0))
-        && data.trackingStatus in ['watching', 'completed']
+        && data.trackingStatus in ['planned', 'watching', 'completed']
         && data.updatedAt is timestamp
         && data.updatedAt == request.time
         && data.title is string
@@ -165,6 +165,78 @@ service cloud.firestore {
     match /animes/{animeId} {
       allow get, list: if request.auth != null;
       allow create, update, delete: if false;
+    }
+
+    function isValidFinanceRule(data) {
+      return data.keys().hasAll([
+          'direction', 'matchType', 'pattern', 'category', 'enabled', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'direction', 'matchType', 'pattern', 'category', 'enabled', 'createdAt', 'updatedAt'
+        ])
+        && data.direction in ['expense', 'income']
+        && data.matchType in ['exact', 'contains']
+        && data.pattern is string
+        && data.pattern.size() > 0
+        && data.pattern.size() <= 120
+        && ((data.direction == 'expense' && data.category in [
+          'food', 'transport', 'shopping', 'entertainment', 'housing', 'health', 'education', 'other'
+        ]) || (data.direction == 'income' && data.category in [
+          'salary', 'freelance', 'business', 'investment', 'gift', 'refund', 'other'
+        ]))
+        && data.enabled is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWeeklyReview(data) {
+      return data.keys().hasAll(['wentWell', 'improve', 'nextFocus', 'updatedAt'])
+        && data.keys().hasOnly(['wentWell', 'improve', 'nextFocus', 'updatedAt'])
+        && data.wentWell is string && data.wentWell.size() <= 2000
+        && data.improve is string && data.improve.size() <= 2000
+        && data.nextFocus is string && data.nextFocus.size() <= 2000
+        && data.updatedAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function isValidFinanceGoal(data) {
+      return data.keys().hasAll([
+          'name', 'targetAmountSen', 'allocatedAmountSen', 'targetDate', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'name', 'targetAmountSen', 'allocatedAmountSen', 'targetDate', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 80
+        && data.targetAmountSen is int && data.targetAmountSen > 0 && data.targetAmountSen <= 9007199254740991
+        && data.allocatedAmountSen is int && data.allocatedAmountSen >= 0 && data.allocatedAmountSen <= 9007199254740991
+        && (data.targetDate == null || data.targetDate is timestamp)
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+
+    function isValidFinanceBudget(data) {
+      return data.keys().hasAll(['name', 'monthlyAmountSen', 'category', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'monthlyAmountSen', 'category', 'status', 'createdAt', 'updatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 80
+        && data.monthlyAmountSen is int && data.monthlyAmountSen > 0 && data.monthlyAmountSen <= 9007199254740991
+        && (data.category == null || data.category in [
+          'food', 'transport', 'shopping', 'entertainment', 'housing', 'health', 'education', 'other'
+        ])
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+
+    function isValidGoalAllocation(data) {
+      return data.keys().hasAll(['goalId', 'amountSen', 'occurredAt', 'createdAt'])
+        && data.keys().hasOnly(['goalId', 'amountSen', 'occurredAt', 'createdAt'])
+        && data.goalId is string && data.goalId.size() > 0 && data.goalId.size() <= 128
+        && data.amountSen is int && data.amountSen > 0 && data.amountSen <= 9007199254740991
+        && data.occurredAt is timestamp && data.createdAt is timestamp;
+    }
+
+    match /animeCatalogueStatus/{statusId} {
+      allow get: if request.auth != null && statusId == 'current';
+      allow list, create, update, delete: if false;
     }
 
     match /users/{userId}/expenses/{expenseId} {
@@ -236,6 +308,60 @@ service cloud.firestore {
       allow get, list: if isOwner(userId);
       allow create, update: if isOwner(userId)
         && isValidAnimeProgress(request.resource.data, progressId);
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/financeRules/{ruleId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidFinanceRule(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidFinanceRule(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/financeGoals/{goalId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidFinanceGoal(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidFinanceGoal(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /users/{userId}/financeBudgets/{budgetId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidFinanceBudget(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidFinanceBudget(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /users/{userId}/financeGoalAllocations/{allocationId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidGoalAllocation(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/weeklyReviews/{weekKey} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create, update: if isOwner(userId) && isValidWeeklyReview(request.resource.data);
       allow delete: if isOwner(userId);
     }
 

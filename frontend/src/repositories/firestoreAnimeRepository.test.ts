@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { animeSummary } from '../test/animeFixtures'
 
-const mock = vi.hoisted(() => ({ getDocs: vi.fn(), getCountFromServer: vi.fn() }))
+const mock = vi.hoisted(() => ({ getDocs: vi.fn(), getCountFromServer: vi.fn(), getDoc: vi.fn() }))
 
 vi.mock('firebase/firestore', () => ({
   collection: (...parts: unknown[]) => ({ kind: 'collection', parts }),
+  doc: (...parts: unknown[]) => ({ kind: 'doc', parts }),
   query: (reference: unknown, ...constraints: unknown[]) => ({ reference, constraints }),
   where: (...args: unknown[]) => ({ kind: 'where', args }),
   orderBy: (...args: unknown[]) => ({ kind: 'orderBy', args }),
@@ -14,6 +15,8 @@ vi.mock('firebase/firestore', () => ({
   limit: (...args: unknown[]) => ({ kind: 'limit', args }),
   getDocs: mock.getDocs,
   getCountFromServer: mock.getCountFromServer,
+  getDoc: mock.getDoc,
+  Timestamp: { fromDate: (value: Date) => ({ kind: 'timestamp', value }) },
 }))
 
 import { createFirestoreAnimeRepository } from './firestoreAnimeRepository'
@@ -24,7 +27,7 @@ function snapshot(index: number) {
 }
 
 describe('Firestore Anime repository', () => {
-  beforeEach(() => { mock.getDocs.mockReset(); mock.getCountFromServer.mockReset() })
+  beforeEach(() => { mock.getDocs.mockReset(); mock.getCountFromServer.mockReset(); mock.getDoc.mockReset() })
 
   it('requests exactly 24 items ordered by updatedAt descending and returns the count', async () => {
     mock.getDocs.mockResolvedValue({ docs: Array.from({ length: 24 }, (_, index) => snapshot(index)) })
@@ -74,5 +77,28 @@ describe('Firestore Anime repository', () => {
     expect(mock.getDocs).not.toHaveBeenCalled()
     await repository.searchTitles('Sample', 8)
     expect(mock.getDocs.mock.calls[0][0].constraints).toContainEqual({ kind: 'limit', args: [8] })
+  })
+
+  it('keeps Home queries bounded and counts updates on the server', async () => {
+    mock.getDocs.mockResolvedValue({ docs: [snapshot(1)] })
+    mock.getCountFromServer.mockResolvedValue({ data: () => ({ count: 3 }) })
+    const repository = createFirestoreAnimeRepository({} as never)
+    await expect(repository.fetchRecent(4)).resolves.toHaveLength(1)
+    expect(mock.getDocs.mock.calls[0][0].constraints).toContainEqual({ kind: 'limit', args: [4] })
+    const since = new Date('2026-09-26T00:00:00.000Z')
+    await expect(repository.countUpdatedSince(since)).resolves.toBe(3)
+    expect(mock.getCountFromServer.mock.calls[0][0].constraints).toContainEqual({ kind: 'where', args: ['updatedAt', '>=', since] })
+  })
+
+  it('queries newly published titles and exposes only sanitized catalogue status', async () => {
+    mock.getDocs.mockResolvedValue({ docs: [snapshot(1)] })
+    mock.getCountFromServer.mockResolvedValue({ data: () => ({ count: 2 }) })
+    mock.getDoc.mockResolvedValue({ exists: () => true, data: () => ({ catalogueCount: 11870, lastSuccessfulSyncAt: { toMillis: () => 1234 }, providerCheckpoint: 'hidden' }) })
+    const repository = createFirestoreAnimeRepository({} as never)
+    const since = new Date('2026-09-22T00:00:00.000Z')
+    await repository.fetchPublishedSince(since, 6)
+    expect(mock.getDocs.mock.calls[0][0].constraints).toContainEqual({ kind: 'where', args: ['firstPublishedAt', '>=', { kind: 'timestamp', value: since }] })
+    await expect(repository.countPublishedSince(since)).resolves.toBe(2)
+    await expect(repository.getCatalogueStatus()).resolves.toEqual({ catalogueCount: 11870, lastSuccessfulSyncAt: 1234 })
   })
 })

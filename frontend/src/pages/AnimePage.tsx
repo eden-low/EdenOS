@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimeCard } from '../components/anime/AnimeCard'
+import { AnimeCatalogueStatusCard, AnimeDiscoverySections } from '../components/anime/AnimeDiscoverySections'
 import { AnimeFilters } from '../components/anime/AnimeFilters'
 import { AnimePlayerDialog, type AnimePlayerTarget } from '../components/anime/AnimePlayerDialog'
 import { AnimeTrackingPanel } from '../components/anime/AnimeTrackingPanel'
@@ -16,8 +17,9 @@ export function AnimePage() {
   const t = useAnimeText()
   const { firestore } = useFirebaseAuth()
   const repository = useMemo(() => createFirestoreAnimeRepository(firestore), [firestore])
-  const [queryInput, setQueryInput] = useState('')
-  const [search, setSearch] = useState('')
+  const initialSearch = new URLSearchParams(window.location.search).get('q')?.trim() ?? ''
+  const [queryInput, setQueryInput] = useState(initialSearch)
+  const [search, setSearch] = useState(initialSearch)
   const [filters, setFilters] = useState<AnimeCatalogueFilters>({})
   const [items, setItems] = useState<AnimeSummary[]>([])
   const [cursor, setCursor] = useState<unknown>()
@@ -74,8 +76,10 @@ export function AnimePage() {
 
   return <div className="mx-auto w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
     <header><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('anime')}</h1><p className="mt-2 text-sm text-[var(--text-secondary)]">{t('subtitle')}</p></header>
-    <AnimeTrackingPanel repository={repository} onOpen={setSelected} />
+    <AnimeCatalogueStatusCard repository={repository} />
     <RecentlyWatching onOpen={setSelected} />
+    <AnimeDiscoverySections repository={repository} onOpen={setSelected} />
+    <AnimeTrackingPanel repository={repository} onOpen={setSelected} />
     <section className="mt-8" aria-labelledby="anime-catalogue-heading">
       <h2 id="anime-catalogue-heading" className="section-label">{t('catalogue')}</h2>
       <form className="mt-3" onSubmit={(event) => { event.preventDefault(); if (searchTimer.current) clearTimeout(searchTimer.current); setSearch(queryInput.trim()) }}>

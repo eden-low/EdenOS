@@ -1,6 +1,10 @@
 name: Anime content sync
 
 on:
+  schedule:
+    # 08:30 UTC = 16:30 Malaysia Time. This stays after Pacific midnight during
+    # both daylight and standard time so the daily Firestore quota has reset.
+    - cron: "30 8 * * *"
   workflow_dispatch:
     inputs:
       mode:
@@ -30,7 +34,7 @@ on:
         type: boolean
         default: false
       controlled:
-        description: Resume the budgeted approved-category expansion checkpoint
+        description: Use durable resumable state for the selected sync mode
         type: boolean
         default: false
       max_titles:
@@ -42,17 +46,32 @@ on:
         description: Authoritative Firestore write ceiling
         required: true
         type: string
-        default: "12000"
+        default: "3000"
       max_firestore_reads:
         description: Authoritative Firestore read ceiling
         required: true
         type: string
-        default: "30000"
+        default: "10000"
       checkpoint_id:
-        description: Durable controlled-sync checkpoint name
+        description: Historical full/backfill checkpoint name (unused by incremental mode)
         required: true
         type: string
         default: "controlled-v1"
+      incremental_state_id:
+        description: Separate durable state name for newest-first incremental sync
+        required: true
+        type: string
+        default: "anime-incremental-v1"
+      incremental_max_pages:
+        description: Maximum newest-first pages inspected per provider category
+        required: true
+        type: string
+        default: "5"
+      incremental_known_pages:
+        description: Consecutive fully mapped older pages required to stop discovery
+        required: true
+        type: string
+        default: "2"
       catalogue_stats:
         description: Measure catalogue count and representative document sizes
         type: boolean
@@ -77,6 +96,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: anime-content-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -93,18 +116,21 @@ jobs:
       R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
-      SYNC_MODE: ${{ inputs.mode }}
-      SYNC_PROVIDERS: ${{ inputs.providers }}
+      SYNC_MODE: ${{ github.event_name == 'schedule' && 'incremental' || inputs.mode }}
+      SYNC_PROVIDERS: ${{ github.event_name == 'schedule' && 'lzi,ffzy' || inputs.providers }}
       SYNC_LIMIT: ${{ inputs.limit }}
-      SYNC_CONTENT_GROUPS: ${{ inputs.content_groups }}
-      SYNC_DRY_RUN: ${{ inputs.dry_run }}
+      SYNC_CONTENT_GROUPS: ${{ github.event_name == 'schedule' && 'china_anime:1,east_asia_anime:1,western_anime:1,hong_kong_taiwan_anime:1,overseas_anime:1,animation_movie:1' || inputs.content_groups }}
+      SYNC_DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || inputs.dry_run }}
       SYNC_PROBE_MEDIA: ${{ inputs.probe_media }}
-      SYNC_CONTROLLED: ${{ inputs.controlled }}
+      SYNC_CONTROLLED: ${{ github.event_name == 'schedule' && 'true' || inputs.controlled }}
       SYNC_MAX_TITLES: ${{ inputs.max_titles }}
-      SYNC_MAX_FIRESTORE_WRITES: ${{ inputs.max_firestore_writes }}
-      SYNC_MAX_FIRESTORE_READS: ${{ inputs.max_firestore_reads }}
+      SYNC_MAX_FIRESTORE_WRITES: ${{ github.event_name == 'schedule' && '3000' || inputs.max_firestore_writes }}
+      SYNC_MAX_FIRESTORE_READS: ${{ github.event_name == 'schedule' && '10000' || inputs.max_firestore_reads }}
       SYNC_CHECKPOINT_ID: ${{ inputs.checkpoint_id }}
-      SYNC_CATALOGUE_STATS: ${{ inputs.catalogue_stats }}
+      SYNC_INCREMENTAL_STATE_ID: ${{ github.event_name == 'schedule' && 'anime-incremental-v1' || inputs.incremental_state_id }}
+      SYNC_INCREMENTAL_MAX_PAGES: ${{ github.event_name == 'schedule' && '5' || inputs.incremental_max_pages }}
+      SYNC_INCREMENTAL_KNOWN_PAGES: ${{ github.event_name == 'schedule' && '2' || inputs.incremental_known_pages }}
+      SYNC_CATALOGUE_STATS: ${{ github.event_name == 'schedule' && 'false' || inputs.catalogue_stats }}
       SYNC_VERIFY_IDEMPOTENCY: ${{ inputs.verify_idempotency }}
       REPAIR_POLICY_SINCE: ${{ inputs.repair_policy_since }}
       REPAIR_POLICY_BEFORE: ${{ inputs.repair_policy_before }}
@@ -163,7 +189,7 @@ jobs:
           }
           NODE
       - name: Run bounded Anime sync
-        if: github.event_name == 'workflow_dispatch' && inputs.repair_policy_since == ''
+        if: (github.event_name == 'workflow_dispatch' && inputs.repair_policy_since == '') || github.event_name == 'schedule'
         shell: bash
         run: |
           args=("--mode=$SYNC_MODE" "--concurrency=3")
@@ -175,6 +201,7 @@ jobs:
           if [[ "$SYNC_CONTROLLED" == "true" ]]; then args+=("--controlled"); fi
           if [[ -n "$SYNC_MAX_TITLES" ]]; then args+=("--max-titles=$SYNC_MAX_TITLES"); fi
           args+=("--max-firestore-writes=$SYNC_MAX_FIRESTORE_WRITES" "--max-firestore-reads=$SYNC_MAX_FIRESTORE_READS" "--checkpoint-id=$SYNC_CHECKPOINT_ID")
+          args+=("--incremental-state-id=$SYNC_INCREMENTAL_STATE_ID" "--incremental-max-pages=$SYNC_INCREMENTAL_MAX_PAGES" "--incremental-known-pages=$SYNC_INCREMENTAL_KNOWN_PAGES")
           if [[ "$SYNC_CATALOGUE_STATS" == "true" ]]; then args+=("--catalogue-stats"); fi
           if [[ "$SYNC_VERIFY_IDEMPOTENCY" == "true" ]]; then args+=("--verify-idempotency"); fi
           npm run sync:animes -- "${args[@]}"

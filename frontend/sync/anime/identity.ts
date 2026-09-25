@@ -6,6 +6,7 @@ export interface IdentityResolution {
   groups: Map<string, ProviderAnimeRecord[]>
   mappings: SourceMapping[]
   ambiguousMatches: number
+  ambiguities: Array<{ provider: string; providerItemId: string; title: string; candidateCanonicalIds: string[]; assignedCanonicalId: string }>
 }
 
 export function sourceMappingId(provider: string, providerItemId: string): string {
@@ -48,6 +49,7 @@ export function resolveCanonicalIdentity(records: ProviderAnimeRecord[], existin
   const groups = new Map<string, ProviderAnimeRecord[]>()
   const mappings: SourceMapping[] = []
   let ambiguousMatches = 0
+  const ambiguities: IdentityResolution['ambiguities'] = []
   const sorted = [...records].sort((left, right) => left.providerPriority - right.providerPriority || left.providerId.localeCompare(right.providerId) || left.providerItemId.localeCompare(right.providerItemId))
   for (const record of sorted) {
     const mapping = existingMappings.get(sourceMappingId(record.providerId, record.providerItemId))
@@ -71,6 +73,7 @@ export function resolveCanonicalIdentity(records: ProviderAnimeRecord[], existin
         if (candidates.length > 1) ambiguousMatches += 1
         externalId = deterministicId(record, candidates.length > 1 ? `${record.providerId}|${record.providerItemId}` : '')
         matchedBy = 'deterministic-new'
+        if (candidates.length > 1) ambiguities.push({ provider: record.providerId, providerItemId: record.providerItemId, title: record.title, candidateCanonicalIds: candidates.map(([id]) => id), assignedCanonicalId: externalId })
       }
     }
     const members = groups.get(externalId) ?? []
@@ -78,5 +81,5 @@ export function resolveCanonicalIdentity(records: ProviderAnimeRecord[], existin
     groups.set(externalId, members)
     mappings.push({ provider: record.providerId, providerItemId: record.providerItemId, canonicalExternalId: externalId, matchedBy })
   }
-  return { groups, mappings, ambiguousMatches }
+  return { groups, mappings, ambiguousMatches, ambiguities }
 }

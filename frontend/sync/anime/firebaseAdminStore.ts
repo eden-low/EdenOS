@@ -2,7 +2,7 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { FieldValue, Timestamp, getFirestore, type Firestore } from 'firebase-admin/firestore'
 import { sourceMappingId } from './identity'
 import type { AnimeMediaType, AnimeRegion } from '../../src/types/anime'
-import type { CanonicalAnime, CatalogueStorageMetrics, PreparedCanonicalWrite, SourceMapping, SyncCheckpoint, SyncState } from './types'
+import type { CanonicalAnime, CatalogueStorageMetrics, IncrementalCategoryState, IncrementalSyncState, PreparedCanonicalWrite, SourceMapping, SyncCheckpoint, SyncState } from './types'
 
 export interface ExistingCatalogueRecord {
   externalId: string
@@ -29,7 +29,11 @@ export interface AnimeSyncStore {
   deleteInternalMetadata(externalIds: string[], mappingDocumentIds: string[]): Promise<void>
   getCheckpoint?(checkpointId: string): Promise<SyncCheckpoint | null>
   saveCheckpoint?(checkpointId: string, checkpoint: SyncCheckpoint): Promise<void>
+  getIncrementalState?(stateId: string): Promise<IncrementalSyncState | null>
+  saveIncrementalState?(stateId: string, state: IncrementalSyncState): Promise<void>
   getCatalogueMetrics?(sampleSize?: number): Promise<CatalogueStorageMetrics>
+  getCatalogueCount?(): Promise<number>
+  saveCatalogueStatus?(status: { catalogueCount: number; lastSuccessfulSyncAtMs: number }): Promise<void>
 }
 
 function readServiceAccount(env: NodeJS.ProcessEnv): ServiceAccountConfig | null {
@@ -69,6 +73,7 @@ function cataloguePayload(canonical: CanonicalAnime, write: PreparedCanonicalWri
     detailHash: write.detailHash,
     updatedAt: Timestamp.fromMillis(write.updatedAtMs),
     lastSyncedAt: FieldValue.serverTimestamp(),
+    ...(write.isNew ? { firstPublishedAt: FieldValue.serverTimestamp() } : {}),
   }
 }
 
@@ -190,6 +195,34 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
         updatedAt: Timestamp.fromMillis(checkpoint.updatedAtMs),
       })
     },
+    async getIncrementalState(stateId) {
+      const snapshot = await firestore.doc(`animeSyncIncrementalState/${stateId}`).get()
+      if (!snapshot.exists) return null
+      const data = snapshot.data()!
+      if (data.version !== 1 || !data.categories || typeof data.categories !== 'object') return null
+      const categories: Record<string, IncrementalCategoryState> = {}
+      for (const [key, raw] of Object.entries(data.categories as Record<string, unknown>)) {
+        if (!raw || typeof raw !== 'object') continue
+        const value = raw as Record<string, unknown>
+        if (typeof value.provider !== 'string' || typeof value.categoryId !== 'string' || typeof value.contentGroup !== 'string' || typeof value.watermarkUpdatedAtMs !== 'number' || !Array.isArray(value.watermarkProviderItemIds)) continue
+        categories[key] = {
+          provider: value.provider,
+          categoryId: value.categoryId,
+          contentGroup: value.contentGroup as IncrementalCategoryState['contentGroup'],
+          watermarkUpdatedAtMs: value.watermarkUpdatedAtMs,
+          watermarkProviderItemIds: value.watermarkProviderItemIds.filter((item): item is string => typeof item === 'string'),
+        }
+      }
+      const updatedAtMs = data.updatedAt && typeof data.updatedAt.toMillis === 'function' ? data.updatedAt.toMillis() : 0
+      return { version: 1, updatedAtMs, categories }
+    },
+    async saveIncrementalState(stateId, state) {
+      await firestore.doc(`animeSyncIncrementalState/${stateId}`).set({
+        version: 1,
+        categories: state.categories,
+        updatedAt: Timestamp.fromMillis(state.updatedAtMs),
+      })
+    },
     async getCatalogueMetrics(sampleSize = 100) {
       const collection = firestore.collection('animes')
       const [countSnapshot, sample] = await Promise.all([
@@ -204,6 +237,16 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
         minimumDocumentBytes: sizes.length ? Math.min(...sizes) : 0,
         maximumDocumentBytes: sizes.length ? Math.max(...sizes) : 0,
       }
+    },
+    async getCatalogueCount() {
+      const snapshot = await firestore.collection('animes').count().get()
+      return snapshot.data().count
+    },
+    async saveCatalogueStatus(status) {
+      await firestore.doc('animeCatalogueStatus/current').set({
+        catalogueCount: status.catalogueCount,
+        lastSuccessfulSyncAt: Timestamp.fromMillis(status.lastSuccessfulSyncAtMs),
+      })
     },
   }
 }

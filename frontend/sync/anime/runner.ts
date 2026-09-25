@@ -8,6 +8,7 @@ import { probeMediaUrl } from './mediaProbe'
 import { classifyAnimeContent, discoverAnimeCategoryPolicies, type AnimeCategoryPolicy, type AnimeImportRegion } from './contentPolicy'
 import { AnimeRawCache, readCachedDetails, readFailureFile, type RawRunManifest } from './rawCache'
 import { fetchControlledCandidates } from './controlled'
+import { emptyIncrementalState, fetchIncrementalCandidates } from './incremental'
 import { defaultMaxFirestoreReads, defaultMaxFirestoreWrites, defaultOperationSafetyMargin } from './config'
 import type { AnimeDetailStore } from './r2Store'
 import type { AnimeSyncStore } from './firebaseAdminStore'
@@ -22,6 +23,8 @@ import type {
   SourceMapping,
   SyncFailure,
   SyncCheckpoint,
+  IncrementalCategoryScan,
+  IncrementalSyncState,
   SyncOperationCounts,
   SyncOptions,
   SyncSummary,
@@ -47,7 +50,14 @@ export interface AnimeSyncResult {
 }
 
 function safeMessage(error: unknown): string {
-  return error instanceof Error ? error.message.slice(0, 300) : 'Unknown sync error'
+  return error instanceof Error ? safeDiagnostic(error.message) : 'Unknown sync error'
+}
+
+function safeDiagnostic(value: string): string {
+  return value
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[redacted-url]')
+    .replace(/\b(token|api[_-]?key|secret|password|authorization)\b\s*[:=]\s*[^\s,;]+/gi, '$1=[redacted]')
+    .slice(0, 300)
 }
 
 function runId(now: number): string {
@@ -71,6 +81,8 @@ function emptyOperations(): SyncOperationCounts {
     syncStateWrites: 0,
     checkpointReads: 0,
     checkpointWrites: 0,
+    incrementalStateReads: 0,
+    incrementalStateWrites: 0,
     r2Reads: 0,
     r2Writes: 0,
     r2Deletes: 0,
@@ -296,13 +308,52 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   let controlledMappings = new Map<string, SourceMapping>()
   let controlledCandidatePositions = new Map<string, SyncCheckpoint>()
   let controlledCheckpoint: SyncCheckpoint | undefined
+  let controlledStartCheckpoint: SyncCheckpoint | undefined
+  let incrementalStartState: IncrementalSyncState | undefined
+  let incrementalState: IncrementalSyncState | undefined
+  let incrementalCanAdvance = false
+  let incrementalCategories: IncrementalCategoryScan[] = []
+  let knownSourceRowsSkipped = 0
   let providerRowsScanned = 0
   let existingCandidates = 0
   let stopReason: SyncStopReason = 'complete'
-  if (options.controlled) {
+  const controlledIncremental = Boolean(options.controlled && options.mode === 'incremental')
+  if (controlledIncremental) {
+    if (!dependencies.store?.getIncrementalState || !dependencies.store.saveIncrementalState) throw new Error('Controlled incremental sync requires an incremental-state-capable Firebase store')
+    const stateId = options.incrementalStateId ?? 'anime-incremental-v1'
+    incrementalStartState = await dependencies.store.getIncrementalState(stateId) ?? emptyIncrementalState(started)
+    operations.firestoreReads += 1
+    operations.incrementalStateReads += 1
+    const incremental = await fetchIncrementalCandidates({
+      providers,
+      store: dependencies.store,
+      cache,
+      options,
+      operations,
+      failures,
+      start: incrementalStartState,
+      now: started,
+    })
+    controlledMappings = incremental.existingMappings
+    controlledCandidatePositions = incremental.candidatePositions
+    incrementalState = incremental.nextState
+    incrementalCanAdvance = incremental.safeToAdvance
+    incrementalCategories = incremental.categories
+    knownSourceRowsSkipped = incremental.knownRowsSkipped
+    providerRowsScanned = incremental.providerRowsScanned
+    existingCandidates = incremental.existingCandidates
+    stopReason = incremental.stopReason
+    for (const provider of providers) {
+      const items = incremental.itemsByProvider.get(provider.config.id) ?? []
+      rawByProvider.set(provider.config.id, items)
+      policiesByProvider.set(provider.config.id, discoverAnimeCategoryPolicies(await provider.fetchCategories()))
+      manifest.providers[provider.config.id] = { pages: incremental.pagesByProvider.get(provider.config.id) ?? 0, itemCount: items.length, failures: failures.filter((failure) => failure.provider === provider.config.id).length }
+    }
+  } else if (options.controlled) {
     if (!dependencies.store?.getCheckpoint || !dependencies.store.saveCheckpoint) throw new Error('Controlled sync requires a checkpoint-capable Firebase store')
     const checkpointId = options.checkpointId ?? 'controlled-v1'
     const saved = await dependencies.store.getCheckpoint(checkpointId)
+    controlledStartCheckpoint = saved ?? initialCheckpoint(started)
     operations.firestoreReads += 1
     operations.checkpointReads += 1
     const controlled = await fetchControlledCandidates({
@@ -312,7 +363,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       options,
       operations,
       failures,
-      start: saved ?? initialCheckpoint(started),
+      start: controlledStartCheckpoint,
       now: started,
     })
     controlledMappings = controlled.existingMappings
@@ -382,7 +433,19 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     existingCandidates = mappingKeys.filter((key) => existingMappings.has(sourceMappingId(key.provider, key.providerItemId))).length
   }
   const identity = resolveCanonicalIdentity(identityInput, existingMappings)
-  const availableStateReads = Math.max(0, readLimit - operations.firestoreReads)
+  for (const ambiguity of identity.ambiguities) {
+    const position = controlledCandidatePositions.get(sourceMappingId(ambiguity.provider, ambiguity.providerItemId))
+    log(`Ambiguous match: ${JSON.stringify({
+      provider: safeDiagnostic(ambiguity.provider),
+      providerItemId: safeDiagnostic(ambiguity.providerItemId),
+      title: safeDiagnostic(ambiguity.title),
+      candidateCanonicalIds: ambiguity.candidateCanonicalIds,
+      assignedCanonicalId: ambiguity.assignedCanonicalId,
+      ...(position ? { cursor: { providerIndex: position.providerIndex, categoryIndex: position.categoryIndex, page: position.page, offset: position.offset } } : {}),
+    })}`)
+  }
+  const statusReadReserve = controlledIncremental && dependencies.store?.getCatalogueCount ? 1 : 0
+  const availableStateReads = Math.max(0, readLimit - operations.firestoreReads - statusReadReserve)
   const identityGroups = [...identity.groups.entries()]
   const selectedGroups = identityGroups.slice(0, availableStateReads)
   if (selectedGroups.length < identityGroups.length) stopReason = 'read budget'
@@ -405,7 +468,27 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     if (result.status === 'fulfilled') mergedCanonicals.push(result.value)
     else {
       const [externalId, records] = mergeJobs[index]
-      failures.push({ provider: records[0].providerId, canonicalExternalId: externalId, stage: 'normalize', errorCode: 'canonical-output', message: safeMessage(result.reason) })
+      const sources = records.map((record) => {
+        const position = controlledCandidatePositions.get(sourceMappingId(record.providerId, record.providerItemId))
+        return {
+          provider: safeDiagnostic(record.providerId),
+          providerItemId: safeDiagnostic(record.providerItemId),
+          title: safeDiagnostic(record.title),
+          ...(position ? { cursor: { providerIndex: position.providerIndex, categoryIndex: position.categoryIndex, page: position.page, offset: position.offset } } : {}),
+        }
+      })
+      const failure: SyncFailure = {
+        provider: sources[0].provider,
+        providerItemId: sources[0].providerItemId,
+        canonicalExternalId: externalId,
+        sources,
+        stage: 'normalize',
+        errorCode: 'canonical-output',
+        message: safeMessage(result.reason),
+        ...(result.reason instanceof Error ? { errorName: safeDiagnostic(result.reason.name) } : {}),
+      }
+      failures.push(failure)
+      log(`Canonical-output failure: ${JSON.stringify(failure)}`)
     }
   }
   const canonicals = options.controlled
@@ -435,7 +518,12 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       }
     }
     return {
-      write: { canonical, indexHash, detailHash, updatedAtMs: writeTimestamp(canonical, previous, indexChanged || detailChanged, started), r2Changed, indexChanged },
+      write: {
+        canonical, indexHash, detailHash,
+        updatedAtMs: writeTimestamp(canonical, previous, indexChanged || detailChanged, started),
+        r2Changed, indexChanged,
+        isNew: previous === undefined && canonical.records.every((record) => !existingMappings.has(sourceMappingId(record.providerId, record.providerItemId))),
+      },
       r2Changed,
     }
   })
@@ -473,9 +561,10 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   for (const write of prepared) {
     const mappings = mappingsByCanonical.get(write.canonical.externalId) ?? []
     const cost = (write.indexChanged || write.r2Changed ? 2 : 0) + mappings.length
-    if (operations.firestoreWrites + plannedFirestoreWrites + cost > writeLimit) {
+    const controlWriteReserve = controlledIncremental ? (dependencies.store?.saveCatalogueStatus ? 2 : 1) : 0
+    if (operations.firestoreWrites + plannedFirestoreWrites + cost > writeLimit - controlWriteReserve) {
       stopReason = 'write budget'
-      if (options.controlled) {
+      if (options.controlled && !controlledIncremental) {
         const position = write.canonical.records
           .map((record) => controlledCandidatePositions.get(sourceMappingId(record.providerId, record.providerItemId)))
           .find((candidate): candidate is SyncCheckpoint => Boolean(candidate))
@@ -501,7 +590,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       successfulR2Writes.push(write)
     } catch (error) {
       failures.push({ provider: write.canonical.records[0].providerId, canonicalExternalId: write.canonical.externalId, stage: 'r2', errorCode: 'r2-put', message: safeMessage(error) })
-      if (options.controlled) {
+      if (options.controlled && !controlledIncremental) {
         const position = write.canonical.records
           .map((record) => controlledCandidatePositions.get(sourceMappingId(record.providerId, record.providerItemId)))
           .find((candidate): candidate is SyncCheckpoint => Boolean(candidate))
@@ -520,17 +609,47 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     operations.syncStateWrites += successfulR2Writes.length
     operations.sourceMapWrites += publishMappings.length
   }
-  if (options.controlled && controlledCheckpoint && !options.dryRun) {
+  if (options.controlled && !controlledIncremental && failures.length && controlledStartCheckpoint) {
+    controlledCheckpoint = controlledStartCheckpoint
+    stopReason = 'error threshold'
+    log(`Checkpoint retained due to ${failures.length} unresolved failure(s)`)
+  }
+  if (options.controlled && !controlledIncremental && controlledCheckpoint && !options.dryRun && !failures.length) {
     await dependencies.store!.saveCheckpoint!(options.checkpointId ?? 'controlled-v1', { ...controlledCheckpoint, updatedAtMs: dependencies.now?.() ?? Date.now() })
     operations.firestoreWrites += 1
     operations.checkpointWrites += 1
+  }
+  const incrementalStateSafe = controlledIncremental && incrementalCanAdvance && failures.length === 0 &&
+    stopReason !== 'write budget' && stopReason !== 'read budget' && stopReason !== 'title cap' && stopReason !== 'scan window' && stopReason !== 'error threshold' &&
+    selectedWrites.length === prepared.length && successfulR2Writes.length === changedWrites.length
+  if (controlledIncremental && failures.length) {
+    stopReason = 'error threshold'
+    log(`Incremental state retained due to ${failures.length} unresolved failure(s)`)
+  } else if (controlledIncremental && !incrementalStateSafe) {
+    log(`Incremental state retained because the scan stopped at ${stopReason}`)
+  }
+  if (incrementalStateSafe && incrementalState && !options.dryRun) {
+    const completedAtMs = dependencies.now?.() ?? Date.now()
+    await dependencies.store!.saveIncrementalState!(options.incrementalStateId ?? 'anime-incremental-v1', { ...incrementalState, updatedAtMs: completedAtMs })
+    operations.firestoreWrites += 1
+    operations.incrementalStateWrites += 1
+    if (dependencies.store!.getCatalogueCount && dependencies.store!.saveCatalogueStatus) {
+      const catalogueCount = await dependencies.store!.getCatalogueCount()
+      operations.firestoreReads += 1
+      await dependencies.store!.saveCatalogueStatus({ catalogueCount, lastSuccessfulSyncAtMs: completedAtMs })
+      operations.firestoreWrites += 1
+    }
   }
   r2Uploaded = options.dryRun ? plannedR2Writes : operations.r2Writes
   r2Skipped = selectedWrites.length - plannedR2Writes
   operations.r2UnchangedSkipped += r2Skipped
   const committedIds = options.dryRun
     ? new Set(selectedWrites.map((write) => write.canonical.externalId))
-    : new Set([...successfulR2Writes.map((write) => write.canonical.externalId), ...publishMappings.map((mapping) => mapping.canonicalExternalId)])
+    : new Set([
+        ...selectedWrites.filter((write) => !write.indexChanged && !write.r2Changed).map((write) => write.canonical.externalId),
+        ...successfulR2Writes.map((write) => write.canonical.externalId),
+        ...publishMappings.map((mapping) => mapping.canonicalExternalId),
+      ])
   const committedWrites = selectedWrites.filter((write) => committedIds.has(write.canonical.externalId))
   const canonicalCreated = committedWrites.filter((write) => !states.has(write.canonical.externalId)).length
   const canonicalUpdated = committedWrites.filter((write) => states.has(write.canonical.externalId) && (write.indexChanged || write.r2Changed)).length
@@ -569,6 +688,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     retryCount: providers.reduce((total, provider) => total + provider.stats.retries, 0),
     stopReason,
     ...(controlledCheckpoint ? { checkpoint: controlledCheckpoint } : {}),
+    ...(controlledIncremental && incrementalState ? { incrementalState, incrementalCategories, knownSourceRowsSkipped } : {}),
   }
   const failureFile = await cache.writeFailures(failures)
   log(`Failure report: ${failureFile}`)

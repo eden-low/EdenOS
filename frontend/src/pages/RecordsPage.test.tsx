@@ -6,6 +6,7 @@ import { RecordsPage } from './RecordsPage'
 
 vi.mock('../hooks/useLocalReferenceDate', () => ({ useLocalReferenceDate: vi.fn() }))
 vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
+vi.mock('../state/useAnimeProgress', () => ({ useAnimeProgress: () => ({ items: [] }) }))
 
 function provideRecords(status: 'loaded' | 'loading' | 'error' = 'loaded') {
   vi.mocked(useRecords).mockReturnValue({

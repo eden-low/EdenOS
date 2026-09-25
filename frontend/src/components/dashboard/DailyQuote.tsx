@@ -28,7 +28,7 @@ export function DailyQuote({ referenceDate }: { referenceDate: Date }) {
           <p className="min-w-0 break-words text-sm leading-5 text-[var(--text-secondary)] sm:leading-6">“{quote.text}”</p>
           {credit && (
             <a
-              className="mt-1 block min-w-0 truncate text-xs leading-4 text-[var(--text-muted)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-soft)] sm:mt-0 sm:max-w-[35%] sm:shrink-0 sm:text-right sm:leading-5"
+              className="mt-1 inline-flex min-h-10 min-w-0 items-center truncate rounded-lg py-1 text-xs leading-4 text-[var(--text-muted)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-soft)] sm:mt-0 sm:max-w-[35%] sm:shrink-0 sm:justify-end sm:text-right sm:leading-5"
               href={`https://hitokoto.cn/?uuid=${encodeURIComponent(quote.uuid)}`}
               title={credit}
               target="_blank"

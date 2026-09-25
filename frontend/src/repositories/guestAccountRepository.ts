@@ -19,11 +19,16 @@ export async function getGuestDataSummary(
   localAnimeProgressCount = 0,
 ): Promise<GuestDataSummary> {
   const user = ['users', uid] as const
-  const [expenses, incomes, exercises, animeProgress, preferences] = await Promise.all([
+  const [expenses, incomes, exercises, animeProgress, financeRules, weeklyReviews, financeGoals, financeBudgets, goalAllocations, preferences] = await Promise.all([
     getCountFromServer(query(collection(firestore, ...user, 'expenses'))),
     getCountFromServer(query(collection(firestore, ...user, 'incomes'))),
     getCountFromServer(query(collection(firestore, ...user, 'exercises'))),
     getCountFromServer(query(collection(firestore, ...user, 'animeWatchProgress'))),
+    getCountFromServer(query(collection(firestore, ...user, 'financeRules'))),
+    getCountFromServer(query(collection(firestore, ...user, 'weeklyReviews'))),
+    getCountFromServer(query(collection(firestore, ...user, 'financeGoals'))),
+    getCountFromServer(query(collection(firestore, ...user, 'financeBudgets'))),
+    getCountFromServer(query(collection(firestore, ...user, 'financeGoalAllocations'))),
     getDocFromServer(doc(firestore, ...user, 'settings', 'preferences')),
   ])
 
@@ -39,7 +44,12 @@ export async function getGuestDataSummary(
   const otherBlockingData = Object.entries(data)
     .filter(([key, value]) => !knownPreferenceFields.has(key) && value !== null && value !== undefined)
     .map(([key]) => key)
-    .sort()
+  if (count(financeRules) > 0) otherBlockingData.push('financeRules')
+  if (count(weeklyReviews) > 0) otherBlockingData.push('weeklyReviews')
+  if (count(financeGoals) > 0) otherBlockingData.push('financeGoals')
+  if (count(financeBudgets) > 0) otherBlockingData.push('financeBudgets')
+  if (count(goalAllocations) > 0) otherBlockingData.push('financeGoalAllocations')
+  otherBlockingData.sort()
   const hasBlockingData = expensesCount > 0 || incomesCount > 0 || exercisesCount > 0 || hasBodyWeight || hasHeight || hasBudget ||
     hasSavingsGoal || otherBlockingData.length > 0
 

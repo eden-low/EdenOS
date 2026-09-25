@@ -1,4 +1,4 @@
-import { ArrowDownLeft, CircleAlert, LoaderCircle, Plus, ReceiptText } from 'lucide-react'
+import { ArrowDownLeft, CircleAlert, LoaderCircle, PlayCircle, Plus, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CaptureSheet } from '../components/capture/CaptureSheet'
 import { triggerPressFeedback } from '../components/ui/pressFeedback'
@@ -16,6 +16,7 @@ import { formatExerciseMetrics } from '../lib/format'
 import { FinancialAmount } from '../components/privacy/FinancialAmount'
 import { selectTimelineGroups } from '../selectors/recordSelectors'
 import { useRecords } from '../state/useRecords'
+import { useAnimeProgress } from '../state/useAnimeProgress'
 import type { RecordDomainStatus, RecordFilter } from '../types/records'
 
 const filters: Array<{ value: RecordFilter; label: string }> = [
@@ -23,6 +24,7 @@ const filters: Array<{ value: RecordFilter; label: string }> = [
   { value: 'expenses', label: 'Expenses' },
   { value: 'income', label: 'Income' },
   { value: 'exercise', label: 'Exercise' },
+  { value: 'anime', label: 'Anime' },
 ]
 
 function DomainStatusNotice({
@@ -68,6 +70,7 @@ function DomainStatusNotice({
 }
 
 export function RecordsPage() {
+  const animeProgress = useAnimeProgress()
   const {
     expenses,
     incomes,
@@ -94,8 +97,9 @@ export function RecordsPage() {
         exerciseStatus === 'loaded' ? exerciseRecords : [],
         filter,
         incomeStatus === 'loaded' ? incomes : [],
+        animeProgress.items,
       ),
-    [exerciseRecords, exerciseStatus, expenseStatus, expenses, filter, incomeStatus, incomes],
+    [animeProgress.items, exerciseRecords, exerciseStatus, expenseStatus, expenses, filter, incomeStatus, incomes],
   )
   const selectedExpense = expenses.find((expense) => expense.id === selectedExpenseId)
   const selectedExercise = exerciseRecords.find((exercise) => exercise.id === selectedExerciseId)
@@ -129,7 +133,7 @@ export function RecordsPage() {
         </CaptureSheet>
       </header>
 
-      <div className="mt-8 flex gap-1 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-1.5 sm:inline-flex" role="tablist" aria-label="Record filters">
+      <div className="mt-8 flex max-w-full gap-1 overflow-x-auto rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-1.5 sm:inline-flex" role="tablist" aria-label="Record filters">
         {filters.map((item) => {
           const active = filter === item.value
           return (
@@ -140,7 +144,7 @@ export function RecordsPage() {
               role="tab"
               aria-selected={active}
               onClick={() => setFilter(item.value)}
-              className={`press-feedback min-h-11 flex-1 rounded-xl px-3 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:flex-none sm:px-4 ${
+              className={`press-feedback min-h-11 flex-none rounded-xl px-3 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)] sm:px-4 ${
                 active
                   ? 'bg-[var(--accent-wash-strong)] text-[var(--accent-soft)]'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--surface-primary)] hover:text-[var(--text-primary)]'
@@ -247,6 +251,11 @@ export function RecordsPage() {
                       <div className="min-w-0"><p className="truncate font-semibold text-[var(--text-primary)]">{income.description}</p><p className="mt-1 text-sm text-[var(--text-secondary)]">Income · {incomeCategoryLabels[income.category]}</p></div>
                       <div className="ml-auto min-w-0 shrink-0 text-right"><FinancialAmount amountSen={income.amountSen} prefix="+" interactive={false} className="font-semibold text-[var(--positive)]" /><p className="mt-1 text-xs text-[var(--text-muted)]">{relativeDayLabel(income.occurredAt, referenceDate)} · {formatTime(income.occurredAt)}</p></div>
                     </button>
+                  }
+
+                  if (item.kind === 'anime') {
+                    const anime = item.record
+                    return <div key={`anime-${anime.externalId}`} className="flex min-h-20 w-full items-center gap-3 rounded-xl px-2 py-4 sm:gap-4 sm:px-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-wash)] text-[var(--accent-soft)]"><PlayCircle aria-hidden="true" size={19} /></span><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-primary)]">{anime.title}</p><p className="mt-1 text-sm text-[var(--text-secondary)]">Anime · {anime.trackingStatus === 'completed' ? 'completed' : anime.trackingStatus === 'planned' ? 'added to plan' : 'progressed'}</p></div><p className="ml-auto shrink-0 text-right text-xs text-[var(--text-muted)]">{relativeDayLabel(item.occurredAt, referenceDate)} · {formatTime(item.occurredAt)}</p></div>
                   }
 
                   const exercise = item.record

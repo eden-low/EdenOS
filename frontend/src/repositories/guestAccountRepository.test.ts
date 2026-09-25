@@ -18,8 +18,13 @@ function state(
   exercisesCount = 0,
   settings: Record<string, unknown> | null = null,
   animeCloudProgressCount = 0,
+  financeRulesCount = 0,
+  weeklyReviewsCount = 0,
+  financeGoalsCount = 0,
+  financeBudgetsCount = 0,
+  goalAllocationsCount = 0,
 ) {
-  for (const value of [expensesCount, incomesCount, exercisesCount, animeCloudProgressCount]) {
+  for (const value of [expensesCount, incomesCount, exercisesCount, animeCloudProgressCount, financeRulesCount, weeklyReviewsCount, financeGoalsCount, financeBudgetsCount, goalAllocationsCount]) {
     sdk.getCountFromServer.mockResolvedValueOnce({ data: () => ({ count: value }) })
   }
   sdk.getDocFromServer.mockResolvedValue({ exists: () => settings !== null, data: () => settings })
@@ -47,6 +52,11 @@ describe('authoritative Guest data summary', () => {
       ['users', 'guest-uid', 'incomes'],
       ['users', 'guest-uid', 'exercises'],
       ['users', 'guest-uid', 'animeWatchProgress'],
+      ['users', 'guest-uid', 'financeRules'],
+      ['users', 'guest-uid', 'weeklyReviews'],
+      ['users', 'guest-uid', 'financeGoals'],
+      ['users', 'guest-uid', 'financeBudgets'],
+      ['users', 'guest-uid', 'financeGoalAllocations'],
     ])
     expect(sdk.doc).toHaveBeenCalledWith(db, 'users', 'guest-uid', 'settings', 'preferences')
   })
@@ -85,6 +95,25 @@ describe('authoritative Guest data summary', () => {
       animeCloudProgressCount: 2,
       hasBlockingData: false,
     })
+  })
+
+  it('protects UID-scoped Finance rules during a Guest account switch', async () => {
+    state(0, 0, 0, null, 0, 1)
+    expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({ otherBlockingData: ['financeRules'], hasBlockingData: true })
+  })
+
+  it('protects saved Weekly Review reflections during a Guest account switch', async () => {
+    state(0, 0, 0, null, 0, 0, 1)
+    expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({ otherBlockingData: ['weeklyReviews'], hasBlockingData: true })
+  })
+
+  it.each([
+    ['financeGoals', [0, 0, 0, null, 0, 0, 0, 1, 0, 0]],
+    ['financeBudgets', [0, 0, 0, null, 0, 0, 0, 0, 1, 0]],
+    ['financeGoalAllocations', [0, 0, 0, null, 0, 0, 0, 0, 0, 1]],
+  ])('protects %s during a Guest account switch', async (label, args) => {
+    state(...args as Parameters<typeof state>)
+    expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({ otherBlockingData: [label], hasBlockingData: true })
   })
 
   it('ignores empty known preference placeholders but protects unknown saved data', async () => {
