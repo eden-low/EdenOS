@@ -60,6 +60,8 @@ describe('Records timeline', () => {
     }
     expect(selectTimelineGroups([], [], 'all', [income])[0].records[0].kind).toBe('income')
     expect(selectTimelineGroups(expenses, exercises, 'income', [income])
-      .flatMap((group) => group.records.map((item) => item.record.id))).toEqual(['salary'])
+      .flatMap((group) => group.records)).toMatchObject([
+      { kind: 'income', record: { id: 'salary' } },
+    ])
   })
 })
