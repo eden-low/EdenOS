@@ -25,6 +25,23 @@ describe('finance calculations', () => {
     expect(summary.budgetProgress).toBe(40)
   })
 
+  it('keeps budget remaining signed when spending exceeds the budget', () => {
+    const summary = selectFinanceSummary([expense('expense', 12_500, at(2026, 9, 3))], [], settings, new Date(2026, 8, 1))
+    expect(summary.budgetRemainingSen).toBe(-2_500)
+    expect(summary.isOverspent).toBe(true)
+  })
+
+  it('builds a deterministic month story from current and previous data', () => {
+    const summary = selectFinanceSummary(
+      [expense('food-now', 6_000, at(2026, 9, 3)), expense('food-old', 2_000, at(2026, 8, 3))],
+      [income('salary', 20_000, at(2026, 9, 1))], settings, new Date(2026, 8, 1),
+    )
+    expect(summary.savingsRatePercent).toBe(70)
+    expect(summary.expenseChangePercent).toBe(200)
+    expect(summary.largestCategory).toEqual({ label: 'Food', spentSen: 6_000 })
+    expect(summary.mostChangedCategory).toEqual({ label: 'Food', changeSen: 4_000 })
+  })
+
   it('returns an intentional zero-data month', () => {
     const summary = selectFinanceSummary([], [], settings, new Date(2026, 8, 1))
     expect(summary).toMatchObject({ monthlyIncomeSen: 0, monthlyExpensesSen: 0, netCashflowSen: 0, categories: [], transactions: [], hasPreviousData: false })

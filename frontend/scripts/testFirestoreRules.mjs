@@ -121,7 +121,15 @@ try {
   await assertFails(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 3000000, updatedAt: serverTimestamp() }))
   await assertFails(setDoc(doc(alice, 'users/alice/animeWatchProgress/wrong-id'), progress))
   await assertSucceeds(setDoc(doc(alice, progressPath), { ...progress, currentEpisode: 3, updatedAt: serverTimestamp() }))
-  process.stdout.write('Firestore ownership, catalogue, progress, and settings rules passed.\n')
+  const financeRule = { direction: 'expense', matchType: 'exact', pattern: 'mcdonald s', category: 'food', enabled: true, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }
+  const financeRulePath = 'users/alice/financeRules/mcdonalds'
+  await assertSucceeds(setDoc(doc(alice, financeRulePath), financeRule))
+  await assertSucceeds(getDoc(doc(alice, financeRulePath)))
+  await assertFails(getDoc(doc(bob, financeRulePath)))
+  await assertFails(setDoc(doc(bob, 'users/alice/financeRules/foreign'), financeRule))
+  await assertFails(setDoc(doc(alice, 'users/alice/financeRules/bad-category'), { ...financeRule, category: 'salary' }))
+  await assertSucceeds(setDoc(doc(alice, financeRulePath), { ...financeRule, enabled: false, createdAt: (await getDoc(doc(alice, financeRulePath))).data().createdAt, updatedAt: serverTimestamp() }))
+  process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, and settings rules passed.\n')
 } finally {
   await environment.cleanup()
 }

@@ -18,8 +18,9 @@ function state(
   exercisesCount = 0,
   settings: Record<string, unknown> | null = null,
   animeCloudProgressCount = 0,
+  financeRulesCount = 0,
 ) {
-  for (const value of [expensesCount, incomesCount, exercisesCount, animeCloudProgressCount]) {
+  for (const value of [expensesCount, incomesCount, exercisesCount, animeCloudProgressCount, financeRulesCount]) {
     sdk.getCountFromServer.mockResolvedValueOnce({ data: () => ({ count: value }) })
   }
   sdk.getDocFromServer.mockResolvedValue({ exists: () => settings !== null, data: () => settings })
@@ -47,6 +48,7 @@ describe('authoritative Guest data summary', () => {
       ['users', 'guest-uid', 'incomes'],
       ['users', 'guest-uid', 'exercises'],
       ['users', 'guest-uid', 'animeWatchProgress'],
+      ['users', 'guest-uid', 'financeRules'],
     ])
     expect(sdk.doc).toHaveBeenCalledWith(db, 'users', 'guest-uid', 'settings', 'preferences')
   })
@@ -85,6 +87,11 @@ describe('authoritative Guest data summary', () => {
       animeCloudProgressCount: 2,
       hasBlockingData: false,
     })
+  })
+
+  it('protects UID-scoped Finance rules during a Guest account switch', async () => {
+    state(0, 0, 0, null, 0, 1)
+    expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({ otherBlockingData: ['financeRules'], hasBlockingData: true })
   })
 
   it('ignores empty known preference placeholders but protects unknown saved data', async () => {

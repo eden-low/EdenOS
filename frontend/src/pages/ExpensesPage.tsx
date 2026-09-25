@@ -5,6 +5,8 @@ import { ExpenseActivityDonut } from '../components/finance/ExpenseActivityDonut
 import { FinanceEntryDialog } from '../components/finance/FinanceEntryDialogs'
 import { IncomeRecordDialog } from '../components/finance/IncomeRecordDialog'
 import { BatchImportDialog } from '../components/finance/BatchImportDialog'
+import { FinanceRulesPanel } from '../components/finance/FinanceRulesPanel'
+import { MonthStory } from '../components/finance/MonthStory'
 import { MoneySettingsDialog } from '../components/dashboard/MoneySettingsDialog'
 import { FinancialAmount } from '../components/privacy/FinancialAmount'
 import { ExpenseRecordDialog } from '../components/records/ExpenseRecordDialog'
@@ -78,6 +80,8 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
       <article className="finance-summary-card finance-summary-card-amber"><div className="flex items-start justify-between gap-3"><p className="section-label">Savings Goal</p><span className="finance-summary-icon"><Target size={19} /></span></div><div className="mt-4">{summary.savingsGoalSen === null ? <span className="text-xl font-semibold">Not configured</span> : <FinancialAmount amountSen={summary.savingsGoalSen} className="metric-value text-2xl font-semibold" />}</div><p className="mt-2 text-xs text-[var(--text-muted)]">Configured target—not an account balance</p></article>
     </section>
 
+    <MonthStory summary={summary} />
+
     <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.85fr)]"><CashflowChart data={summary.cashflow} monthLabel={summary.monthLabel} /><ExpenseActivityDonut summary={summary} /></div>
 
     <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.85fr)]">
@@ -92,6 +96,7 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
         <Goal label="Savings Goal" amount={summary.savingsGoalSen} detail="Configured savings target. EdenOS does not infer an actual savings balance." progress={null} action={<MoneySettingsDialog kind="savings" />} />
       </section>
     </div>
+    <FinanceRulesPanel />
 
     {entryKind && <FinanceEntryDialog key={entryKind} kind={entryKind} open onClose={() => setEntryKind(null)} />}
     <BatchImportDialog key={batchImportOpen ? 'batch-open' : 'batch-closed'} open={batchImportOpen} onClose={() => setBatchImportOpen(false)} />

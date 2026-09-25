@@ -11,6 +11,7 @@ import { UserSettingsProvider } from './state/UserSettingsProvider'
 import { AnimeProgressProvider } from './state/AnimeProgressProvider'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { PrivacyLockProvider } from './privacy/PrivacyLockProvider'
+import { FinanceRulesProvider } from './state/FinanceRulesProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,11 +22,13 @@ createRoot(document.getElementById('root')!).render(
         <FirebaseAuthProvider>
           <RecordsProvider>
             <UserSettingsProvider>
+              <FinanceRulesProvider>
               <AnimeProgressProvider>
                 <PrivacyLockProvider>
                   <App />
                 </PrivacyLockProvider>
               </AnimeProgressProvider>
+              </FinanceRulesProvider>
             </UserSettingsProvider>
           </RecordsProvider>
         </FirebaseAuthProvider>

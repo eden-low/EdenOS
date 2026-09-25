@@ -1,11 +1,15 @@
 import { ArrowRight, Dumbbell, Landmark, Search, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { matchingDestinations, parseCommand } from '../../domain/command'
+import { isExpenseCategory } from '../../domain/expense'
+import { matchingFinanceRule } from '../../domain/financeRules'
+import { isIncomeCategory } from '../../domain/income'
 import { formatLongDate, formatTime } from '../../lib/date'
 import { formatDuration, formatMoneyExact } from '../../lib/format'
 import { createFirestoreAnimeRepository } from '../../repositories/firestoreAnimeRepository'
 import { useFirebaseAuth } from '../../state/useFirebaseAuth'
 import { useRecords } from '../../state/useRecords'
+import { useFinanceRules } from '../../state/useFinanceRules'
 import type { AnimeSummary } from '../../types/anime'
 import type { ExpenseData, ExerciseData, IncomeData } from '../../types/records'
 import type { AppPage } from '../layout/Navigation'
@@ -28,6 +32,7 @@ export function CommandPalette({ open, onClose, onNavigate, onAnimeSearch }: {
 }) {
   const { firestore } = useFirebaseAuth()
   const records = useRecords()
+  const { rules } = useFinanceRules()
   const repository = useMemo(() => createFirestoreAnimeRepository(firestore), [firestore])
   const [input, setInput] = useState('')
   const [candidate, setCandidate] = useState<Candidate | null>(null)
@@ -36,7 +41,18 @@ export function CommandPalette({ open, onClose, onNavigate, onAnimeSearch }: {
   const [animeStatus, setAnimeStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const intent = useMemo(() => parseCommand(input), [input])
+  const intent = useMemo(() => {
+    const parsed = parseCommand(input)
+    if (parsed.kind === 'expense') {
+      const rule = matchingFinanceRule(parsed.data.title, 'expense', rules)
+      return rule && isExpenseCategory(rule.category) ? { ...parsed, data: { ...parsed.data, category: rule.category } } : parsed
+    }
+    if (parsed.kind === 'income') {
+      const rule = matchingFinanceRule(parsed.data.description, 'income', rules)
+      return rule && isIncomeCategory(rule.category) ? { ...parsed, data: { ...parsed.data, category: rule.category } } : parsed
+    }
+    return parsed
+  }, [input, rules])
   const destinations = useMemo(() => matchingDestinations(input), [input])
 
   useEffect(() => {

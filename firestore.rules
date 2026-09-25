@@ -167,6 +167,28 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    function isValidFinanceRule(data) {
+      return data.keys().hasAll([
+          'direction', 'matchType', 'pattern', 'category', 'enabled', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'direction', 'matchType', 'pattern', 'category', 'enabled', 'createdAt', 'updatedAt'
+        ])
+        && data.direction in ['expense', 'income']
+        && data.matchType in ['exact', 'contains']
+        && data.pattern is string
+        && data.pattern.size() > 0
+        && data.pattern.size() <= 120
+        && ((data.direction == 'expense' && data.category in [
+          'food', 'transport', 'shopping', 'entertainment', 'housing', 'health', 'education', 'other'
+        ]) || (data.direction == 'income' && data.category in [
+          'salary', 'freelance', 'business', 'investment', 'gift', 'refund', 'other'
+        ]))
+        && data.enabled is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     match /animeCatalogueStatus/{statusId} {
       allow get: if request.auth != null && statusId == 'current';
       allow list, create, update, delete: if false;
@@ -241,6 +263,19 @@ service cloud.firestore {
       allow get, list: if isOwner(userId);
       allow create, update: if isOwner(userId)
         && isValidAnimeProgress(request.resource.data, progressId);
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/financeRules/{ruleId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidFinanceRule(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidFinanceRule(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
       allow delete: if isOwner(userId);
     }
 

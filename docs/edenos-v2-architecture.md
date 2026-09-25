@@ -21,3 +21,11 @@ This document records implementation decisions for the September 2026 V2 develop
 - New-title queries use `firstPublishedAt`. The sync writes it only for newly discovered, previously unmapped canonicals; no historical value is fabricated and no backfill is required.
 - A successful controlled incremental run publishes `animeCatalogueStatus/current` with only catalogue count and last-success time. Provider, checkpoint, workflow, and R2 details remain private.
 - Home and Anime use bounded title queries and server-side counts. Heavy detail, episode, and playback data remain in R2.
+
+## Phase 4 — Finance Intelligence
+
+- `users/{uid}/financeRules/{ruleId}` stores only normalized matching rules. Rules are owner-readable/writable, explicitly created, individually enabled/disabled, and never applied retroactively.
+- Exact normalized matching is the default. `contains` exists only as an explicit user choice. The repeated-categorization suggestion threshold is a domain constant (`3`), not a schema concern.
+- Rules influence the category on an in-memory command candidate; the user still reviews and confirms the transaction before the authoritative Records repository writes it.
+- Month Story is deterministic and derived from existing records/settings. Budget remaining is signed (`budget - expenses`); UI attention state is separate from the underlying value.
+- Finance Rules add one UID-scoped subscription at authenticated app startup. They are also included in the conservative Guest-to-Google data-loss check.
