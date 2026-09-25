@@ -10,6 +10,7 @@ import { PrivacyLockContext, unlockedPrivacyLock } from '../privacy/privacyLockC
 vi.mock('../hooks/useLocalReferenceDate', () => ({ useLocalReferenceDate: vi.fn() }))
 vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
 vi.mock('../state/useUserSettings', () => ({ useUserSettings: vi.fn() }))
+vi.mock('../state/useFinanceRules', () => ({ useFinanceRules: () => ({ rules: [], status: 'loaded', createRule: vi.fn(), setRuleEnabled: vi.fn(), deleteRule: vi.fn() }) }))
 
 const retryExpenseSubscription = vi.fn()
 const retryIncomeSubscription = vi.fn()
@@ -32,7 +33,7 @@ describe('dedicated dashboards', () => {
     const openRecords = vi.fn(); render(<ExpensesPage onOpenRecords={openRecords} />)
     expect(screen.getByRole('heading', { name: 'Expenses' })).toBeTruthy()
     expect(screen.getAllByText('RM 25')[0]).toBeTruthy()
-    expect(screen.getByText('Food')).toBeTruthy()
+    expect(screen.getAllByText('Food')[0]).toBeTruthy()
     expect(screen.getByText('Lunch')).toBeTruthy()
     expect(screen.getByText('Cashflow activity')).toBeTruthy()
     expect(screen.getByRole('img', { name: 'Cumulative income and expense line chart' })).toBeTruthy()

@@ -76,7 +76,7 @@ export function DailyWeather() {
               {weather.precipitationProbability !== undefined && ` · Precipitation ${Math.round(weather.precipitationProbability)}%`}
             </p>
             <a
-              className="inline-block text-[11px] leading-4 text-[var(--text-muted)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-soft)]"
+              className="inline-flex min-h-10 items-center text-[11px] leading-4 text-[var(--text-muted)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-soft)]"
               href={weatherAttribution.url}
               target="_blank"
               rel="noopener noreferrer"
@@ -87,7 +87,7 @@ export function DailyWeather() {
             {state.status === 'denied' && <span className="text-xs text-[var(--text-secondary)]">Location access denied.</span>}
             <button
               type="button"
-              className="rounded-md text-sm font-medium text-[var(--accent-soft)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-soft)]"
+              className="min-h-10 rounded-md px-2 text-sm font-medium text-[var(--accent-soft)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-soft)]"
               onClick={() => void enableWeather()}
             >{state.status === 'denied' ? 'Try again' : 'Enable weather'}</button>
           </div>
