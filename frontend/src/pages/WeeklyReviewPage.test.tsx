@@ -7,6 +7,8 @@ import { WeeklyReviewPage } from './WeeklyReviewPage'
 
 vi.mock('../hooks/useLocalReferenceDate', () => ({ useLocalReferenceDate: vi.fn() }))
 vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
+vi.mock('../state/useAnimeProgress', () => ({ useAnimeProgress: () => ({ items: [] }) }))
+vi.mock('../components/review/WeeklyReflection', () => ({ WeeklyReflection: ({ weekKey }: { weekKey: string }) => <div>Reflection {weekKey}</div> }))
 
 const at = (day: number) => new Date(2026, 8, day, 12).toISOString()
 const currentExpense: ExpenseRecord = {
@@ -23,17 +25,22 @@ const currentExercise: ExerciseRecord = {
 }
 const retryExpenseSubscription = vi.fn()
 const retryExerciseSubscription = vi.fn()
+const retryIncomeSubscription = vi.fn()
 
 function provideRecords(overrides: Record<string, unknown> = {}) {
   vi.mocked(useRecords).mockReturnValue({
     expenses: [currentExpense, previousExpense],
     exerciseRecords: [currentExercise],
+    incomes: [],
     expenseStatus: 'loaded',
     expenseError: null,
     exerciseStatus: 'loaded',
     exerciseError: null,
+    incomeStatus: 'loaded',
+    incomeError: null,
     retryExpenseSubscription,
     retryExerciseSubscription,
+    retryIncomeSubscription,
     ...overrides,
   } as unknown as ReturnType<typeof useRecords>)
 }

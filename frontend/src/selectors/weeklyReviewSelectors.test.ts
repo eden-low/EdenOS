@@ -57,8 +57,20 @@ describe('weekly review selectors', () => {
     )
     expect(summary).toEqual({
       expenses: { count: 0, spentSen: 0, categories: [] },
-      exercise: { count: 0, durationSeconds: 0, sessions: [] },
+      exercise: { count: 0, durationSeconds: 0, sessions: [], distanceMetres: 0, durationChangePercent: null },
+      finance: { incomeSen: 0, spentSen: 0, netSen: 0, spendingChangePercent: null },
+      anime: { progressed: [], completed: [] },
     })
+  })
+
+  it('adds income, trend, distance, and truthful latest Anime progress context', () => {
+    const income = { id: 'salary', amountSen: 5000, category: 'salary' as const, description: 'Salary', occurredAt: at(2026, 9, 17), createdAt: at(2026, 9, 17), updatedAt: at(2026, 9, 17) }
+    const anime = { externalId: 'frieren', animeId: 'frieren', title: 'Frieren', currentEpisode: 3, positionSeconds: 0, durationSeconds: 0, watchedEpisodes: [1, 2], trackingStatus: 'watching' as const, updatedAt: new Date(at(2026, 9, 17)).getTime() }
+    const run = { ...exercise('run', 1800, at(2026, 9, 17)), distanceMetres: 5000 }
+    const summary = selectWeeklyReview([expense('lunch', 1000, 'food', at(2026, 9, 17))], [run], selectedDate, [income], [anime])
+    expect(summary.finance).toMatchObject({ incomeSen: 5000, spentSen: 1000, netSen: 4000 })
+    expect(summary.exercise.distanceMetres).toBe(5000)
+    expect(summary.anime.progressed[0].title).toBe('Frieren')
   })
 
   it('recomputes totals from the current records after an edit or deletion', () => {

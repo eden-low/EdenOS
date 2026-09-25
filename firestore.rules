@@ -189,6 +189,16 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function isValidWeeklyReview(data) {
+      return data.keys().hasAll(['wentWell', 'improve', 'nextFocus', 'updatedAt'])
+        && data.keys().hasOnly(['wentWell', 'improve', 'nextFocus', 'updatedAt'])
+        && data.wentWell is string && data.wentWell.size() <= 2000
+        && data.improve is string && data.improve.size() <= 2000
+        && data.nextFocus is string && data.nextFocus.size() <= 2000
+        && data.updatedAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
     match /animeCatalogueStatus/{statusId} {
       allow get: if request.auth != null && statusId == 'current';
       allow list, create, update, delete: if false;
@@ -276,6 +286,13 @@ service cloud.firestore {
         && isValidFinanceRule(request.resource.data)
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/weeklyReviews/{weekKey} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create, update: if isOwner(userId) && isValidWeeklyReview(request.resource.data);
       allow delete: if isOwner(userId);
     }
 

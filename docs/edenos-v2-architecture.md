@@ -29,3 +29,11 @@ This document records implementation decisions for the September 2026 V2 develop
 - Rules influence the category on an in-memory command candidate; the user still reviews and confirms the transaction before the authoritative Records repository writes it.
 - Month Story is deterministic and derived from existing records/settings. Budget remaining is signed (`budget - expenses`); UI attention state is separate from the underlying value.
 - Finance Rules add one UID-scoped subscription at authenticated app startup. They are also included in the conservative Guest-to-Google data-loss check.
+
+## Phase 5 — Life Layer
+
+- Exercise consistency, weekly comparison, active days, streak, and personal bests are derived from existing Exercise records. A best is shown only when its required duration/distance data exists; no health advice is inferred.
+- Records aggregates Finance, Exercise, and each Anime title's latest progress update client-side. No cross-domain activity collection or event log was created.
+- Weekly Review combines derived Finance, Exercise, and latest Anime progress context. Anime language intentionally says a title “progressed” and does not claim exact episode history.
+- `users/{uid}/weeklyReviews/{weekKey}` stores only `wentWell`, `improve`, `nextFocus`, and `updatedAt`. The selected week document is read only while the Weekly Review route is open; domain summaries are not duplicated.
+- Saved reflections are included in the conservative Guest-to-Google data-loss check.

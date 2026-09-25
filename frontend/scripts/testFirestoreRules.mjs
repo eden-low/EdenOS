@@ -129,7 +129,15 @@ try {
   await assertFails(setDoc(doc(bob, 'users/alice/financeRules/foreign'), financeRule))
   await assertFails(setDoc(doc(alice, 'users/alice/financeRules/bad-category'), { ...financeRule, category: 'salary' }))
   await assertSucceeds(setDoc(doc(alice, financeRulePath), { ...financeRule, enabled: false, createdAt: (await getDoc(doc(alice, financeRulePath))).data().createdAt, updatedAt: serverTimestamp() }))
-  process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, and settings rules passed.\n')
+  const review = { wentWell: 'Moved consistently', improve: 'Plan lunches', nextFocus: 'Three workouts', updatedAt: serverTimestamp() }
+  const reviewPath = 'users/alice/weeklyReviews/2026-09-21'
+  await assertSucceeds(setDoc(doc(alice, reviewPath), review))
+  await assertSucceeds(getDoc(doc(alice, reviewPath)))
+  await assertFails(getDoc(doc(bob, reviewPath)))
+  await assertFails(getDocs(collection(alice, 'users/alice/weeklyReviews')))
+  await assertFails(setDoc(doc(bob, 'users/alice/weeklyReviews/2026-09-21'), review))
+  await assertFails(setDoc(doc(alice, 'users/alice/weeklyReviews/too-long'), { ...review, wentWell: 'x'.repeat(2001) }))
+  process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, Weekly Reviews, and settings rules passed.\n')
 } finally {
   await environment.cleanup()
 }
