@@ -111,5 +111,20 @@ export function createFirestoreAnimeRepository(firestore: Firestore): AnimeRepos
       ))
       return snapshot.docs.map(decodeAnimeSummary)
     },
+    async fetchRecent(resultLimit = 6) {
+      const snapshot = await getDocs(query(
+        reference,
+        orderBy('updatedAt', 'desc'),
+        limit(Math.min(Math.max(1, resultLimit), 12)),
+      ))
+      return snapshot.docs.map(decodeAnimeSummary)
+    },
+    async countUpdatedSince(since) {
+      const count = await getCountFromServer(query(
+        reference,
+        where('updatedAt', '>=', since),
+      ))
+      return count.data().count
+    },
   }
 }

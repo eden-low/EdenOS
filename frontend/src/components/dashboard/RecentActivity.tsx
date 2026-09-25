@@ -9,13 +9,15 @@ export function RecentActivity({
   items,
   sourceLabel = 'Finance + exercise',
   emptyMessage = 'No recent activity yet',
+  onOpen,
 }: {
   items: RecentActivityItem[]
   sourceLabel?: string
   emptyMessage?: string
+  onOpen?: () => void
 }) {
   return (
-    <section aria-label="Recent activity" className="dashboard-card order-2 col-span-2 p-5 sm:p-6 md:col-span-6 xl:col-span-7 xl:p-7">
+    <section aria-label="Recent activity" className="dashboard-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <p className="section-label">Recent Activity</p>
         <span className="text-xs text-[var(--text-muted)]">{sourceLabel}</span>
@@ -61,6 +63,7 @@ export function RecentActivity({
           )
         })}
       </ul>
+      {onOpen && <div className="mt-4 border-t border-[var(--border-subtle)] pt-3 text-right"><button type="button" onClick={onOpen} className="min-h-10 rounded-xl px-3 text-sm font-semibold text-[var(--accent-soft)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]">Open Records</button></div>}
     </section>
   )
 }

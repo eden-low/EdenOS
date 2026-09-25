@@ -3,4 +3,6 @@ import type { AnimeCataloguePage, AnimeCatalogueRequest, AnimeSummary } from '..
 export interface AnimeRepository {
   fetchPage: (request: AnimeCatalogueRequest) => Promise<AnimeCataloguePage>
   searchTitles: (query: string, resultLimit?: number) => Promise<AnimeSummary[]>
+  fetchRecent: (resultLimit?: number) => Promise<AnimeSummary[]>
+  countUpdatedSince: (since: Date) => Promise<number>
 }

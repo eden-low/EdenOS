@@ -75,4 +75,15 @@ describe('Firestore Anime repository', () => {
     await repository.searchTitles('Sample', 8)
     expect(mock.getDocs.mock.calls[0][0].constraints).toContainEqual({ kind: 'limit', args: [8] })
   })
+
+  it('keeps Home queries bounded and counts updates on the server', async () => {
+    mock.getDocs.mockResolvedValue({ docs: [snapshot(1)] })
+    mock.getCountFromServer.mockResolvedValue({ data: () => ({ count: 3 }) })
+    const repository = createFirestoreAnimeRepository({} as never)
+    await expect(repository.fetchRecent(4)).resolves.toHaveLength(1)
+    expect(mock.getDocs.mock.calls[0][0].constraints).toContainEqual({ kind: 'limit', args: [4] })
+    const since = new Date('2026-09-26T00:00:00.000Z')
+    await expect(repository.countUpdatedSince(since)).resolves.toBe(3)
+    expect(mock.getCountFromServer.mock.calls[0][0].constraints).toContainEqual({ kind: 'where', args: ['updatedAt', '>=', since] })
+  })
 })

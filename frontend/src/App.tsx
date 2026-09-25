@@ -39,7 +39,7 @@ function App() {
       <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.25rem+env(safe-area-inset-top))] lg:ml-28 lg:pb-8 lg:pt-0">
         <Suspense fallback={<div className="mx-auto max-w-[92rem] px-4 py-8 text-sm text-[var(--text-muted)]">Opening…</div>}>
           {activePage === 'today' ? (
-            <TodayPage />
+            <TodayPage onNavigate={navigate} />
           ) : activePage === 'expenses' ? (
             <ExpensesPage onOpenRecords={() => navigate('records')} />
           ) : activePage === 'exercise' ? (
