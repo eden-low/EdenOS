@@ -17,7 +17,7 @@ import { useFirebaseAuth } from '../state/useFirebaseAuth'
 import { useRecords } from '../state/useRecords'
 import type { AnimeSummary } from '../types/anime'
 
-export function TodayPage({ onNavigate }: { onNavigate: (page: AppPage) => void }) {
+export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: AppPage) => void; onOpenCommand: () => void }) {
   const {
     expenses,
     incomes,
@@ -79,7 +79,7 @@ export function TodayPage({ onNavigate }: { onNavigate: (page: AppPage) => void 
             : 'Activity unavailable'
   return (
     <div className="core-page mx-auto w-full max-w-[76rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-      <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} />
+      <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} onOpenCommand={onOpenCommand} />
       <TodaySummary
         netCashflowSen={dashboard.monthlyFinance.netCashflowSen}
         workouts={dashboard.exercise.completedSessions}

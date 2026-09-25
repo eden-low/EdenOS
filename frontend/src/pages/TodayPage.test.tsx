@@ -34,7 +34,7 @@ describe('Today V2', () => {
 
   it('prioritizes the four primary domains, preserves signed overspend, and deep-links', async () => {
     const navigate = vi.fn()
-    await act(async () => { render(<TodayPage onNavigate={navigate} />) })
+    await act(async () => { render(<TodayPage onNavigate={navigate} onOpenCommand={vi.fn()} />) })
     expect(screen.getByText('Here is what matters today.')).toBeTruthy()
     expect(screen.getByLabelText('Today summary')).toBeTruthy()
     expect(screen.getByText('Frieren')).toBeTruthy()
@@ -49,7 +49,7 @@ describe('Today V2', () => {
 
   it('keeps domain errors scoped and the rest of Home usable', async () => {
     animeRepository.fetchRecent.mockRejectedValue(new Error('offline'))
-    await act(async () => { render(<TodayPage onNavigate={vi.fn()} />) })
+    await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
     expect(screen.getByRole('alert').textContent).toContain('Anime updates')
     expect(screen.getByRole('button', { name: 'Open Finance' })).toBeTruthy()
   })

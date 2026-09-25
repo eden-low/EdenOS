@@ -1,4 +1,4 @@
-import { CalendarDays, Plus } from 'lucide-react'
+import { CalendarDays, Plus, Search } from 'lucide-react'
 import { Button } from '../ui/button'
 import { CaptureSheet } from '../capture/CaptureSheet'
 import { triggerPressFeedback } from '../ui/pressFeedback'
@@ -6,9 +6,11 @@ import { triggerPressFeedback } from '../ui/pressFeedback'
 export function DashboardHeader({
   greeting,
   displayDate,
+  onOpenCommand,
 }: {
   greeting: string
   displayDate: string
+  onOpenCommand?: () => void
 }) {
   return (
     <header className="rounded-[1.5rem] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-soft)] sm:p-7">
@@ -24,12 +26,10 @@ export function DashboardHeader({
           <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">Here is what matters today.</p>
         </div>
 
-        <CaptureSheet>
-          <Button {...triggerPressFeedback} className="press-feedback self-start sm:self-auto">
-            <Plus aria-hidden="true" size={18} strokeWidth={2.2} />
-            Capture
-          </Button>
-        </CaptureSheet>
+        <div className="flex flex-wrap gap-2">
+          {onOpenCommand && <Button type="button" variant="secondary" onClick={onOpenCommand}><Search aria-hidden="true" size={17} />Search <span className="hidden text-xs text-[var(--text-muted)] sm:inline">⌘K</span></Button>}
+          <CaptureSheet><Button {...triggerPressFeedback} className="press-feedback"><Plus aria-hidden="true" size={18} strokeWidth={2.2} />Capture</Button></CaptureSheet>
+        </div>
       </div>
     </header>
   )

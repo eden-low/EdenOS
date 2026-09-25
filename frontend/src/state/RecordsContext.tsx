@@ -185,6 +185,10 @@ export function RecordsProvider({ children }: { children: ReactNode }) {
         await exerciseRepository.createExercise(draft.id, draft.data)
         dispatch({ type: 'exerciseDraft/confirmed', draftId: id })
       },
+      async createExercise(data) {
+        if (connectivity === 'offline') throw new OfflineExerciseWriteError()
+        await exerciseRepository.createExercise(createId('exercise'), data)
+      },
       async updateExercise(id, data) {
         if (connectivity === 'offline') throw new OfflineExerciseWriteError()
         await exerciseRepository.updateExercise(id, data)

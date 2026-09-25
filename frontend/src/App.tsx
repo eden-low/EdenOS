@@ -13,9 +13,11 @@ const ExercisePage = lazy(() => import('./pages/ExercisePage').then((module) => 
 const RecordsPage = lazy(() => import('./pages/RecordsPage').then((module) => ({ default: module.RecordsPage })))
 const WeeklyReviewPage = lazy(() => import('./pages/WeeklyReviewPage').then((module) => ({ default: module.WeeklyReviewPage })))
 const AnimePage = lazy(() => import('./pages/AnimePage').then((module) => ({ default: module.AnimePage })))
+const CommandPalette = lazy(() => import('./components/command/CommandPalette').then((module) => ({ default: module.CommandPalette })))
 
 function App() {
   const [activePage, setActivePage] = useState<AppPage>(() => appPageFromLocation())
+  const [commandOpen, setCommandOpen] = useState(false)
 
   useEffect(() => {
     function syncPageFromUrl() { setActivePage(appPageFromLocation()) }
@@ -27,9 +29,25 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    function openCommand(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setCommandOpen(true)
+      }
+    }
+    window.addEventListener('keydown', openCommand)
+    return () => window.removeEventListener('keydown', openCommand)
+  }, [])
+
   function navigate(page: AppPage) {
     if (page !== activePage || window.location.hash) pushAppPage(page)
     setActivePage(page)
+  }
+
+  function searchAnime(query: string) {
+    window.history.pushState(null, '', `/anime?q=${encodeURIComponent(query)}`)
+    setActivePage('anime')
   }
 
   return (
@@ -39,7 +57,7 @@ function App() {
       <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.25rem+env(safe-area-inset-top))] lg:ml-28 lg:pb-8 lg:pt-0">
         <Suspense fallback={<div className="mx-auto max-w-[92rem] px-4 py-8 text-sm text-[var(--text-muted)]">Opening…</div>}>
           {activePage === 'today' ? (
-            <TodayPage onNavigate={navigate} />
+            <TodayPage onNavigate={navigate} onOpenCommand={() => setCommandOpen(true)} />
           ) : activePage === 'expenses' ? (
             <ExpensesPage onOpenRecords={() => navigate('records')} />
           ) : activePage === 'exercise' ? (
@@ -56,6 +74,7 @@ function App() {
 
       <MobileNavigation activePage={activePage} onNavigate={navigate} />
       <PwaUpdatePrompt />
+      {commandOpen && <Suspense fallback={null}><CommandPalette open onClose={() => setCommandOpen(false)} onNavigate={navigate} onAnimeSearch={searchAnime} /></Suspense>}
     </div>
   )
 }

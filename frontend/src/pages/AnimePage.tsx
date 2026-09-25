@@ -16,8 +16,9 @@ export function AnimePage() {
   const t = useAnimeText()
   const { firestore } = useFirebaseAuth()
   const repository = useMemo(() => createFirestoreAnimeRepository(firestore), [firestore])
-  const [queryInput, setQueryInput] = useState('')
-  const [search, setSearch] = useState('')
+  const initialSearch = new URLSearchParams(window.location.search).get('q')?.trim() ?? ''
+  const [queryInput, setQueryInput] = useState(initialSearch)
+  const [search, setSearch] = useState(initialSearch)
   const [filters, setFilters] = useState<AnimeCatalogueFilters>({})
   const [items, setItems] = useState<AnimeSummary[]>([])
   const [cursor, setCursor] = useState<unknown>()

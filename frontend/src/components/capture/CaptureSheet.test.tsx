@@ -72,6 +72,7 @@ function Harness() {
     createIncome: vi.fn(async () => undefined),
     updateIncome: vi.fn(async () => undefined),
     deleteIncome: vi.fn(async () => undefined),
+    createExercise: vi.fn(async () => undefined),
     updateExercise: vi.fn(async () => undefined),
     deleteExercise: vi.fn(async () => undefined),
   } as RecordsContextValue
