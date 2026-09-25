@@ -1,6 +1,8 @@
 import { expenseCategoryLabels } from '../domain/expense'
 import { incomeCategoryLabels } from '../domain/income'
 import type { UserSettings } from '../domain/userSettings'
+import { selectBudgetPlan, sumGoalAllocations, type BudgetPlanSummary } from '../domain/financePlanning'
+import type { FinanceBudget, FinanceGoalAllocation } from '../types/finance'
 import type { ExpenseRecord, IncomeRecord } from '../types/records'
 
 export interface FinanceTransaction {
@@ -34,6 +36,9 @@ export interface FinanceSummary {
   budgetRemainingSen: number | null
   budgetProgress: number | null
   savingsGoalSen: number | null
+  goalAllocationsSen: number
+  availableSen: number
+  budgetPlan: BudgetPlanSummary
   categories: Array<{ category: string; label: string; spentSen: number; percentage: number }>
   transactions: FinanceTransaction[]
   cashflow: CashflowPoint[]
@@ -86,6 +91,7 @@ export function selectFinanceSummary(
   incomes: IncomeRecord[],
   settings: UserSettings,
   selectedMonth: Date,
+  planning: { budgets?: FinanceBudget[]; allocations?: FinanceGoalAllocation[] } = {},
 ): FinanceSummary {
   const year = selectedMonth.getFullYear()
   const month = selectedMonth.getMonth()
@@ -131,6 +137,8 @@ export function selectFinanceSummary(
     }))
     .sort((left, right) => Math.abs(right.changeSen) - Math.abs(left.changeSen))
   const netCashflowSen = monthlyIncomeSen - monthlyExpensesSen
+  const goalAllocationsSen = sumGoalAllocations(planning.allocations ?? [])
+  const budgetPlan = selectBudgetPlan(planning.budgets ?? [], currentExpenses, budgetSen)
   return {
     monthLabel: new Intl.DateTimeFormat('en-MY', { month: 'long', year: 'numeric' }).format(selectedMonth),
     monthInput: monthKey(selectedMonth),
@@ -145,6 +153,9 @@ export function selectFinanceSummary(
     budgetRemainingSen: budgetSen === null ? null : budgetSen - monthlyExpensesSen,
     budgetProgress: budgetSen === null ? null : Math.min(100, monthlyExpensesSen / budgetSen * 100),
     savingsGoalSen: settings.savingsGoalSen,
+    goalAllocationsSen,
+    availableSen: netCashflowSen - goalAllocationsSen,
+    budgetPlan,
     categories,
     transactions: selectFinanceTransactions(currentExpenses, currentIncomes),
     cashflow,

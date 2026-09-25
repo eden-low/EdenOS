@@ -19,6 +19,8 @@ import { useRecords } from '../state/useRecords'
 import { useDashboardPreferences } from '../state/useDashboardPreferences'
 import type { DashboardSection } from '../domain/dashboardPreferences'
 import type { AnimeSummary } from '../types/anime'
+import { useFinancePlanning } from '../state/useFinancePlanning'
+import { useGoalAllocations } from '../state/useGoalAllocations'
 
 export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: AppPage) => void; onOpenCommand: () => void }) {
   const {
@@ -39,6 +41,8 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
   const dashboardPreferences = useDashboardPreferences()
   const { items: animeProgress } = useAnimeProgress()
   const referenceDate = useLocalReferenceDate()
+  const financePlanning = useFinancePlanning()
+  const { allocations: goalAllocations, status: goalAllocationsStatus } = useGoalAllocations(referenceDate)
   const repository = useMemo(() => createFirestoreAnimeRepository(firestore), [firestore])
   const [anime, setAnime] = useState<{
     status: 'loading' | 'ready' | 'error'
@@ -82,7 +86,7 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
             ? 'Activity loading'
             : 'Activity unavailable'
   const sections: Record<DashboardSection, ReactNode> = {
-    finance: <SpendingCard spending={dashboard.monthlySpending} finance={dashboard.monthlyFinance} status={expenseStatus} incomeStatus={incomeStatus} error={expenseError} incomeError={incomeError} onRetry={retryExpenseSubscription} onRetryIncome={retryIncomeSubscription} onOpen={() => onNavigate('expenses')} />,
+    finance: <SpendingCard spending={dashboard.monthlySpending} finance={dashboard.monthlyFinance} goals={financePlanning.goals} goalAllocations={goalAllocations} planningStatus={financePlanning.status === 'error' || goalAllocationsStatus === 'error' ? 'error' : financePlanning.status === 'loaded' && goalAllocationsStatus === 'loaded' ? 'loaded' : 'loading'} status={expenseStatus} incomeStatus={incomeStatus} error={expenseError} incomeError={incomeError} onRetry={retryExpenseSubscription} onRetryIncome={retryIncomeSubscription} onOpen={() => onNavigate('expenses')} />,
     exercise: <ExerciseCard exercise={dashboard.exercise} status={exerciseStatus} error={exerciseError} onRetry={retryExerciseSubscription} onOpen={() => onNavigate('exercise')} />,
     anime: <AnimeHomeCard watching={animeProgress.filter((item) => item.trackingStatus === 'watching').sort((left, right) => right.updatedAt - left.updatedAt)} recent={anime.recent} status={anime.status} onOpen={() => onNavigate('anime')} />,
     review: <WeeklyReviewCard referenceDate={referenceDate} onOpen={() => onNavigate('review')} />,

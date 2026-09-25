@@ -20,7 +20,7 @@ function Harness({ initial = emptyUserSettings, fail = false }: { initial?: User
   return <UserSettingsContext.Provider value={{
     settings, status: 'loaded', saveBodyWeight: vi.fn(async () => undefined), saveHeight: vi.fn(async () => undefined), saveMonthlyBudget, saveSavingsGoal,
   }}>
-    <SpendingCard spending={{ month: 'September', spentSen: 12345, spentTodaySen: 0 }} finance={{ incomeSen: 0, expenseSen: 12345, netCashflowSen: -12345 }} status="loaded" incomeStatus="loaded" error={null} incomeError={null} onRetry={vi.fn()} onRetryIncome={vi.fn()} />
+    <SpendingCard spending={{ month: 'September', spentSen: 12345, spentTodaySen: 0 }} finance={{ incomeSen: 0, expenseSen: 12345, netCashflowSen: -12345 }} goals={[]} goalAllocations={[]} planningStatus="loaded" status="loaded" incomeStatus="loaded" error={null} incomeError={null} onRetry={vi.fn()} onRetryIncome={vi.fn()} />
     <SavingsGoalCard />
     <output data-testid="persisted">{`${settings.monthlyBudgetSen ?? 'none'}:${settings.savingsGoalSen ?? 'none'}`}</output>
   </UserSettingsContext.Provider>

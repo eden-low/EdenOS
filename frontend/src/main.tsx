@@ -12,6 +12,7 @@ import { AnimeProgressProvider } from './state/AnimeProgressProvider'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { PrivacyLockProvider } from './privacy/PrivacyLockProvider'
 import { FinanceRulesProvider } from './state/FinanceRulesProvider'
+import { FinancePlanningProvider } from './state/FinancePlanningProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
         <FirebaseAuthProvider>
           <RecordsProvider>
             <UserSettingsProvider>
+              <FinancePlanningProvider>
               <FinanceRulesProvider>
               <AnimeProgressProvider>
                 <PrivacyLockProvider>
@@ -29,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
                 </PrivacyLockProvider>
               </AnimeProgressProvider>
               </FinanceRulesProvider>
+              </FinancePlanningProvider>
             </UserSettingsProvider>
           </RecordsProvider>
         </FirebaseAuthProvider>

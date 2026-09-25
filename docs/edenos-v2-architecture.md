@@ -30,6 +30,15 @@ This document records implementation decisions for the September 2026 V2 develop
 - Month Story is deterministic and derived from existing records/settings. Budget remaining is signed (`budget - expenses`); UI attention state is separate from the underlying value.
 - Finance Rules add one UID-scoped subscription at authenticated app startup. They are also included in the conservative Guest-to-Google data-loss check.
 
+### Multi-goal and multi-budget extension
+
+- `users/{uid}/financeGoals/{goalId}` stores goal identity, target, current allocated balance, optional date, and active/archive state. The legacy `settings/preferences.savingsGoalSen` is surfaced as a synthetic goal until its first edit or contribution creates the deterministic `legacy-savings-goal` document. No release migration or production mutation is required.
+- `users/{uid}/financeGoalAllocations/{allocationId}` is append-only and records positive allocations. A contribution updates the goal balance and creates its allocation event in one Firestore transaction. An “Already saved” opening balance initializes goal progress without creating a current-month allocation event. Allocations are not Expenses and never enter expense category totals.
+- `users/{uid}/financeBudgets/{budgetId}` stores a monthly planning amount and optional Expense category. Category spending is derived from authoritative Expense records; transaction totals are not copied into budget documents.
+- Monthly net cashflow remains `income - actual expenses`. Goal allocations are reported separately. Available/unallocated money is `income - actual expenses - goal allocations`, so the same money is not counted twice.
+- Overall budget remaining stays signed: `overall monthly limit - actual expenses`. Pot remaining is also signed: `pot amount - matching category expenses`. Unlinked pots are planning-only and do not claim derived spending.
+- Goal and budget lists add two UID-scoped subscriptions. Allocation reads are bounded to the displayed reporting month. All three collections are included in the conservative Guest-to-Google data-loss check.
+
 ## Phase 5 — Life Layer
 
 - Exercise consistency, weekly comparison, active days, streak, and personal bests are derived from existing Exercise records. A best is shown only when its required duration/distance data exists; no health advice is inferred.

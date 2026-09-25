@@ -199,6 +199,41 @@ service cloud.firestore {
         && data.updatedAt == request.time;
     }
 
+    function isValidFinanceGoal(data) {
+      return data.keys().hasAll([
+          'name', 'targetAmountSen', 'allocatedAmountSen', 'targetDate', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'name', 'targetAmountSen', 'allocatedAmountSen', 'targetDate', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 80
+        && data.targetAmountSen is int && data.targetAmountSen > 0 && data.targetAmountSen <= 9007199254740991
+        && data.allocatedAmountSen is int && data.allocatedAmountSen >= 0 && data.allocatedAmountSen <= 9007199254740991
+        && (data.targetDate == null || data.targetDate is timestamp)
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+
+    function isValidFinanceBudget(data) {
+      return data.keys().hasAll(['name', 'monthlyAmountSen', 'category', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'monthlyAmountSen', 'category', 'status', 'createdAt', 'updatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 80
+        && data.monthlyAmountSen is int && data.monthlyAmountSen > 0 && data.monthlyAmountSen <= 9007199254740991
+        && (data.category == null || data.category in [
+          'food', 'transport', 'shopping', 'entertainment', 'housing', 'health', 'education', 'other'
+        ])
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+
+    function isValidGoalAllocation(data) {
+      return data.keys().hasAll(['goalId', 'amountSen', 'occurredAt', 'createdAt'])
+        && data.keys().hasOnly(['goalId', 'amountSen', 'occurredAt', 'createdAt'])
+        && data.goalId is string && data.goalId.size() > 0 && data.goalId.size() <= 128
+        && data.amountSen is int && data.amountSen > 0 && data.amountSen <= 9007199254740991
+        && data.occurredAt is timestamp && data.createdAt is timestamp;
+    }
+
     match /animeCatalogueStatus/{statusId} {
       allow get: if request.auth != null && statusId == 'current';
       allow list, create, update, delete: if false;
@@ -287,6 +322,40 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time;
       allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/financeGoals/{goalId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidFinanceGoal(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidFinanceGoal(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /users/{userId}/financeBudgets/{budgetId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidFinanceBudget(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidFinanceBudget(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /users/{userId}/financeGoalAllocations/{allocationId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && isValidGoalAllocation(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
     }
 
     match /users/{userId}/weeklyReviews/{weekKey} {

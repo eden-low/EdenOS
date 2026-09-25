@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing'
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore'
 
 const rules = readFileSync(new URL('../../firestore.rules', import.meta.url), 'utf8')
 const environment = await initializeTestEnvironment({ projectId: 'demo-edenos-rules', firestore: { rules } })
@@ -129,6 +129,31 @@ try {
   await assertFails(setDoc(doc(bob, 'users/alice/financeRules/foreign'), financeRule))
   await assertFails(setDoc(doc(alice, 'users/alice/financeRules/bad-category'), { ...financeRule, category: 'salary' }))
   await assertSucceeds(setDoc(doc(alice, financeRulePath), { ...financeRule, enabled: false, createdAt: (await getDoc(doc(alice, financeRulePath))).data().createdAt, updatedAt: serverTimestamp() }))
+  const goalPath = 'users/alice/financeGoals/phone'
+  const goal = { name: 'Phone', targetAmountSen: 500000, allocatedAmountSen: 280000, targetDate: null, status: 'active', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }
+  await assertSucceeds(setDoc(doc(alice, goalPath), goal))
+  await assertSucceeds(getDoc(doc(alice, goalPath)))
+  await assertFails(getDoc(doc(bob, goalPath)))
+  await assertFails(setDoc(doc(bob, 'users/alice/financeGoals/foreign'), goal))
+  const storedGoal = (await getDoc(doc(alice, goalPath))).data()
+  await assertSucceeds(updateDoc(doc(alice, goalPath), { status: 'archived', createdAt: storedGoal.createdAt, updatedAt: serverTimestamp() }))
+  await assertFails(deleteDoc(doc(alice, goalPath)))
+  await assertFails(setDoc(doc(alice, 'users/alice/financeGoals/bad'), { ...goal, allocatedAmountSen: -1 }))
+  const budgetPath = 'users/alice/financeBudgets/food'
+  const budget = { name: 'Food', monthlyAmountSen: 100000, category: 'food', status: 'active', createdAt: serverTimestamp(), updatedAt: serverTimestamp() }
+  await assertSucceeds(setDoc(doc(alice, budgetPath), budget))
+  await assertSucceeds(getDocs(collection(alice, 'users/alice/financeBudgets')))
+  await assertFails(getDoc(doc(bob, budgetPath)))
+  await assertFails(setDoc(doc(alice, 'users/alice/financeBudgets/bad'), { ...budget, category: 'salary' }))
+  await assertFails(deleteDoc(doc(alice, budgetPath)))
+  const allocationPath = 'users/alice/financeGoalAllocations/phone-september'
+  const allocation = { goalId: 'phone', amountSen: 30000, occurredAt: Timestamp.now(), createdAt: serverTimestamp() }
+  await assertSucceeds(setDoc(doc(alice, allocationPath), allocation))
+  await assertSucceeds(getDocs(collection(alice, 'users/alice/financeGoalAllocations')))
+  await assertFails(getDoc(doc(bob, allocationPath)))
+  await assertFails(setDoc(doc(bob, 'users/alice/financeGoalAllocations/foreign'), allocation))
+  await assertFails(updateDoc(doc(alice, allocationPath), { amountSen: 50000 }))
+  await assertFails(deleteDoc(doc(alice, allocationPath)))
   const review = { wentWell: 'Moved consistently', improve: 'Plan lunches', nextFocus: 'Three workouts', updatedAt: serverTimestamp() }
   const reviewPath = 'users/alice/weeklyReviews/2026-09-21'
   await assertSucceeds(setDoc(doc(alice, reviewPath), review))
@@ -137,7 +162,7 @@ try {
   await assertFails(getDocs(collection(alice, 'users/alice/weeklyReviews')))
   await assertFails(setDoc(doc(bob, 'users/alice/weeklyReviews/2026-09-21'), review))
   await assertFails(setDoc(doc(alice, 'users/alice/weeklyReviews/too-long'), { ...review, wentWell: 'x'.repeat(2001) }))
-  process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, Weekly Reviews, and settings rules passed.\n')
+  process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, goals, budgets, allocations, Weekly Reviews, and settings rules passed.\n')
 } finally {
   await environment.cleanup()
 }

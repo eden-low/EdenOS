@@ -61,4 +61,29 @@ describe('finance calculations', () => {
       expect.objectContaining({ category: 'transport', percentage: 25 }),
     ])
   })
+
+  it('keeps goal allocations separate from expenses and net cashflow', () => {
+    const summary = selectFinanceSummary(
+      [expense('food', 2_100, at(2026, 9, 2))],
+      [income('salary', 6_000, at(2026, 9, 1))],
+      settings,
+      new Date(2026, 8, 1),
+      { allocations: [{ id: 'allocation', goalId: 'phone', amountSen: 1_300, occurredAt: at(2026, 9, 3), createdAt: 1 }] },
+    )
+    expect(summary).toMatchObject({ monthlyIncomeSen: 6_000, monthlyExpensesSen: 2_100, netCashflowSen: 3_900, goalAllocationsSen: 1_300, availableSen: 2_600 })
+  })
+
+  it('derives category budget pots without double-counting overall spending', () => {
+    const summary = selectFinanceSummary(
+      [expense('food', 2_500, at(2026, 9, 2)), expense('ride', 1_500, at(2026, 9, 2), 'transport')],
+      [], settings, new Date(2026, 8, 1),
+      { budgets: [
+        { id: 'food', name: 'Food', monthlyAmountSen: 2_000, category: 'food', status: 'active', createdAt: 1, updatedAt: 1 },
+        { id: 'transport', name: 'Transport', monthlyAmountSen: 3_000, category: 'transport', status: 'active', createdAt: 1, updatedAt: 1 },
+      ] },
+    )
+    expect(summary.monthlyExpensesSen).toBe(4_000)
+    expect(summary.budgetPlan).toMatchObject({ allocatedBudgetSen: 5_000, unallocatedBudgetSen: 5_000, spentSen: 4_000, remainingSen: 6_000 })
+    expect(summary.budgetPlan.active[0]).toMatchObject({ spentSen: 2_500, remainingSen: -500, isOverspent: true })
+  })
 })

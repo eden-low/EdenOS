@@ -24,3 +24,41 @@ export interface FinanceRuleSuggestion extends FinanceRuleData {
 }
 
 export type FinanceRuleSourceRecord = ExpenseRecord | IncomeRecord
+
+export type FinancePlanStatus = 'active' | 'archived'
+
+export interface FinanceGoalData {
+  name: string
+  targetAmountSen: number
+  targetDate: string | null
+  status: FinancePlanStatus
+}
+
+export interface FinanceGoal extends FinanceGoalData {
+  id: string
+  allocatedAmountSen: number
+  createdAt: number
+  updatedAt: number
+  source: 'stored' | 'legacy'
+}
+
+export interface FinanceBudgetData {
+  name: string
+  monthlyAmountSen: number
+  category: ExpenseCategory | null
+  status: FinancePlanStatus
+}
+
+export interface FinanceBudget extends FinanceBudgetData {
+  id: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface FinanceGoalAllocation {
+  id: string
+  goalId: string
+  amountSen: number
+  occurredAt: string
+  createdAt: number
+}

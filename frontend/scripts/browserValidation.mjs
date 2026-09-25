@@ -54,9 +54,27 @@ async function waitFor(expression, label, attempts = 100) {
 async function navigate(url, expectedText) {
   await send('Page.navigate', { url })
   await waitFor(`document.readyState === 'complete'`, `${url} load`)
-  try { await waitFor(`document.querySelector('h1')?.textContent?.includes(${JSON.stringify(expectedText)})`, `${url} content`) }
+  try { await waitFor(`document.querySelector('h1')?.textContent?.includes(${JSON.stringify(expectedText)})`, `${url} content`, 200) }
   catch (error) { console.error(`Route failure ${url}: ${await evaluate(`document.body?.innerText ?? ''`)}\nErrors: ${errors.join(' | ')}`); throw error }
   return evaluate(`({ url: location.pathname, overflow: document.documentElement.scrollWidth > innerWidth, heading: document.querySelector('h1')?.textContent?.trim() })`)
+}
+
+async function clickButton(label) {
+  const clicked = await evaluate(`(() => { const button = Array.from(document.querySelectorAll('button')).find((item) => item.textContent?.trim().includes(${JSON.stringify(label)})); button?.click(); return Boolean(button) })()`)
+  if (!clicked) throw new Error(`Button not found: ${label}`)
+}
+
+async function setLabeledValue(label, value, selector = 'input') {
+  const changed = await evaluate(`(() => {
+    const label = Array.from(document.querySelectorAll('label')).find((item) => item.textContent?.includes(${JSON.stringify(label)}) && item.querySelector(${JSON.stringify(selector)}) && item.getBoundingClientRect().height > 0)
+    const control = label?.querySelector(${JSON.stringify(selector)})
+    if (!control) return false
+    const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(control), 'value')
+    descriptor?.set?.call(control, ${JSON.stringify(value)})
+    control.dispatchEvent(new Event('input', { bubbles: true })); control.dispatchEvent(new Event('change', { bubbles: true }))
+    return true
+  })()`)
+  if (!changed) throw new Error(`Form control not found: ${label}`)
 }
 
 try {
@@ -82,6 +100,29 @@ try {
   await evaluate(`Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('Continue as guest'))?.click()`)
   await waitFor(`document.body?.innerText.includes('Here is what matters today.')`, 'authenticated Home', 200)
 
+  await navigate('http://127.0.0.1:5173/expenses', 'Expenses')
+  await waitFor(`document.body?.innerText.includes('No active goals')`, 'empty Finance planning')
+  await clickButton('Add goal'); await waitFor(`document.body?.innerText.includes('Create goal')`, 'goal editor')
+  await setLabeledValue('Name', 'Phone'); await setLabeledValue('Target amount', '5000'); await setLabeledValue('Already saved', '2800'); await clickButton('Save goal')
+  await waitFor(`document.body?.innerText.includes('56% funded')`, 'Phone goal')
+  await clickButton('Add goal'); await setLabeledValue('Name', 'Emergency Fund'); await setLabeledValue('Target amount', '10000'); await setLabeledValue('Already saved', '6500'); await clickButton('Save goal')
+  await waitFor(`document.body?.innerText.includes('65% funded')`, 'Emergency goal')
+  await waitFor(`document.body?.innerText.includes('No budget pots')`, 'budget empty state')
+  const financeImage = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true })
+  await writeFile(path.join(outputDirectory, 'finance-planning-populated.png'), Buffer.from(financeImage.data, 'base64'))
+  const financeResponsive = []
+  for (const viewport of [{ width: 390, height: 1000 }, { width: 1440, height: 1000 }]) {
+    await send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.width < 768 })
+    await evaluate(`document.querySelector('#finance-goals-heading')?.scrollIntoView({ block: 'start' })`); await delay(150)
+    const audit = await evaluate(`({ width: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth, goals: Array.from(document.querySelectorAll('h3')).filter((heading) => ['Phone', 'Emergency Fund'].includes(heading.textContent?.trim())).length, budgetEmpty: document.body.innerText.includes('No budget pots') })`)
+    const shot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+    const filename = `finance-planning-${viewport.width}.png`; await writeFile(path.join(outputDirectory, filename), Buffer.from(shot.data, 'base64'))
+    financeResponsive.push({ ...audit, screenshot: filename })
+  }
+  await send('Page.navigate', { url: 'http://127.0.0.1:5173/' })
+  await waitFor(`document.readyState === 'complete'`, 'Home load')
+  await waitFor(`document.body?.innerText.includes('saved across 2 active goals')`, 'Home goal summary')
+
   const viewports = [
     { width: 320, height: 900, theme: 'light' },
     { width: 390, height: 900, theme: 'dark' },
@@ -93,6 +134,7 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: viewport.width, height: viewport.height, deviceScaleFactor: 1, mobile: viewport.width < 768 })
     await evaluate(`localStorage.setItem('edenos.theme.v1', '${viewport.theme}'); location.reload()`)
     await waitFor(`document.body?.innerText.includes('Here is what matters today.')`, `${viewport.width}px Home`)
+    await waitFor(`document.querySelectorAll('[data-dashboard-section]').length === 6`, `${viewport.width}px dashboard sections`, 200)
     const audit = await evaluate(`(() => {
       const visible = (element) => { const rect = element.getBoundingClientRect(); const style = getComputedStyle(element); return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' }
       const undersized = Array.from(document.querySelectorAll('button, a, input, select, textarea')).filter(visible).map((element) => ({ label: element.getAttribute('aria-label') || element.textContent?.trim().slice(0, 40) || element.tagName, height: Math.round(element.getBoundingClientRect().height), width: Math.round(element.getBoundingClientRect().width) })).filter((item) => item.height < 36 || item.width < 36)
@@ -119,10 +161,12 @@ try {
 
   const routes = []
   for (const [route, heading] of [['/expenses', 'Expenses'], ['/exercise', 'Exercise'], ['/anime', 'Anime'], ['/records', 'Records'], ['/weekly-review', 'Weekly Review']]) {
-    routes.push(await navigate(`http://127.0.0.1:5173${route}`, heading))
+    await evaluate(`history.pushState(null, '', ${JSON.stringify(route)}); window.dispatchEvent(new PopStateEvent('popstate'))`)
+    await waitFor(`document.querySelector('h1')?.textContent?.includes(${JSON.stringify(heading)})`, `${route} SPA content`)
+    routes.push(await evaluate(`({ url: location.pathname, overflow: document.documentElement.scrollWidth > innerWidth, heading: document.querySelector('h1')?.textContent?.trim() })`))
   }
 
-  console.log(JSON.stringify({ responsive, commandKeyboard, dashboardEdit, routes, runtimeErrors: errors }, null, 2))
+  console.log(JSON.stringify({ financePlanning: { multipleGoals: true, budgetEmptyState: true, homeSummary: true, responsive: financeResponsive, screenshot: 'finance-planning-populated.png' }, responsive, commandKeyboard, dashboardEdit, routes, runtimeErrors: errors }, null, 2))
 } finally {
   if (socket?.readyState === WebSocket.OPEN) socket.close()
   browser.kill()
