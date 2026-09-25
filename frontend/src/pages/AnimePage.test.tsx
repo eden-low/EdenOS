@@ -2,8 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { animeSummary } from '../test/animeFixtures'
 
-const mock = vi.hoisted(() => ({ fetchPage: vi.fn(), searchTitles: vi.fn(), firestore: {}, progress: { items: [], cloudError: null, saveProgress: vi.fn(), flushProgress: vi.fn() } }))
-vi.mock('../repositories/firestoreAnimeRepository', () => ({ createFirestoreAnimeRepository: () => ({ fetchPage: mock.fetchPage, searchTitles: mock.searchTitles }) }))
+const mock = vi.hoisted(() => ({ fetchPage: vi.fn(), searchTitles: vi.fn(), fetchPublishedSince: vi.fn(), fetchRecent: vi.fn(), getCatalogueStatus: vi.fn(), firestore: {}, progress: { items: [], cloudError: null, saveProgress: vi.fn(), flushProgress: vi.fn() } }))
+vi.mock('../repositories/firestoreAnimeRepository', () => ({ createFirestoreAnimeRepository: () => ({ fetchPage: mock.fetchPage, searchTitles: mock.searchTitles, fetchPublishedSince: mock.fetchPublishedSince, fetchRecent: mock.fetchRecent, getCatalogueStatus: mock.getCatalogueStatus }) }))
 vi.mock('../state/useFirebaseAuth', () => ({ useFirebaseAuth: () => ({ firestore: mock.firestore }) }))
 vi.mock('../state/useAnimeProgress', () => ({ useAnimeProgress: () => mock.progress }))
 vi.mock('../components/anime/AnimePlayerDialog', () => ({ AnimePlayerDialog: ({ target }: { target: { title: string } | null }) => target ? <div data-testid="player-target">{target.title}</div> : null }))
@@ -15,6 +15,7 @@ const catalogue = Array.from({ length: 24 }, (_, index) => animeSummary({ extern
 describe('AnimePage', () => {
   beforeEach(() => {
     vi.useRealTimers(); mock.fetchPage.mockReset(); mock.searchTitles.mockReset()
+    mock.fetchPublishedSince.mockResolvedValue([]); mock.fetchRecent.mockResolvedValue([]); mock.getCatalogueStatus.mockResolvedValue(null)
     mock.fetchPage.mockResolvedValue({ items: catalogue, cursor: { id: 'last' }, total: 30, hasMore: true })
   })
   it('renders a 24-card page, count, grid, and opens detail only after a card click', async () => {

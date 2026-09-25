@@ -6,7 +6,7 @@ import { useRecords } from '../state/useRecords'
 import { useUserSettings } from '../state/useUserSettings'
 import { TodayPage } from './TodayPage'
 
-const animeRepository = vi.hoisted(() => ({ fetchRecent: vi.fn(), countUpdatedSince: vi.fn() }))
+const animeRepository = vi.hoisted(() => ({ fetchPublishedSince: vi.fn(), countPublishedSince: vi.fn() }))
 vi.mock('../repositories/firestoreAnimeRepository', () => ({ createFirestoreAnimeRepository: () => animeRepository }))
 vi.mock('../state/useFirebaseAuth', () => ({ useFirebaseAuth: () => ({ firestore: {} }) }))
 vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
@@ -28,8 +28,8 @@ describe('Today V2', () => {
       expenseStatus: 'loaded', incomeStatus: 'loaded', exerciseStatus: 'loaded', expenseError: null, incomeError: null, exerciseError: null,
       retryExpenseSubscription: vi.fn(), retryIncomeSubscription: vi.fn(), retryExerciseSubscription: vi.fn(),
     } as unknown as ReturnType<typeof useRecords>)
-    animeRepository.fetchRecent.mockResolvedValue([{ externalId: 'new', title: 'New show', titleNormalized: 'new show', coverUrl: '', mediaType: 'anime', genres: [], status: 'airing', updatedAt: 2, filterKeys: [] }])
-    animeRepository.countUpdatedSince.mockResolvedValue(3)
+    animeRepository.fetchPublishedSince.mockResolvedValue([{ externalId: 'new', title: 'New show', titleNormalized: 'new show', coverUrl: '', mediaType: 'anime', genres: [], status: 'airing', updatedAt: 2, firstPublishedAt: 2, filterKeys: [] }])
+    animeRepository.countPublishedSince.mockResolvedValue(3)
   })
 
   it('prioritizes the four primary domains, preserves signed overspend, and deep-links', async () => {
@@ -48,7 +48,7 @@ describe('Today V2', () => {
   })
 
   it('keeps domain errors scoped and the rest of Home usable', async () => {
-    animeRepository.fetchRecent.mockRejectedValue(new Error('offline'))
+    animeRepository.fetchPublishedSince.mockRejectedValue(new Error('offline'))
     await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
     expect(screen.getByRole('alert').textContent).toContain('Anime updates')
     expect(screen.getByRole('button', { name: 'Open Finance' })).toBeTruthy()

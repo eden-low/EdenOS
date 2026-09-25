@@ -1,7 +1,9 @@
 import {
   collection,
+  doc,
   endAt,
   getCountFromServer,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -13,7 +15,7 @@ import {
   type Firestore,
   type QueryConstraint,
   type QueryDocumentSnapshot,
-  type Timestamp,
+  Timestamp,
 } from 'firebase/firestore'
 import { animePageSize, buildAnimeFilterKey, isAnimeMediaType, isAnimeRegion, isAnimeStatus, isValidExternalId, normalizeAnimeTitle } from '../domain/anime'
 import type { AnimeRepository } from './animeRepository'
@@ -36,6 +38,8 @@ export function decodeAnimeSummary(snapshot: QueryDocumentSnapshot<DocumentData>
   const data = snapshot.data()
   const externalId = typeof data.externalId === 'string' ? data.externalId : snapshot.id
   const updatedAt = toMillis(data.updatedAt)
+  const firstPublishedAt = toMillis(data.firstPublishedAt)
+  const lastSyncedAt = toMillis(data.lastSyncedAt)
   if (!isValidExternalId(externalId) || externalId !== snapshot.id ||
       typeof data.title !== 'string' || !data.title.trim() ||
       typeof data.titleNormalized !== 'string' || !data.titleNormalized.trim() ||
@@ -64,6 +68,8 @@ export function decodeAnimeSummary(snapshot: QueryDocumentSnapshot<DocumentData>
     ...(year !== undefined ? { year } : {}),
     ...(totalEpisodes !== undefined ? { totalEpisodes } : {}),
     updatedAt,
+    ...(firstPublishedAt !== null ? { firstPublishedAt } : {}),
+    ...(lastSyncedAt !== null ? { lastSyncedAt } : {}),
     filterKeys: data.filterKeys,
   }
 }
@@ -125,6 +131,30 @@ export function createFirestoreAnimeRepository(firestore: Firestore): AnimeRepos
         where('updatedAt', '>=', since),
       ))
       return count.data().count
+    },
+    async fetchPublishedSince(since, resultLimit = 12) {
+      const snapshot = await getDocs(query(
+        reference,
+        where('firstPublishedAt', '>=', Timestamp.fromDate(since)),
+        orderBy('firstPublishedAt', 'desc'),
+        limit(Math.min(Math.max(1, resultLimit), 24)),
+      ))
+      return snapshot.docs.map(decodeAnimeSummary)
+    },
+    async countPublishedSince(since) {
+      const count = await getCountFromServer(query(
+        reference,
+        where('firstPublishedAt', '>=', Timestamp.fromDate(since)),
+      ))
+      return count.data().count
+    },
+    async getCatalogueStatus() {
+      const snapshot = await getDoc(doc(firestore, 'animeCatalogueStatus', 'current'))
+      if (!snapshot.exists()) return null
+      const data = snapshot.data()
+      const lastSuccessfulSyncAt = toMillis(data.lastSuccessfulSyncAt)
+      if (!Number.isInteger(data.catalogueCount) || data.catalogueCount < 0 || lastSuccessfulSyncAt === null) return null
+      return { catalogueCount: data.catalogueCount, lastSuccessfulSyncAt }
     },
   }
 }

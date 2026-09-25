@@ -89,9 +89,15 @@ try {
   await assertFails(getDoc(doc(guest, 'animes/sample-anime')))
   await assertFails(setDoc(doc(alice, 'animes/client-write'), { title: 'Unsafe' }))
   await environment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'animeCatalogueStatus/current'), { catalogueCount: 11870, lastSuccessfulSyncAt: Timestamp.now() })
     await setDoc(doc(context.firestore(), 'animeSyncSourceMap/provider-item'), { provider: 'provider', providerItemId: '1', canonicalExternalId: 'sample-anime' })
     await setDoc(doc(context.firestore(), 'animeSyncState/sample-anime'), { indexHash: 'index', detailHash: 'detail', updatedAt: Timestamp.now() })
   })
+  await assertSucceeds(getDoc(doc(alice, 'animeCatalogueStatus/current')))
+  await assertSucceeds(getDoc(doc(anonymousUser, 'animeCatalogueStatus/current')))
+  await assertFails(getDoc(doc(guest, 'animeCatalogueStatus/current')))
+  await assertFails(getDocs(collection(alice, 'animeCatalogueStatus')))
+  await assertFails(setDoc(doc(alice, 'animeCatalogueStatus/current'), { catalogueCount: 0 }))
   await assertFails(getDoc(doc(alice, 'animeSyncSourceMap/provider-item')))
   await assertFails(getDoc(doc(anonymousUser, 'animeSyncState/sample-anime')))
   await assertFails(setDoc(doc(alice, 'animeSyncSourceMap/client-write'), { provider: 'unsafe' }))
@@ -104,6 +110,7 @@ try {
   }
   const progressPath = 'users/alice/animeWatchProgress/sample-anime'
   await assertSucceeds(setDoc(doc(alice, progressPath), progress))
+  await assertSucceeds(setDoc(doc(alice, progressPath), { ...progress, trackingStatus: 'planned', updatedAt: serverTimestamp() }))
   await assertSucceeds(getDoc(doc(alice, progressPath)))
   await assertFails(getDoc(doc(bob, progressPath)))
   await assertFails(setDoc(doc(bob, progressPath), progress))

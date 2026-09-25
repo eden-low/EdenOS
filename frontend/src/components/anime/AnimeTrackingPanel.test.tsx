@@ -14,13 +14,15 @@ describe('AnimeTrackingPanel', () => {
       { externalId: 'one', animeId: 'one', title: 'One', currentEpisode: 2, positionSeconds: 1, durationSeconds: 2, watchedEpisodes: [], trackingStatus: 'watching', updatedAt: 2 },
       { externalId: 'two', animeId: 'two', title: 'Two', currentEpisode: 12, positionSeconds: 2, durationSeconds: 2, watchedEpisodes: [12], trackingStatus: 'completed', updatedAt: 1 },
     ]
-    render(<AnimeTrackingPanel repository={{ fetchPage: vi.fn(), searchTitles: vi.fn(), fetchRecent: vi.fn(), countUpdatedSince: vi.fn() }} onOpen={vi.fn()} />)
-    expect(screen.getByText('One')).not.toBeNull(); expect(screen.getByText('Two')).not.toBeNull()
+    render(<AnimeTrackingPanel repository={{ fetchPage: vi.fn(), searchTitles: vi.fn(), fetchRecent: vi.fn(), countUpdatedSince: vi.fn(), fetchPublishedSince: vi.fn(), countPublishedSince: vi.fn(), getCatalogueStatus: vi.fn() }} onOpen={vi.fn()} />)
+    expect(screen.getByText('One')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Completed 1/ }))
+    expect(screen.getByText('Two')).not.toBeNull()
   })
   it('manually searches the catalogue, selects a real title, and saves progress', async () => {
     vi.useFakeTimers()
     const title = animeSummary()
-    const repository = { fetchPage: vi.fn(), searchTitles: vi.fn().mockResolvedValue([title]), fetchRecent: vi.fn(), countUpdatedSince: vi.fn() }
+    const repository = { fetchPage: vi.fn(), searchTitles: vi.fn().mockResolvedValue([title]), fetchRecent: vi.fn(), countUpdatedSince: vi.fn(), fetchPublishedSince: vi.fn(), countPublishedSince: vi.fn(), getCatalogueStatus: vi.fn() }
     render(<AnimeTrackingPanel repository={repository} onOpen={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: 'Add Anime' }))
     fireEvent.change(screen.getByLabelText('Search catalogue'), { target: { value: 'Sample' } })

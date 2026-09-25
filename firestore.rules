@@ -151,7 +151,7 @@ service cloud.firestore {
             && data.watchedEpisodes[0] > 0
             && data.watchedEpisodes[data.watchedEpisodes.size() - 1] is int
             && data.watchedEpisodes[data.watchedEpisodes.size() - 1] > 0))
-        && data.trackingStatus in ['watching', 'completed']
+        && data.trackingStatus in ['planned', 'watching', 'completed']
         && data.updatedAt is timestamp
         && data.updatedAt == request.time
         && data.title is string
@@ -165,6 +165,11 @@ service cloud.firestore {
     match /animes/{animeId} {
       allow get, list: if request.auth != null;
       allow create, update, delete: if false;
+    }
+
+    match /animeCatalogueStatus/{statusId} {
+      allow get: if request.auth != null && statusId == 'current';
+      allow list, create, update, delete: if false;
     }
 
     match /users/{userId}/expenses/{expenseId} {

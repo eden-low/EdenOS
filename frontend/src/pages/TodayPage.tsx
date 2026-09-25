@@ -46,7 +46,7 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
     let active = true
     const today = new Date(referenceDate)
     today.setHours(0, 0, 0, 0)
-    void Promise.all([repository.fetchRecent(4), repository.countUpdatedSince(today)])
+    void Promise.all([repository.fetchPublishedSince(today, 4), repository.countPublishedSince(today)])
       .then(([recent, updatesToday]) => {
         if (active) setAnime({ status: 'ready', recent, updatesToday })
       })
