@@ -8,7 +8,7 @@ import { TodayPage } from './TodayPage'
 
 const animeRepository = vi.hoisted(() => ({ fetchPublishedSince: vi.fn(), countPublishedSince: vi.fn() }))
 vi.mock('../repositories/firestoreAnimeRepository', () => ({ createFirestoreAnimeRepository: () => animeRepository }))
-vi.mock('../state/useFirebaseAuth', () => ({ useFirebaseAuth: () => ({ firestore: {} }) }))
+vi.mock('../state/useFirebaseAuth', () => ({ useFirebaseAuth: () => ({ firestore: {}, uid: 'dashboard-owner' }) }))
 vi.mock('../state/useRecords', () => ({ useRecords: vi.fn() }))
 vi.mock('../state/useUserSettings', () => ({ useUserSettings: vi.fn() }))
 vi.mock('../state/useAnimeProgress', () => ({ useAnimeProgress: vi.fn() }))
@@ -17,6 +17,7 @@ vi.mock('../components/dashboard/DailyContext', () => ({ DailyContext: () => <di
 
 describe('Today V2', () => {
   beforeEach(() => {
+    localStorage.clear()
     vi.mocked(useLocalReferenceDate).mockReturnValue(new Date(2026, 8, 26, 12))
     vi.mocked(useUserSettings).mockReturnValue({ settings: { bodyWeightKg: null, heightCm: null, monthlyBudgetSen: 1_000, savingsGoalSen: 5_000 }, status: 'loaded' } as ReturnType<typeof useUserSettings>)
     vi.mocked(useAnimeProgress).mockReturnValue({ items: [{ externalId: 'frieren', animeId: 'frieren', title: 'Frieren', currentEpisode: 4, positionSeconds: 0, durationSeconds: 0, watchedEpisodes: [1, 2, 3], trackingStatus: 'watching', updatedAt: 2 }], cloudError: null } as ReturnType<typeof useAnimeProgress>)
@@ -30,6 +31,16 @@ describe('Today V2', () => {
     } as unknown as ReturnType<typeof useRecords>)
     animeRepository.fetchPublishedSince.mockResolvedValue([{ externalId: 'new', title: 'New show', titleNormalized: 'new show', coverUrl: '', mediaType: 'anime', genres: [], status: 'airing', updatedAt: 2, firstPublishedAt: 2, filterKeys: [] }])
     animeRepository.countPublishedSince.mockResolvedValue(3)
+  })
+
+  it('changes layout only in explicit edit mode and can reset the UID-local preference', async () => {
+    await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
+    expect(screen.getByRole('button', { name: 'Open Finance' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Dashboard' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Hide Finance' }))
+    expect(screen.queryByRole('button', { name: 'Open Finance' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Reset to default' }))
+    expect(screen.getByRole('button', { name: 'Open Finance' })).toBeTruthy()
   })
 
   it('prioritizes the four primary domains, preserves signed overspend, and deep-links', async () => {

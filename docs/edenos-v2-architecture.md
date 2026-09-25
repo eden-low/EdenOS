@@ -37,3 +37,9 @@ This document records implementation decisions for the September 2026 V2 develop
 - Weekly Review combines derived Finance, Exercise, and latest Anime progress context. Anime language intentionally says a title “progressed” and does not claim exact episode history.
 - `users/{uid}/weeklyReviews/{weekKey}` stores only `wentWell`, `improve`, `nextFocus`, and `updatedAt`. The selected week document is read only while the Weekly Review route is open; domain summaries are not duplicated.
 - Saved reflections are included in the conservative Guest-to-Google data-loss check.
+
+## Phase 6 — Dashboard Customization
+
+- Layout preferences use `edenos.dashboard.v1:{uid}` in device-local storage. They contain only section order and hidden section IDs; Privacy Lock and cloud preferences are unchanged.
+- The default order remains Finance, Exercise, Anime, Weekly Review, Records, Calendar. Mobile is always one column and desktop remains a responsive two-column flow.
+- Reordering and visibility changes are available only inside explicit Edit Dashboard mode, use touch-sized move controls, and include a reset-to-default action. No grid, resizing, or drag-and-drop dependency was introduced.

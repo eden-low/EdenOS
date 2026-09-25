@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { AppPage } from '../components/layout/Navigation'
 import { AnimeHomeCard } from '../components/dashboard/AnimeHomeCard'
 import { DashboardHeader } from '../components/dashboard/DashboardHeader'
@@ -9,12 +9,15 @@ import { SpendingCard } from '../components/dashboard/SpendingCard'
 import { CalendarCard } from '../components/dashboard/CalendarCard'
 import { TodaySummary } from '../components/dashboard/TodaySummary'
 import { WeeklyReviewCard } from '../components/dashboard/WeeklyReviewCard'
+import { DashboardEditor } from '../components/dashboard/DashboardEditor'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { createFirestoreAnimeRepository } from '../repositories/firestoreAnimeRepository'
 import { selectDashboardSummary } from '../selectors/dashboardSelectors'
 import { useAnimeProgress } from '../state/useAnimeProgress'
 import { useFirebaseAuth } from '../state/useFirebaseAuth'
 import { useRecords } from '../state/useRecords'
+import { useDashboardPreferences } from '../state/useDashboardPreferences'
+import type { DashboardSection } from '../domain/dashboardPreferences'
 import type { AnimeSummary } from '../types/anime'
 
 export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: AppPage) => void; onOpenCommand: () => void }) {
@@ -33,6 +36,7 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
     retryExerciseSubscription,
   } = useRecords()
   const { firestore } = useFirebaseAuth()
+  const dashboardPreferences = useDashboardPreferences()
   const { items: animeProgress } = useAnimeProgress()
   const referenceDate = useLocalReferenceDate()
   const repository = useMemo(() => createFirestoreAnimeRepository(firestore), [firestore])
@@ -77,6 +81,14 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
           : expenseStatus === 'loading' || exerciseStatus === 'loading'
             ? 'Activity loading'
             : 'Activity unavailable'
+  const sections: Record<DashboardSection, ReactNode> = {
+    finance: <SpendingCard spending={dashboard.monthlySpending} finance={dashboard.monthlyFinance} status={expenseStatus} incomeStatus={incomeStatus} error={expenseError} incomeError={incomeError} onRetry={retryExpenseSubscription} onRetryIncome={retryIncomeSubscription} onOpen={() => onNavigate('expenses')} />,
+    exercise: <ExerciseCard exercise={dashboard.exercise} status={exerciseStatus} error={exerciseError} onRetry={retryExerciseSubscription} onOpen={() => onNavigate('exercise')} />,
+    anime: <AnimeHomeCard watching={animeProgress.filter((item) => item.trackingStatus === 'watching').sort((left, right) => right.updatedAt - left.updatedAt)} recent={anime.recent} status={anime.status} onOpen={() => onNavigate('anime')} />,
+    review: <WeeklyReviewCard referenceDate={referenceDate} onOpen={() => onNavigate('review')} />,
+    records: <RecentActivity items={dashboard.recentActivity} sourceLabel={recentActivitySource} emptyMessage="No recent records yet." onOpen={() => onNavigate('records')} />,
+    calendar: <CalendarCard referenceDate={referenceDate} />,
+  }
   return (
     <div className="core-page mx-auto w-full max-w-[76rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
       <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} onOpenCommand={onOpenCommand} />
@@ -90,49 +102,8 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
         animeReady={anime.status === 'ready'}
       />
       <DailyContext referenceDate={referenceDate} />
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <SpendingCard
-          spending={dashboard.monthlySpending}
-          finance={dashboard.monthlyFinance}
-          status={expenseStatus}
-          incomeStatus={incomeStatus}
-          error={expenseError}
-          incomeError={incomeError}
-          onRetry={retryExpenseSubscription}
-          onRetryIncome={retryIncomeSubscription}
-          onOpen={() => onNavigate('expenses')}
-        />
-        <ExerciseCard
-          exercise={dashboard.exercise}
-          status={exerciseStatus}
-          error={exerciseError}
-          onRetry={retryExerciseSubscription}
-          onOpen={() => onNavigate('exercise')}
-        />
-        <AnimeHomeCard
-          watching={animeProgress
-            .filter((item) => item.trackingStatus === 'watching')
-            .sort((left, right) => right.updatedAt - left.updatedAt)}
-          recent={anime.recent}
-          status={anime.status}
-          onOpen={() => onNavigate('anime')}
-        />
-        <WeeklyReviewCard referenceDate={referenceDate} onOpen={() => onNavigate('review')} />
-      </div>
-
-      <section aria-labelledby="secondary-heading" className="mt-7">
-        <h2 id="secondary-heading" className="section-label mb-3">Also available</h2>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <RecentActivity
-            items={dashboard.recentActivity}
-            sourceLabel={recentActivitySource}
-            emptyMessage="No recent records yet."
-            onOpen={() => onNavigate('records')}
-          />
-          <CalendarCard referenceDate={referenceDate} />
-        </div>
-      </section>
+      <DashboardEditor dashboard={dashboardPreferences} />
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">{dashboardPreferences.preferences.order.filter((section) => !dashboardPreferences.preferences.hidden.includes(section)).map((section) => <div key={section} data-dashboard-section={section}>{sections[section]}</div>)}</div>
     </div>
   )
 }
