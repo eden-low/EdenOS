@@ -29,7 +29,7 @@ function provideRecords(status: 'loaded' | 'loading' | 'error' = 'loaded') {
 
 beforeEach(() => {
   vi.mocked(useLocalReferenceDate).mockReturnValue(new Date(2026, 8, 17, 12))
-  vi.mocked(useAnimeProgress).mockReturnValue({ items: [], cloudError: null } as ReturnType<typeof useAnimeProgress>)
+  vi.mocked(useAnimeProgress).mockReturnValue({ items: [], cloudError: null, saveProgress: vi.fn(), flushProgress: vi.fn() } as ReturnType<typeof useAnimeProgress>)
   provideRecords()
 })
 
@@ -63,7 +63,7 @@ describe('Records page empty state', () => {
       expenseStatus: 'loaded', expenseError: null, incomeStatus: 'loaded', incomeError: null, exerciseStatus: 'loaded', exerciseError: null,
       retryExpenseSubscription: vi.fn(), retryIncomeSubscription: vi.fn(), retryExerciseSubscription: vi.fn(), drafts: [],
     } as unknown as ReturnType<typeof useRecords>)
-    vi.mocked(useAnimeProgress).mockReturnValue({ items: [{ externalId: 'frieren', animeId: 'frieren', title: 'Frieren', currentEpisode: 3, positionSeconds: 0, durationSeconds: 0, watchedEpisodes: [1, 2], trackingStatus: 'watching', updatedAt: new Date(2026, 8, 17, 19).getTime() }], cloudError: null } as ReturnType<typeof useAnimeProgress>)
+    vi.mocked(useAnimeProgress).mockReturnValue({ items: [{ externalId: 'frieren', animeId: 'frieren', title: 'Frieren', currentEpisode: 3, positionSeconds: 0, durationSeconds: 0, watchedEpisodes: [1, 2], trackingStatus: 'watching', updatedAt: new Date(2026, 8, 17, 19).getTime() }], cloudError: null, saveProgress: vi.fn(), flushProgress: vi.fn() } as ReturnType<typeof useAnimeProgress>)
 
     render(<RecordsPage />)
 

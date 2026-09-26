@@ -4,6 +4,7 @@ import { FinancialAmount } from '../components/privacy/FinancialAmount'
 import { WeeklyReflection } from '../components/review/WeeklyReflection'
 import { Button } from '../components/ui/button'
 import { triggerPressFeedback } from '../components/ui/pressFeedback'
+import { expenseCategoryLabels } from '../domain/expense'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { addLocalWeeks, localDateKey, startOfLocalWeek } from '../lib/date'
 import { formatDistance, formatDuration } from '../lib/format'
@@ -49,7 +50,7 @@ export function WeeklyReviewPage() {
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <section aria-label="Weekly expenses" className="dashboard-card p-5 sm:p-6">
           <ReviewCardHeader icon={<ReceiptText size={18} />} tone="blue" label="Finance" title="Money in motion" />
-          {financeUnavailable ? <DomainUnavailable label={financeUnavailable.label} status={financeUnavailable.status} error={financeUnavailable.error} onRetry={financeUnavailable.retry} /> : <><div className="mt-5 grid grid-cols-3 gap-2"><MoneyStat label="Income" amountSen={summary.finance.incomeSen} /><MoneyStat label="Spent" amountSen={summary.finance.spentSen} /><MoneyStat label="Net" amountSen={summary.finance.netSen} /></div>{summary.expenses.count === 0 ? <p className="mt-5 text-sm text-[var(--text-secondary)]">No expenses recorded this week.</p> : <p className="mt-5 text-sm text-[var(--text-secondary)]">{summary.expenses.count} {summary.expenses.count === 1 ? 'expense' : 'expenses'} recorded{summary.expenses.categories[0] ? ` · ${summary.expenses.categories[0].category} was the largest category` : ''}.</p>}{summary.finance.spendingChangePercent !== null && <p className="mt-2 text-xs text-[var(--text-muted)]">Spending {summary.finance.spendingChangePercent >= 0 ? '+' : ''}{summary.finance.spendingChangePercent}% vs last week</p>}</>}
+          {financeUnavailable ? <DomainUnavailable label={financeUnavailable.label} status={financeUnavailable.status} error={financeUnavailable.error} onRetry={financeUnavailable.retry} /> : <><div className="mt-5 grid grid-cols-3 gap-2"><MoneyStat label="Income" amountSen={summary.finance.incomeSen} /><MoneyStat label="Spent" amountSen={summary.finance.spentSen} /><MoneyStat label="Net" amountSen={summary.finance.netSen} /></div>{summary.expenses.count === 0 ? <p className="mt-5 text-sm text-[var(--text-secondary)]">No expenses recorded this week.</p> : <p className="mt-5 text-sm text-[var(--text-secondary)]">{summary.expenses.count} {summary.expenses.count === 1 ? 'expense' : 'expenses'} recorded{summary.expenses.categories[0] ? ` · ${expenseCategoryLabels[summary.expenses.categories[0].category]} was the largest category` : ''}.</p>}{summary.finance.spendingChangePercent !== null && <p className="mt-2 text-xs text-[var(--text-muted)]">Spending {summary.finance.spendingChangePercent >= 0 ? '+' : ''}{summary.finance.spendingChangePercent}% vs last week</p>}</>}
         </section>
 
         <section aria-label="Weekly exercise sessions" className="dashboard-card p-5 sm:p-6">
