@@ -79,7 +79,7 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
 
     <FinanceKpiGrid summary={summary} />
 
-    <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(18rem,0.75fr)]"><CashflowChart data={summary.cashflow} monthLabel={summary.monthLabel} /><ExpenseActivityDonut summary={summary} /></div>
+    <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.85fr)]"><CashflowChart data={summary.cashflow} monthLabel={summary.monthLabel} /><ExpenseActivityDonut summary={summary} /></div>
 
     <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)_minmax(0,0.92fr)]">
       <RecentTransactionsCard transactions={summary.transactions} monthLabel={summary.monthLabel} onSelect={(transaction) => setSelection({ kind: transaction.direction, id: transaction.id })} onViewAll={onOpenRecords} />
