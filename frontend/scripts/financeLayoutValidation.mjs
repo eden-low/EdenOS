@@ -85,10 +85,16 @@ async function signInAndOpenFinance() {
   await waitFor(`document.body?.innerText.includes('Continue as guest') || document.querySelector('h1')?.textContent?.includes('Finance')`, 'authentication or Finance', 300)
   if (await evaluate(`document.body?.innerText.includes('Continue as guest')`)) {
     await clickButton('Continue as guest')
-    await waitFor(`Boolean(document.querySelector('h1')) || document.body?.innerText.includes('Here is what matters today.')`, 'authenticated application', 300)
+    await waitFor(`!document.body?.innerText.includes('Continue as guest') && (Boolean(document.querySelector('h1')) || document.body?.innerText.includes('Here is what matters today.'))`, 'authenticated application', 300)
     await send('Page.navigate', { url: `${baseUrl}/expenses` })
   }
-  await waitFor(`document.querySelector('h1')?.textContent?.includes('Finance')`, 'Finance page', 300)
+  try {
+    await waitFor(`document.querySelector('h1')?.textContent?.includes('Finance')`, 'Finance page', 300)
+  } catch (error) {
+    console.error(await evaluate(`({ url: location.href, body: document.body?.innerText ?? '' })`))
+    console.error(runtimeErrors.join('\n'))
+    throw error
+  }
   try {
     await waitFor(`document.querySelectorAll('[data-finance-kpi]').length === 4`, 'Finance dashboard', 300)
   } catch (error) {
