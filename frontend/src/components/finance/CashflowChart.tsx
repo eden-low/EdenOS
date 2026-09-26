@@ -21,7 +21,7 @@ function points(values: number[], maximum: number): string {
 export function CashflowChart({ data, monthLabel }: { data: CashflowPoint[]; monthLabel: string }) {
   const privacy = usePrivacyLock()
   if (privacy.locked) return <section className="dashboard-card p-5 sm:p-6" aria-labelledby="cashflow-title">
-    <h2 id="cashflow-title" className="text-lg font-semibold">Cashflow trend</h2>
+    <p className="section-label">Monthly overview</p><h2 id="cashflow-title" className="mt-1 text-lg font-semibold">Income and expenses</h2>
     <div role="status" className="mt-4 flex min-h-36 flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--surface-secondary)] p-5 text-center">
       <LockKeyhole size={20} /><p className="text-sm text-[var(--text-secondary)]">Unlock to view finance trend</p><Button variant="secondary" onClick={privacy.requestUnlock}>Unlock</Button>
     </div>
@@ -35,7 +35,7 @@ export function CashflowChart({ data, monthLabel }: { data: CashflowPoint[]; mon
   const description = `${monthLabel}: cumulative income ${formatMoney(income.at(-1) ?? 0)} and cumulative expenses ${formatMoney(expenses.at(-1) ?? 0)}.`
   return <section className="dashboard-card p-5 sm:p-6" aria-labelledby="cashflow-title">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="section-label">Finance trend</p><h2 id="cashflow-title" className="mt-1 text-lg font-semibold">Cashflow activity</h2></div>
+      <div><p className="section-label">Monthly overview</p><h2 id="cashflow-title" className="mt-1 text-lg font-semibold">Income and expenses</h2><p className="mt-1 text-xs text-[var(--text-muted)]">Cumulative movement through {monthLabel}</p></div>
       <div className="flex gap-4 text-xs text-[var(--text-secondary)]" aria-label="Chart legend"><span className="inline-flex items-center gap-2"><i className="size-2 rounded-full bg-[var(--positive)]" />Income</span><span className="inline-flex items-center gap-2"><i className="size-2 rounded-full bg-[var(--accent-blue)]" />Expenses</span></div>
     </div>
     {maximumValue === 0 ? <div className="mt-4 flex min-h-36 flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-subtle)] text-center"><TrendingUp size={20} className="text-[var(--text-muted)]" /><p className="mt-3 text-sm font-semibold">No finance activity this month</p><p className="mt-1 text-xs text-[var(--text-muted)]">Add income or an expense to begin the trend.</p></div> : <>
