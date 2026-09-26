@@ -307,4 +307,5 @@ export interface PreparedCanonicalWrite {
   updatedAtMs: number
   r2Changed: boolean
   indexChanged: boolean
+  isNew?: boolean
 }

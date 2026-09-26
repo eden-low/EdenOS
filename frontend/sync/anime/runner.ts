@@ -444,7 +444,8 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       ...(position ? { cursor: { providerIndex: position.providerIndex, categoryIndex: position.categoryIndex, page: position.page, offset: position.offset } } : {}),
     })}`)
   }
-  const availableStateReads = Math.max(0, readLimit - operations.firestoreReads)
+  const statusReadReserve = controlledIncremental && dependencies.store?.getCatalogueCount ? 1 : 0
+  const availableStateReads = Math.max(0, readLimit - operations.firestoreReads - statusReadReserve)
   const identityGroups = [...identity.groups.entries()]
   const selectedGroups = identityGroups.slice(0, availableStateReads)
   if (selectedGroups.length < identityGroups.length) stopReason = 'read budget'
@@ -517,7 +518,12 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
       }
     }
     return {
-      write: { canonical, indexHash, detailHash, updatedAtMs: writeTimestamp(canonical, previous, indexChanged || detailChanged, started), r2Changed, indexChanged },
+      write: {
+        canonical, indexHash, detailHash,
+        updatedAtMs: writeTimestamp(canonical, previous, indexChanged || detailChanged, started),
+        r2Changed, indexChanged,
+        isNew: previous === undefined && canonical.records.every((record) => !existingMappings.has(sourceMappingId(record.providerId, record.providerItemId))),
+      },
       r2Changed,
     }
   })
@@ -555,7 +561,7 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
   for (const write of prepared) {
     const mappings = mappingsByCanonical.get(write.canonical.externalId) ?? []
     const cost = (write.indexChanged || write.r2Changed ? 2 : 0) + mappings.length
-    const controlWriteReserve = controlledIncremental ? 1 : 0
+    const controlWriteReserve = controlledIncremental ? (dependencies.store?.saveCatalogueStatus ? 2 : 1) : 0
     if (operations.firestoreWrites + plannedFirestoreWrites + cost > writeLimit - controlWriteReserve) {
       stopReason = 'write budget'
       if (options.controlled && !controlledIncremental) {
@@ -623,9 +629,16 @@ export async function runAnimeSync(options: SyncOptions, dependencies: AnimeSync
     log(`Incremental state retained because the scan stopped at ${stopReason}`)
   }
   if (incrementalStateSafe && incrementalState && !options.dryRun) {
-    await dependencies.store!.saveIncrementalState!(options.incrementalStateId ?? 'anime-incremental-v1', { ...incrementalState, updatedAtMs: dependencies.now?.() ?? Date.now() })
+    const completedAtMs = dependencies.now?.() ?? Date.now()
+    await dependencies.store!.saveIncrementalState!(options.incrementalStateId ?? 'anime-incremental-v1', { ...incrementalState, updatedAtMs: completedAtMs })
     operations.firestoreWrites += 1
     operations.incrementalStateWrites += 1
+    if (dependencies.store!.getCatalogueCount && dependencies.store!.saveCatalogueStatus) {
+      const catalogueCount = await dependencies.store!.getCatalogueCount()
+      operations.firestoreReads += 1
+      await dependencies.store!.saveCatalogueStatus({ catalogueCount, lastSuccessfulSyncAtMs: completedAtMs })
+      operations.firestoreWrites += 1
+    }
   }
   r2Uploaded = options.dryRun ? plannedR2Writes : operations.r2Writes
   r2Skipped = selectedWrites.length - plannedR2Writes

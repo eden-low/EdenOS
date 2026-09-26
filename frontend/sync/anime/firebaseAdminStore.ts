@@ -32,6 +32,8 @@ export interface AnimeSyncStore {
   getIncrementalState?(stateId: string): Promise<IncrementalSyncState | null>
   saveIncrementalState?(stateId: string, state: IncrementalSyncState): Promise<void>
   getCatalogueMetrics?(sampleSize?: number): Promise<CatalogueStorageMetrics>
+  getCatalogueCount?(): Promise<number>
+  saveCatalogueStatus?(status: { catalogueCount: number; lastSuccessfulSyncAtMs: number }): Promise<void>
 }
 
 function readServiceAccount(env: NodeJS.ProcessEnv): ServiceAccountConfig | null {
@@ -71,6 +73,7 @@ function cataloguePayload(canonical: CanonicalAnime, write: PreparedCanonicalWri
     detailHash: write.detailHash,
     updatedAt: Timestamp.fromMillis(write.updatedAtMs),
     lastSyncedAt: FieldValue.serverTimestamp(),
+    ...(write.isNew ? { firstPublishedAt: FieldValue.serverTimestamp() } : {}),
   }
 }
 
@@ -234,6 +237,16 @@ export function createAnimeSyncStore(firestore: Firestore): AnimeSyncStore {
         minimumDocumentBytes: sizes.length ? Math.min(...sizes) : 0,
         maximumDocumentBytes: sizes.length ? Math.max(...sizes) : 0,
       }
+    },
+    async getCatalogueCount() {
+      const snapshot = await firestore.collection('animes').count().get()
+      return snapshot.data().count
+    },
+    async saveCatalogueStatus(status) {
+      await firestore.doc('animeCatalogueStatus/current').set({
+        catalogueCount: status.catalogueCount,
+        lastSuccessfulSyncAt: Timestamp.fromMillis(status.lastSuccessfulSyncAtMs),
+      })
     },
   }
 }

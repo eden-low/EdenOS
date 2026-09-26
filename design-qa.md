@@ -1,47 +1,59 @@
-# Finance and Exercise UI design QA
+# Finance Layout Refresh — Design QA
 
-- Source visual truth path: unavailable in the current session; the user referenced a FINCHECK screenshot, but no readable image attachment or local file was exposed.
-- Implementation screenshot path: unavailable because the configured in-app browser surface is not available in this session.
-- Viewport: not captured.
-- Source pixels / implementation pixels / CSS size / density: not available.
-- State: local implementation running with the existing EdenOS Firebase configuration.
-- Full-view comparison evidence: blocked; neither the source screenshot nor a browser-rendered implementation capture can be opened together.
-- Focused region comparison evidence: blocked for the same reason.
-- Primary interactions tested: covered by automated component, repository, selector, provider, and Firestore emulator tests; not browser-tested.
-- Console errors checked: blocked without a browser surface.
+## Comparison target
 
-## Findings
+- Source visual truth: the user-provided finance-dashboard reference and the approved structural specification in this task. The reference is intentionally used only for information hierarchy, dashboard density, chart/card proportions, and desktop grid structure; its branding, assets, copy, icons, and colors are explicitly out of scope.
+- Implementation evidence: `D:\EdenOS-finance-layout-refresh-artifacts\local\finance-1440-dark.png`, plus the responsive captures in the same directory.
+- Route and state: `/expenses`, authenticated fresh anonymous test identity, September 2026, representative income/expense/goal/allocation/budget data, Privacy Lock unlocked.
+- CSS viewports and implementation pixels: 320×900 at 1× (light), 390×900 at 1× (dark), 768×1024 at 1× (light), and 1440×1000 at 1× (dark).
+- Source dimensions/density: not applicable to the text wireframe; the supplied visual reference is a structural inspiration target rather than a pixel-fidelity target. No density-based visual measurements were inferred from it.
 
-- [P1] Direct visual comparison is unavailable.
-  - Location: `/expenses`, desktop/mobile, Light/Dark/System.
-  - Evidence: the implementation follows the supplied four-card, chart-plus-donut, history-plus-goals hierarchy, but the named FINCHECK image is not accessible for side-by-side review.
-  - Impact: screenshot fidelity and rendered responsive polish cannot be certified.
-  - Fix: reattach the reference screenshot and provide an available browser surface, or approve a Playwright CLI capture pass.
+## Full-view comparison evidence
 
-## Comparison history
+- `D:\EdenOS-finance-layout-refresh-artifacts\local\finance-1440-dark.png` shows the requested desktop hierarchy: four KPI cards; a dominant monthly overview beside a compact expense breakdown; then recent transactions, goals/budgets, and Month Story in a balanced three-column layer. Detailed planning and rules remain below the first viewport.
+- `D:\EdenOS-finance-layout-refresh-artifacts\local\finance-390-dark.png` shows the mobile transformation: 2×2 KPI grid, stacked analytics, readable controls, and no horizontal page overflow.
+- `D:\EdenOS-finance-layout-refresh-artifacts\local\finance-768-light.png` verifies the 2×2 tablet KPI arrangement, stacked analytics, EdenOS light-theme surfaces, and readable chart labels.
+- `D:\EdenOS-finance-layout-refresh-artifacts\local\finance-320-light.png` verifies the narrow one-column KPI layout and the stacked month selector.
 
-- No visual comparison iteration could be performed. No P0/P1/P2 finding has been closed through post-fix screenshot evidence.
+## Focused-region comparison evidence
+
+The KPI/analytics region is large enough to judge typography, spacing, semantic color, native month control, chart labels, and category legend in the full viewport captures. The lower goal/budget and Month Story region is visible in the 1440px capture and was additionally checked through browser assertions for goal progress, signed overspend, and allocation semantics. No separate crop was needed.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: code-level token review only; browser comparison blocked.
-- Spacing and layout rhythm: responsive grid classes reviewed; browser comparison blocked.
-- Colors and visual tokens: EdenOS theme tokens used throughout; rendered contrast review blocked.
-- Image quality and asset fidelity: no raster assets are introduced; charts are data visualizations. Source-image comparison blocked.
-- Copy and content: reviewed against the requested financial semantics.
+- Fonts and typography: existing EdenOS font stack, weights, tracking, and uppercase section-label treatment are preserved. KPI values establish the strongest numeric hierarchy; chart labels and transaction context remain readable without competing with them.
+- Spacing and layout rhythm: desktop uses four KPI tracks, a 1.75/0.75 analytics split, and an intentionally asymmetric lower layer. Tablet stacks analytics and uses two KPI tracks. The 320px state uses one KPI track and a two-row month picker. Existing radii, borders, and card spacing are retained.
+- Colors and visual tokens: all surfaces and semantic states use existing EdenOS CSS variables. No reference palette, glow, or decorative gradient was copied. Both supplied light and dark captures retain readable text/border contrast.
+- Image quality and asset fidelity: Finance intentionally contains no decorative imagery. Existing Lucide icons and native inline SVG charts remain crisp at 1×; no bitmap or placeholder assets were introduced.
+- Copy and content: labels use canonical EdenOS semantics: Available Money, Income, Expenses, Net Cashflow, Goal allocations, signed budget remaining, and deterministic Month Story. No bank-balance claim or AI-generated copy is present.
 
-final result: blocked
+## Findings
 
-## Exercise refresh addendum — 2026-09-21
+- No actionable P0, P1, or P2 findings remain.
+- [P3] At 390px, the first viewport ends partway through the monthly chart. This is an acceptable consequence of preserving comfortable KPI and chart sizing; the page scroll remains natural and unobstructed.
 
-- Source visual truth path: unavailable in the current session; the fitness-dashboard screenshot is referenced in the brief but is not exposed as an attachment or local file.
-- Implementation screenshot path: unavailable; the computer-use state reports no browser surfaces.
-- Viewports: desktop and mobile captures unavailable.
-- States requiring review: `/exercise` with data and zero data; Today calendar and Exercise overview; Light, Dark, and System themes.
-- Automated evidence: BMI and height domain tests, component interaction tests, selector tests, calendar navigation test, full frontend suite, lint, typecheck/build, and Firestore emulator rules all pass.
-- Code-level review: Exercise uses 4/2/1-column responsive card grids, token-based gradients and surfaces, real record-derived chart/donut values, explicit reported/estimated calorie labels, and no new raster assets.
-- [P1] Rendered fitness-reference comparison and responsive/theme inspection remain unavailable.
-  - Impact: pixel-level hierarchy, card density, chart legibility, and theme contrast cannot be certified from screenshots.
-  - Required follow-up: owner review on staging with desktop/mobile and Light/Dark/System.
+## Comparison history
 
-final exercise result: blocked
+1. Initial responsive pass found a P2 issue at 320px: the native month input clipped the displayed year.
+2. Fix: changed the selector container below 360px to a two-row grid with a full-width native month input; retained the compact inline layout from 360px upward.
+3. Post-fix evidence: `D:\EdenOS-finance-layout-refresh-artifacts\local\finance-320-light.png` shows the complete “September, 2026” value with no overflow. Automated browser measurements report no document or main-content horizontal overflow and no visible interactive target under 36px at all four viewports.
+
+## Primary interactions and runtime checks
+
+- Created confirmed income and three confirmed expenses through existing entry dialogs.
+- Created two goals, recorded a RM1,300 allocation, configured an overall budget, and created three category-linked budget pots.
+- Verified direct `/expenses` refresh, month selector rendering, semantic KPI values, goal progress, overspend presentation, light/dark theme, and responsive reflow.
+- Browser console/runtime errors: none.
+
+## Implementation checklist
+
+- [x] Four canonical KPI cards above the fold.
+- [x] Deterministic cumulative income/expense overview.
+- [x] Compact expense donut with authoritative amounts and visual-only long-tail grouping.
+- [x] Bounded mixed recent-transactions card.
+- [x] Bounded active goals and budgets summary with signed remaining state.
+- [x] Month Story retained and integrated.
+- [x] Detailed management and Finance Rules visually secondary.
+- [x] 320/390/768/1440 responsive validation in light and dark modes.
+
+final result: passed

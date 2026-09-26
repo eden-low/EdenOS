@@ -5,7 +5,8 @@ import { FinancialAmount } from '../privacy/FinancialAmount'
 const colors = ['var(--accent-blue)', 'var(--accent-teal)', 'var(--accent-primary)', 'var(--warning)', 'var(--positive)', 'var(--text-muted)']
 
 export function ExpenseActivityDonut({ summary }: { summary: FinanceSummary }) {
-  const segments = summary.categories.map((item, index, categories) => ({
+  const visibleCategories = compactCategories(summary.categories)
+  const segments = visibleCategories.map((item, index, categories) => ({
     ...item,
     offset: categories.slice(0, index).reduce((sum, category) => sum + category.percentage, 0),
   }))
@@ -19,7 +20,19 @@ export function ExpenseActivityDonut({ summary }: { summary: FinanceSummary }) {
         </svg>
         <div className="absolute inset-0 grid place-content-center text-center"><span className="text-[0.65rem] font-semibold uppercase tracking-[0.13em] text-[var(--text-muted)]">Expenses</span><FinancialAmount amountSen={summary.monthlyExpensesSen} className="mt-1 text-sm font-semibold" interactive={false} /></div>
       </div>
-      <ul className="space-y-3">{summary.categories.slice(0, 6).map((item, index) => <li key={item.category} className="flex items-center gap-2 text-sm"><i className="size-2.5 rounded-full" style={{ background: colors[index % colors.length] }} /><span className="min-w-0 flex-1 truncate text-[var(--text-secondary)]">{item.label}</span><span className="font-semibold">{Math.round(item.percentage)}%</span></li>)}</ul>
+      <ul className="space-y-3">{visibleCategories.map((item, index) => <li key={item.category} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 text-xs"><i className="size-2.5 rounded-full" style={{ background: colors[index % colors.length] }} /><span className="min-w-0 truncate text-[var(--text-secondary)]">{item.label}</span><span className="text-right"><strong className="block text-xs"><FinancialAmount amountSen={item.spentSen} interactive={false} /></strong><span className="text-[0.68rem] text-[var(--text-muted)]">{Math.round(item.percentage)}%</span></span></li>)}</ul>
     </div>}
   </section>
+}
+
+function compactCategories(categories: FinanceSummary['categories']): FinanceSummary['categories'] {
+  if (categories.length <= 6) return categories
+  const visible = categories.slice(0, 5)
+  const remaining = categories.slice(5)
+  return [...visible, {
+    category: 'other-categories',
+    label: 'Other categories',
+    spentSen: remaining.reduce((sum, item) => sum + item.spentSen, 0),
+    percentage: remaining.reduce((sum, item) => sum + item.percentage, 0),
+  }]
 }

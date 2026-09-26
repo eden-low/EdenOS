@@ -1,6 +1,8 @@
 import { expenseCategoryLabels } from '../domain/expense'
 import { incomeCategoryLabels } from '../domain/income'
 import type { UserSettings } from '../domain/userSettings'
+import { selectBudgetPlan, sumGoalAllocations, type BudgetPlanSummary } from '../domain/financePlanning'
+import type { FinanceBudget, FinanceGoalAllocation } from '../types/finance'
 import type { ExpenseRecord, IncomeRecord } from '../types/records'
 
 export interface FinanceTransaction {
@@ -34,9 +36,17 @@ export interface FinanceSummary {
   budgetRemainingSen: number | null
   budgetProgress: number | null
   savingsGoalSen: number | null
+  goalAllocationsSen: number
+  availableSen: number
+  budgetPlan: BudgetPlanSummary
   categories: Array<{ category: string; label: string; spentSen: number; percentage: number }>
   transactions: FinanceTransaction[]
   cashflow: CashflowPoint[]
+  savingsRatePercent: number | null
+  expenseChangePercent: number | null
+  largestCategory: { label: string; spentSen: number } | null
+  mostChangedCategory: { label: string; changeSen: number } | null
+  isOverspent: boolean
 }
 
 function monthKey(date: Date): string {
@@ -81,6 +91,7 @@ export function selectFinanceSummary(
   incomes: IncomeRecord[],
   settings: UserSettings,
   selectedMonth: Date,
+  planning: { budgets?: FinanceBudget[]; allocations?: FinanceGoalAllocation[] } = {},
 ): FinanceSummary {
   const year = selectedMonth.getFullYear()
   const month = selectedMonth.getMonth()
@@ -95,6 +106,8 @@ export function selectFinanceSummary(
   const previousIncomeSen = previousIncomes.reduce((sum, record) => sum + record.amountSen, 0)
   const grouped = new Map<string, number>()
   currentExpenses.forEach((record) => grouped.set(record.category, (grouped.get(record.category) ?? 0) + record.amountSen))
+  const previousGrouped = new Map<string, number>()
+  previousExpenses.forEach((record) => previousGrouped.set(record.category, (previousGrouped.get(record.category) ?? 0) + record.amountSen))
   const categories = [...grouped.entries()]
     .map(([category, spentSen]) => ({
       category,
@@ -117,22 +130,39 @@ export function selectFinanceSummary(
     return { day, incomeSen: cumulativeIncome, expenseSen: cumulativeExpense }
   })
   const budgetSen = settings.monthlyBudgetSen
+  const categoryChanges = [...new Set([...grouped.keys(), ...previousGrouped.keys()])]
+    .map((category) => ({
+      label: expenseCategoryLabels[category as keyof typeof expenseCategoryLabels],
+      changeSen: (grouped.get(category) ?? 0) - (previousGrouped.get(category) ?? 0),
+    }))
+    .sort((left, right) => Math.abs(right.changeSen) - Math.abs(left.changeSen))
+  const netCashflowSen = monthlyIncomeSen - monthlyExpensesSen
+  const goalAllocationsSen = sumGoalAllocations(planning.allocations ?? [])
+  const budgetPlan = selectBudgetPlan(planning.budgets ?? [], currentExpenses, budgetSen)
   return {
     monthLabel: new Intl.DateTimeFormat('en-MY', { month: 'long', year: 'numeric' }).format(selectedMonth),
     monthInput: monthKey(selectedMonth),
     monthlyIncomeSen,
     monthlyExpensesSen,
-    netCashflowSen: monthlyIncomeSen - monthlyExpensesSen,
+    netCashflowSen,
     previousIncomeSen,
     previousExpensesSen,
     previousNetCashflowSen: previousIncomeSen - previousExpensesSen,
     hasPreviousData: previousExpenses.length + previousIncomes.length > 0,
     budgetSen,
-    budgetRemainingSen: budgetSen === null ? null : Math.max(0, budgetSen - monthlyExpensesSen),
+    budgetRemainingSen: budgetSen === null ? null : budgetSen - monthlyExpensesSen,
     budgetProgress: budgetSen === null ? null : Math.min(100, monthlyExpensesSen / budgetSen * 100),
     savingsGoalSen: settings.savingsGoalSen,
+    goalAllocationsSen,
+    availableSen: netCashflowSen - goalAllocationsSen,
+    budgetPlan,
     categories,
     transactions: selectFinanceTransactions(currentExpenses, currentIncomes),
     cashflow,
+    savingsRatePercent: monthlyIncomeSen > 0 ? netCashflowSen / monthlyIncomeSen * 100 : null,
+    expenseChangePercent: previousExpensesSen > 0 ? (monthlyExpensesSen - previousExpensesSen) / previousExpensesSen * 100 : null,
+    largestCategory: categories[0] ? { label: categories[0].label, spentSen: categories[0].spentSen } : null,
+    mostChangedCategory: categoryChanges[0] ?? null,
+    isOverspent: budgetSen !== null && monthlyExpensesSen > budgetSen,
   }
 }

@@ -7,12 +7,14 @@ import type {
   TimelineGroup,
   TimelineRecord,
 } from '../types/records'
+import type { AnimeProgress } from '../types/anime'
 
 export function selectTimelineGroups(
   expenses: ExpenseRecord[],
   exerciseRecords: ExerciseRecord[],
   filter: RecordFilter,
   incomes: IncomeRecord[] = [],
+  animeProgress: AnimeProgress[] = [],
 ): TimelineGroup[] {
   const records: TimelineRecord[] = [
     ...(filter !== 'all' && filter !== 'expenses'
@@ -34,6 +36,13 @@ export function selectTimelineGroups(
       : incomes.map((record) => ({
           kind: 'income' as const,
           occurredAt: record.occurredAt,
+          record,
+        }))),
+    ...(filter !== 'all' && filter !== 'anime'
+      ? []
+      : animeProgress.map((record) => ({
+          kind: 'anime' as const,
+          occurredAt: new Date(record.updatedAt).toISOString(),
           record,
         }))),
   ].sort((left, right) =>

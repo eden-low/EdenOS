@@ -1,5 +1,6 @@
 import type { MoneyInSen } from './dashboard'
 import type { ExerciseIntensity } from '../domain/estimatedCalories'
+import type { AnimeProgress } from './anime'
 
 export const expenseCategories = [
   'food',
@@ -88,13 +89,14 @@ export interface CaptureDraft<TKind extends string, TData> {
 export type ExpenseDraft = CaptureDraft<'expense', ExpenseData>
 export type ExerciseDraft = CaptureDraft<'exercise', ExerciseData>
 export type RecordDraft = ExpenseDraft | ExerciseDraft
-export type RecordFilter = 'all' | 'expenses' | 'income' | 'exercise'
+export type RecordFilter = 'all' | 'expenses' | 'income' | 'exercise' | 'anime'
 export type RecordDomainStatus = 'loading' | 'loaded' | 'error'
 
 export type TimelineRecord =
   | { kind: 'expense'; occurredAt: string; record: ExpenseRecord }
   | { kind: 'income'; occurredAt: string; record: IncomeRecord }
   | { kind: 'exercise'; occurredAt: string; record: ExerciseRecord }
+  | { kind: 'anime'; occurredAt: string; record: AnimeProgress }
 
 export interface TimelineGroup {
   dateKey: string

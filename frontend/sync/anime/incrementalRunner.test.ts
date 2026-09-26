@@ -84,6 +84,7 @@ function syncStore(input: {
   const mappings = input.mappings ?? new Map<string, SourceMapping>()
   const publish = vi.fn(async (_writes: PreparedCanonicalWrite[], _mappings: SourceMapping[]) => undefined)
   const saveIncrementalState = vi.fn(async () => undefined)
+  const saveCatalogueStatus = vi.fn(async () => undefined)
   const getCheckpoint = vi.fn(async () => { throw new Error('historical checkpoint must not be read') })
   const store: AnimeSyncStore = {
     getSourceMappings: async (keys) => new Map(keys.flatMap((key) => {
@@ -100,10 +101,12 @@ function syncStore(input: {
     saveCheckpoint: vi.fn(async () => undefined),
     getIncrementalState: vi.fn(async () => input.state ?? null),
     saveIncrementalState,
+    getCatalogueCount: vi.fn(async () => 11870),
+    saveCatalogueStatus,
     listCatalogue: async () => [], listAllSourceMappings: async () => [], findProgressExternalIds: async () => [],
     deleteCatalogue: async () => undefined, deleteInternalMetadata: async () => undefined,
   }
-  return { store, publish, saveIncrementalState, getCheckpoint }
+  return { store, publish, saveIncrementalState, saveCatalogueStatus, getCheckpoint }
 }
 
 afterEach(async () => {
@@ -126,13 +129,22 @@ describe('controlled incremental Anime runner', () => {
   it('publishes a changed mapped Anime and advances incremental state safely', async () => {
     const mapping: SourceMapping = { provider: 'provider-a', providerItemId: 'known-1', canonicalExternalId: 'canonical-known', matchedBy: 'source-map' }
     const states = new Map([['canonical-known', { externalId: 'canonical-known', indexHash: 'old', detailHash: 'old', updatedAtMs: 1 }]])
-    const { store, publish, saveIncrementalState } = syncStore({ mappings: new Map([[sourceMappingId('provider-a', 'known-1'), mapping]]), states, state: incrementalState() })
+    const { store, publish, saveIncrementalState, saveCatalogueStatus } = syncStore({ mappings: new Map([[sourceMappingId('provider-a', 'known-1'), mapping]]), states, state: incrementalState() })
     const r2 = detailStore()
     const result = await runAnimeSync(options({ dryRun: false }), { providers: [upstream()], cacheRoot: await temporaryDirectory(), store, detailStore: r2.store })
     expect(result.summary).toMatchObject({ canonicalUpdated: 1, stopReason: 'incremental caught up' })
     expect(publish).toHaveBeenCalledOnce()
     expect(r2.put).toHaveBeenCalledOnce()
     expect(saveIncrementalState).toHaveBeenCalledOnce()
+    expect(saveCatalogueStatus).toHaveBeenCalledWith({ catalogueCount: 11870, lastSuccessfulSyncAtMs: expect.any(Number) })
+    expect(publish.mock.calls[0][0][0]).toMatchObject({ isNew: false })
+  })
+
+  it('marks only newly discovered canonical titles for first-publication metadata', async () => {
+    const { store, publish } = syncStore({ state: incrementalState() })
+    const r2 = detailStore()
+    await runAnimeSync(options({ dryRun: false }), { providers: [upstream({ vod_id: 'new-1' })], cacheRoot: await temporaryDirectory(), store, detailStore: r2.store })
+    expect(publish.mock.calls[0][0][0]).toMatchObject({ isNew: true })
   })
 
   it('produces no catalogue or R2 write when a recent mapped canonical is unchanged', async () => {

@@ -16,6 +16,20 @@ export const animeWatchedThreshold = 0.9
 export const animeEpisodeSegmentSize = 50
 export const animeSourceStartupTimeoutMs = 5_000
 
+export type AnimeHeroSelection =
+  | { kind: 'progress'; item: AnimeProgress }
+  | { kind: 'recent'; item: AnimeSummary }
+  | { kind: 'new'; item: AnimeSummary }
+  | { kind: 'catalogue'; item: AnimeSummary }
+
+export function selectAnimeHero(progress: AnimeProgress[], newlyPublished: AnimeSummary[], recent: AnimeSummary[], catalogueFallback?: AnimeSummary): AnimeHeroSelection | null {
+  const watching = progress.filter((item) => item.trackingStatus === 'watching').sort((a, b) => b.updatedAt - a.updatedAt)[0]
+  if (watching) return { kind: 'progress', item: watching }
+  if (recent[0]) return { kind: 'recent', item: recent[0] }
+  if (newlyPublished[0]) return { kind: 'new', item: newlyPublished[0] }
+  return catalogueFallback ? { kind: 'catalogue', item: catalogueFallback } : null
+}
+
 export function normalizeAnimeTitle(value: string): string {
   return value.normalize('NFKC').trim().toLowerCase().replace(/\s+/g, ' ')
 }
