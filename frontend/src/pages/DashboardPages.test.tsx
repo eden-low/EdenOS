@@ -37,11 +37,11 @@ beforeEach(() => {
 describe('dedicated dashboards', () => {
   it('shows authoritative expense summary, categories, recent activity, and Records navigation', () => {
     const openRecords = vi.fn(); render(<ExpensesPage onOpenRecords={openRecords} />)
-    expect(screen.getByRole('heading', { name: 'Expenses' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Finance' })).toBeTruthy()
     expect(screen.getAllByText('RM 25')[0]).toBeTruthy()
     expect(screen.getAllByText('Food')[0]).toBeTruthy()
     expect(screen.getByText('Lunch')).toBeTruthy()
-    expect(screen.getByText('Cashflow activity')).toBeTruthy()
+    expect(screen.getByText('Income and expenses')).toBeTruthy()
     expect(screen.getByRole('img', { name: 'Cumulative income and expense line chart' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'View all EdenOS records' }))
     expect(openRecords).toHaveBeenCalledOnce()
