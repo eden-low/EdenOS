@@ -1,6 +1,5 @@
-import { Bookmark, CheckCircle2, Plus, PlayCircle, Search } from 'lucide-react'
+import { Film, Plus, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
 import type { AnimeRepository } from '../../repositories/animeRepository'
 import { progressForSummary } from '../../domain/anime'
 import { useAnimeProgress } from '../../state/useAnimeProgress'
@@ -10,14 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dia
 import type { AnimePlayerTarget } from './AnimePlayerDialog'
 import { useAnimeText } from '../../services/animeI18n'
 
-function ProgressRow({ item, onOpen }: { item: AnimeProgress; onOpen: (item: AnimePlayerTarget) => void }) {
-  const t = useAnimeText()
-  return <button type="button" onClick={() => onOpen({ externalId: item.externalId, title: item.title, coverUrl: item.coverUrl, totalEpisodes: item.totalEpisodes })} className="flex min-w-0 items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-3 text-left outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]">
-    {item.coverUrl ? <img src={item.coverUrl} alt="" loading="lazy" className="h-16 w-11 shrink-0 rounded-lg object-cover" /> : <span className="grid h-16 w-11 shrink-0 place-items-center rounded-lg bg-[var(--surface-hover)]"><PlayCircle aria-hidden="true" size={18} /></span>}
-    <span className="min-w-0"><strong className="block truncate text-sm text-[var(--text-primary)]">{item.title}</strong><span className="mt-1 block text-xs text-[var(--text-secondary)]">{t('episode')} {item.currentEpisode}{item.totalEpisodes ? ` / ${item.totalEpisodes}` : ''}</span></span>
-  </button>
-}
-
 export function AnimeTrackingPanel({ repository, onOpen }: { repository: AnimeRepository; onOpen: (item: AnimePlayerTarget) => void }) {
   const t = useAnimeText()
   const { items, saveProgress, cloudError } = useAnimeProgress()
@@ -26,26 +17,40 @@ export function AnimeTrackingPanel({ repository, onOpen }: { repository: AnimeRe
   const planned = items.filter((item) => item.trackingStatus === 'planned')
   const watching = items.filter((item) => item.trackingStatus === 'watching')
   const completed = items.filter((item) => item.trackingStatus === 'completed')
-  const groups = {
-    planned: { title: 'Plan', icon: <Bookmark aria-hidden="true" size={17} />, items: planned },
-    watching: { title: t('watching'), icon: <PlayCircle aria-hidden="true" size={17} />, items: watching },
-    completed: { title: t('completed'), icon: <CheckCircle2 aria-hidden="true" size={17} />, items: completed },
+  const groups: Record<AnimeTrackingStatus, { title: string; items: AnimeProgress[] }> = {
+    watching: { title: 'Watching', items: watching },
+    planned: { title: 'Plan', items: planned },
+    completed: { title: 'Finished', items: completed },
   }
   const selected = groups[filter]
   return <>
-    <section className="dashboard-card mt-6 p-5 sm:p-6" aria-labelledby="tracking-heading">
-      <div className="flex items-center justify-between gap-3"><div><p className="section-label">{t('library')}</p><h2 id="tracking-heading" className="mt-1 text-xl font-semibold">{t('tracking')}</h2></div><Button type="button" variant="secondary" onClick={() => setAddOpen(true)}><Plus aria-hidden="true" size={16} />{t('addAnime')}</Button></div>
+    <section className="mt-10 border-t border-[var(--border-subtle)] pt-10" aria-labelledby="tracking-heading">
+      <div className="flex items-end justify-between gap-3"><div><p className="section-label text-[var(--accent-soft)]">Your library</p><h2 id="tracking-heading" className="mt-1 text-2xl font-semibold tracking-[-0.03em]">My List</h2></div><Button type="button" variant="secondary" onClick={() => setAddOpen(true)}><Plus aria-hidden="true" size={16} />{t('addAnime')}</Button></div>
       {cloudError && <p className="mt-3 text-xs text-[var(--danger)]">{t('cloudFailed')}</p>}
-      <div className="mt-5 flex flex-wrap gap-2" aria-label="My List filters">{(Object.keys(groups) as AnimeTrackingStatus[]).map((status) => <button type="button" key={status} aria-pressed={filter === status} onClick={() => setFilter(status)} className={`min-h-10 rounded-full border px-3 text-sm font-medium ${filter === status ? 'border-[var(--accent)] bg-[var(--accent-wash)] text-[var(--text-primary)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]'}`}>{groups[status].title} <span className="ml-1 text-xs text-[var(--text-muted)]">{groups[status].items.length}</span></button>)}</div>
-      <div className="mt-5"><TrackingGroup title={selected.title} icon={selected.icon} items={selected.items} onOpen={onOpen} /></div>
+      <div className="anime-scroll mt-5 flex snap-x gap-2 overflow-x-auto pb-1" aria-label="My List filters">{(['watching', 'planned', 'completed'] as AnimeTrackingStatus[]).map((status) => <button type="button" key={status} aria-pressed={filter === status} onClick={() => setFilter(status)} className={`min-h-11 shrink-0 snap-start rounded-full border px-4 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)] ${filter === status ? 'border-[var(--accent)] bg-[var(--accent-wash)] text-[var(--text-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-primary)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'}`}>{groups[status].title} <span className="ml-1.5 text-xs text-[var(--text-muted)]">{groups[status].items.length}</span></button>)}</div>
+      <div className="mt-5"><TrackingGrid status={filter} items={selected.items} onOpen={onOpen} /></div>
     </section>
     <ManualTrackingDialog open={addOpen} onClose={() => setAddOpen(false)} repository={repository} onSave={(anime, episode, status) => { saveProgress(progressForSummary(anime, episode, status), { immediate: true }); setAddOpen(false) }} />
   </>
 }
 
-function TrackingGroup({ title, icon, items, onOpen }: { title: string; icon: ReactNode; items: AnimeProgress[]; onOpen: (item: AnimePlayerTarget) => void }) {
+function TrackingGrid({ status, items, onOpen }: { status: AnimeTrackingStatus; items: AnimeProgress[]; onOpen: (item: AnimePlayerTarget) => void }) {
   const t = useAnimeText()
-  return <div><h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)]">{icon}{title}<span className="ml-auto text-xs text-[var(--text-muted)]">{items.length}</span></h3><div className="mt-3 grid gap-2">{items.length ? items.slice(0, 4).map((item) => <ProgressRow key={item.externalId} item={item} onOpen={onOpen} />) : <p className="rounded-xl border border-dashed border-[var(--border-subtle)] p-4 text-sm text-[var(--text-muted)]">{t('noTracking')}</p>}</div></div>
+  if (!items.length) return <p className="rounded-2xl border border-dashed border-[var(--border-subtle)] p-5 text-sm text-[var(--text-muted)]">{t('noTracking')}</p>
+  return <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6">{items.slice(0, 12).map((item) => <TrackingPoster key={item.externalId} item={item} status={status} onOpen={onOpen} />)}</div>
+}
+
+function TrackingPoster({ item, status, onOpen }: { item: AnimeProgress; status: AnimeTrackingStatus; onOpen: (item: AnimePlayerTarget) => void }) {
+  const progress = status === 'watching' && item.totalEpisodes ? Math.min(100, Math.max(0, (item.currentEpisode / item.totalEpisodes) * 100)) : null
+  const context = status === 'watching' ? `Episode ${item.currentEpisode}${item.totalEpisodes ? ` of ${item.totalEpisodes}` : ''}` : status === 'completed' ? 'Finished' : 'Ready when you are'
+  return <button type="button" aria-label={`Open ${item.title}`} onClick={() => onOpen({ externalId: item.externalId, title: item.title, coverUrl: item.coverUrl, totalEpisodes: item.totalEpisodes })} className="group min-w-0 text-left outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]">
+    <span className="relative block aspect-[2/3] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] shadow-[var(--shadow-soft)]">
+      {item.coverUrl ? <img src={item.coverUrl} alt="" loading="lazy" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.025]" /> : <span className="grid size-full place-items-center text-[var(--text-muted)]"><Film aria-hidden="true" size={24} /></span>}
+      {progress !== null && <span className="absolute inset-x-2 bottom-2 h-1.5 overflow-hidden rounded-full bg-black/35"><span className="block h-full rounded-full bg-white" style={{ width: `${progress}%` }} /></span>}
+    </span>
+    <strong className="mt-2 block truncate text-sm text-[var(--text-primary)]">{item.title}</strong>
+    <span className="mt-0.5 block truncate text-xs text-[var(--text-muted)]">{context}</span>
+  </button>
 }
 
 function ManualTrackingDialog({ open, onClose, repository, onSave }: { open: boolean; onClose: () => void; repository: AnimeRepository; onSave: (anime: AnimeSummary, episode: number, status: AnimeTrackingStatus) => void }) {

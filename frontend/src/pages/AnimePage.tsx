@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimeCard } from '../components/anime/AnimeCard'
-import { AnimeCatalogueStatusCard, AnimeDiscoverySections } from '../components/anime/AnimeDiscoverySections'
+import { AnimeCatalogueStatusCard } from '../components/anime/AnimeDiscoverySections'
 import { AnimeFilters } from '../components/anime/AnimeFilters'
+import { AnimeMediaHome } from '../components/anime/AnimeMediaHome'
 import { AnimePlayerDialog, type AnimePlayerTarget } from '../components/anime/AnimePlayerDialog'
 import { AnimeTrackingPanel } from '../components/anime/AnimeTrackingPanel'
-import { RecentlyWatching } from '../components/anime/RecentlyWatching'
 import { Button } from '../components/ui/button'
 import { SearchField } from '../components/ui/SearchField'
 import { animePageSize, animeSearchDebounceMs } from '../domain/anime'
@@ -75,13 +75,14 @@ export function AnimePage() {
   }
 
   return <div className="mx-auto w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
-    <header><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('anime')}</h1><p className="mt-2 text-sm text-[var(--text-secondary)]">{t('subtitle')}</p></header>
+    <header><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('anime')}</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">{t('subtitle')}</p></header>
     <AnimeCatalogueStatusCard repository={repository} />
-    <RecentlyWatching onOpen={setSelected} />
-    <AnimeDiscoverySections repository={repository} onOpen={setSelected} />
+    <AnimeMediaHome repository={repository} catalogueFallback={items[0]} onOpen={setSelected} />
     <AnimeTrackingPanel repository={repository} onOpen={setSelected} />
-    <section className="mt-8" aria-labelledby="anime-catalogue-heading">
-      <h2 id="anime-catalogue-heading" className="section-label">{t('catalogue')}</h2>
+    <section className="mt-10 border-t border-[var(--border-subtle)] pt-10" aria-labelledby="anime-catalogue-heading">
+      <p className="section-label text-[var(--accent-soft)]">Browse all</p>
+      <h2 id="anime-catalogue-heading" className="mt-1 text-2xl font-semibold tracking-[-0.03em]">{t('catalogue')}</h2>
+      <p className="mt-2 text-sm text-[var(--text-secondary)]">Search and filter the full catalogue.</p>
       <form className="mt-3" onSubmit={(event) => { event.preventDefault(); if (searchTimer.current) clearTimeout(searchTimer.current); setSearch(queryInput.trim()) }}>
         <SearchField label={t('search')} placeholder={t('search')} value={queryInput} onChange={changeSearchInput} onClear={clearSearch} clearLabel={t('clearSearch')} />
       </form>
