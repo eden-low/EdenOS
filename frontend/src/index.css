@@ -599,6 +599,13 @@ button:not(:disabled) {
   }
 }
 
+.anime-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.anime-scroll::-webkit-scrollbar { display: none; }
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
