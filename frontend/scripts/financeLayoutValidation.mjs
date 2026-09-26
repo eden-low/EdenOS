@@ -85,7 +85,7 @@ async function signInAndOpenFinance() {
   await waitFor(`document.body?.innerText.includes('Continue as guest') || document.querySelector('h1')?.textContent?.includes('Finance')`, 'authentication or Finance', 300)
   if (await evaluate(`document.body?.innerText.includes('Continue as guest')`)) {
     await clickButton('Continue as guest')
-    await waitFor(`!document.body?.innerText.includes('Continue as guest') && (Boolean(document.querySelector('h1')) || document.body?.innerText.includes('Here is what matters today.'))`, 'authenticated application', 300)
+    await waitFor(`!document.body?.innerText.includes('Open your workspace')`, 'authenticated application', 300)
     await send('Page.navigate', { url: `${baseUrl}/expenses` })
   }
   try {
