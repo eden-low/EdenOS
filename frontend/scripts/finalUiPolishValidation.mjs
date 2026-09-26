@@ -51,7 +51,7 @@ async function waitFor(expression, label, attempts = 300) {
 }
 
 async function clickButton(label) {
-  const clicked = await evaluate(`(() => { const visible = (element) => element.getBoundingClientRect().height > 0 && getComputedStyle(element).visibility !== 'hidden'; const button = Array.from(document.querySelectorAll('button')).find((item) => visible(item) && item.textContent?.trim() === ${JSON.stringify(label)}); button?.click(); return Boolean(button) })()`)
+  const clicked = await evaluate(`(() => { const visible = (element) => element.getBoundingClientRect().height > 0 && getComputedStyle(element).visibility !== 'hidden'; const button = Array.from(document.querySelectorAll('button')).find((item) => visible(item) && (item.textContent?.trim() === ${JSON.stringify(label)} || item.getAttribute('aria-label') === ${JSON.stringify(label)})); button?.click(); return Boolean(button) })()`)
   if (!clicked) throw new Error(`Visible button not found: ${label}`)
 }
 
@@ -82,7 +82,7 @@ async function seedRepresentativeData() {
 
   await send('Page.navigate', { url: `${baseUrl}/exercise` })
   await waitFor(`document.querySelector('h1')?.textContent?.includes('Exercise')`, 'Exercise')
-  await clickButton('Capture workout'); await clickButton('Exercise Text')
+  await clickButton('Capture workout'); await waitFor(`Boolean(document.querySelector('[role="dialog"]'))`, 'capture dialog'); await clickButton('Exercise Text')
   await setControl('What exercise did you do?', 'Running 32 min 5 km', 'textarea')
   await clickButton('Continue'); await waitFor(`document.body?.innerText.includes('Review exercise')`, 'exercise review')
   await clickButton('Confirm exercise'); await waitFor(`!document.querySelector('[role="dialog"]')`, 'exercise saved')
