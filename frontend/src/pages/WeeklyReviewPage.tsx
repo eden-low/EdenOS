@@ -76,5 +76,5 @@ function ReviewCardHeader({ icon, tone, label, title }: { icon: ReactNode; tone:
   return <div className="flex items-start justify-between gap-3"><div><p className="section-label">{label}</p><h3 className="mt-1 font-semibold">{title}</h3></div><span className={`grid size-9 shrink-0 place-items-center rounded-xl ${tones[tone]}`}>{icon}</span></div>
 }
 
-function MoneyStat({ label, amountSen }: { label: string; amountSen: number }) { return <div className="min-w-0 rounded-xl bg-[var(--surface-secondary)] p-2.5"><p className="text-[10px] text-[var(--text-muted)] sm:text-xs">{label}</p><FinancialAmount amountSen={amountSen} className="mt-1 block truncate text-sm font-semibold" /></div> }
+function MoneyStat({ label, amountSen }: { label: string; amountSen: number }) { return <div className="min-w-0 rounded-xl bg-[var(--surface-secondary)] p-2.5"><p className="text-[10px] text-[var(--text-muted)] sm:text-xs">{label}</p><FinancialAmount amountSen={amountSen} className="mt-1 block whitespace-nowrap text-xs font-semibold sm:text-[13px]" /></div> }
 function TextStat({ label, value }: { label: string; value: string }) { return <div className="min-w-0 rounded-xl bg-[var(--surface-secondary)] p-2.5"><p className="text-[10px] text-[var(--text-muted)] sm:text-xs">{label}</p><p className="mt-1 truncate text-sm font-semibold">{value}</p></div> }
