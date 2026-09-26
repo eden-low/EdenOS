@@ -13,21 +13,22 @@ export function DashboardHeader({
   onOpenCommand?: () => void
 }) {
   return (
-    <header className="rounded-[1.5rem] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-soft)] sm:p-7">
-      <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+    <header className="py-2 sm:py-3">
+      <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
+          <p className="section-label">Today</p>
+          <div className="mt-2 inline-flex items-center gap-2 text-sm text-[var(--text-muted)]">
             <CalendarDays aria-hidden="true" size={14} strokeWidth={1.8} />
             {displayDate}
           </div>
-          <h1 className="max-w-3xl text-[clamp(1.9rem,5vw,3.15rem)] font-semibold leading-[1.05] tracking-[-0.05em] text-[var(--text-primary)]">
+          <h1 className="mt-3 max-w-3xl text-[clamp(2rem,5vw,3.35rem)] font-semibold leading-[1.02] tracking-[-0.055em] text-[var(--text-primary)]">
             {greeting}
           </h1>
           <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">Here is what matters today.</p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {onOpenCommand && <Button type="button" variant="secondary" onClick={onOpenCommand}><Search aria-hidden="true" size={17} />Search <span className="hidden text-xs text-[var(--text-muted)] sm:inline">⌘K</span></Button>}
+        <div className="flex flex-col gap-2 sm:flex-row lg:min-w-[22rem]">
+          {onOpenCommand && <Button type="button" variant="secondary" className="min-h-12 flex-1 justify-start px-4 text-[var(--text-secondary)]" onClick={onOpenCommand}><Search aria-hidden="true" size={17} /><span className="flex-1 text-left">Search or run a command</span><span className="hidden rounded-lg border border-[var(--border-subtle)] px-2 py-1 text-[10px] text-[var(--text-muted)] sm:inline">⌘K</span></Button>}
           <CaptureSheet><Button {...triggerPressFeedback} className="press-feedback"><Plus aria-hidden="true" size={18} strokeWidth={2.2} />Capture</Button></CaptureSheet>
         </div>
       </div>
