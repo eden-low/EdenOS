@@ -83,7 +83,7 @@ async function seedRepresentativeData() {
   await send('Page.navigate', { url: `${baseUrl}/exercise` })
   await waitFor(`document.querySelector('h1')?.textContent?.includes('Exercise')`, 'Exercise')
   await clickButton('Capture workout'); await waitFor(`Boolean(document.querySelector('[role="dialog"]'))`, 'capture dialog'); await clickButton('Exercise Text')
-  await setControl('What exercise did you do?', 'Running 32 min 5 km', 'textarea')
+  await setControl('What exercise did you do?', 'Badminton 30 min', 'textarea')
   await clickButton('Continue'); await waitFor(`document.body?.innerText.includes('Review exercise')`, 'exercise review')
   await clickButton('Confirm exercise'); await waitFor(`!document.querySelector('[role="dialog"]')`, 'exercise saved')
 }
