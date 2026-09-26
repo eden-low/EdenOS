@@ -29,6 +29,7 @@ beforeEach(() => {
     expenses: [{ id: 'lunch', title: 'Lunch', category: 'food', amountSen: 2500, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z', source: 'manual' }],
     incomes: [{ id: 'salary', description: 'Salary', category: 'salary', amountSen: 250000, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z' }],
     exerciseRecords: [{ id: 'run', activity: 'Running', durationSeconds: 1800, occurredAt: '2026-09-18T08:00:00.000Z', createdAt: '2026-09-18T08:00:00.000Z', updatedAt: '2026-09-18T08:00:00.000Z', source: 'manual', reportedActiveCaloriesKcal: 240 }],
+    drafts: [], discardDraft: vi.fn(), createExpenseDraft: vi.fn(), updateExpenseDraft: vi.fn(), confirmExpenseDraft: vi.fn(), createExerciseDraft: vi.fn(), updateExerciseDraft: vi.fn(), confirmExerciseDraft: vi.fn(),
     expenseStatus: 'loaded', expenseError: null, incomeStatus: 'loaded', incomeError: null, exerciseStatus: 'loaded', exerciseError: null,
     retryExpenseSubscription, retryIncomeSubscription, retryExerciseSubscription,
   } as unknown as ReturnType<typeof useRecords>)
