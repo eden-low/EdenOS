@@ -1,6 +1,7 @@
 import { firebaseInitialization } from '../lib/firebase'
 import { combineLocalDateTime, toLocalTimeInput } from '../lib/date'
 import type { ReceiptCandidate, ReceiptExtractionResponse } from '../types/receipt'
+import { isExpenseCategory } from '../domain/expense'
 
 export type ReceiptOcrErrorCode =
   | 'auth' | 'unsupported' | 'too-large' | 'invalid' | 'not-configured'
@@ -52,10 +53,12 @@ export async function readReceiptImage(image: Blob, signal?: AbortSignal): Promi
   if (!result || typeof result !== 'object' ||
       !('merchant' in result) || !('amountSen' in result) ||
       !('receiptDate' in result) || !('amountIssue' in result) ||
+      !('category' in result) ||
       (result.merchant !== null && typeof result.merchant !== 'string') ||
       (result.amountSen !== null && (!Number.isSafeInteger(result.amountSen) ||
         typeof result.amountSen !== 'number' || result.amountSen <= 0)) ||
       (result.receiptDate !== null && typeof result.receiptDate !== 'string') ||
+      (result.category !== null && !isExpenseCategory(result.category)) ||
       ![null, 'missing', 'ambiguous'].includes(result.amountIssue as null)) {
     throw new ReceiptOcrError('provider')
   }
@@ -65,6 +68,7 @@ export async function readReceiptImage(image: Blob, signal?: AbortSignal): Promi
     : null
   return {
     title: extracted.merchant ?? '',
+    category: extracted.category ?? undefined,
     amountSen: extracted.amountSen ?? undefined,
     occurredAt: occurredAt ?? undefined,
     amountIssue: extracted.amountIssue ?? undefined,

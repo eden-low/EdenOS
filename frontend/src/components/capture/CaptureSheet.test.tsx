@@ -8,7 +8,7 @@ import type { FitnessScreenshotCandidate } from '../../types/fitnessScreenshot'
 import { CaptureSheet } from './CaptureSheet'
 
 const { readReceiptImage } = vi.hoisted(() => ({
-  readReceiptImage: vi.fn(async (): Promise<ReceiptCandidate> => ({ title: 'STARBUCKS', amountSen: 1590 })),
+  readReceiptImage: vi.fn(async (): Promise<ReceiptCandidate> => ({ title: 'STARBUCKS', amountSen: 1590, category: 'food' })),
 }))
 const { readFitnessScreenshot } = vi.hoisted(() => ({
   readFitnessScreenshot: vi.fn(async (): Promise<FitnessScreenshotCandidate> => ({
@@ -87,6 +87,7 @@ function Harness() {
           ? `${drafts[0].data.activity}:${drafts[0].data.durationSeconds}:${drafts[0].data.source}`
           : ''
     }</output>
+    <output data-testid="draft-category">{drafts[0]?.kind === 'expense' ? drafts[0].data.category : ''}</output>
     <output data-testid="draft-intensity">{drafts[0]?.kind === 'exercise' ? drafts[0].data.intensity ?? 'default' : ''}</output>
   </RecordsContext.Provider>
 }
@@ -347,11 +348,14 @@ describe('Receipt Capture', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:receipt')
 
     fireEvent.change(screen.getByLabelText('Merchant / title'), { target: { value: 'Coffee shop' } })
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'other' } })
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
     expect(screen.getByTestId('draft-data').textContent).toBe('1590:photo:Coffee shop')
+    expect(screen.getByTestId('draft-category').textContent).toBe('other')
     expect(confirmExpenseDraft).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(screen.getByTestId('draft-category').textContent).toBe('other')
     fireEvent.click(screen.getByRole('button', { name: 'Confirm expense' }))
     await waitFor(() => expect(confirmExpenseDraft).toHaveBeenCalledOnce())
   })

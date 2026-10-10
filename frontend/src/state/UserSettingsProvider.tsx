@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { emptyUserSettings, type UserSettings } from '../domain/userSettings'
+import { emptyUserSettings, type BodyMeasurement, type UserSettings } from '../domain/userSettings'
 import { createFirestoreUserSettingsRepository } from '../repositories/firestoreUserSettingsRepository'
 import { UserSettingsContext } from './userSettingsContextDefinition'
 import { useFirebaseAuth } from './useFirebaseAuth'
@@ -10,6 +10,7 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<{ uid: string; settings: UserSettings; status: 'loading' | 'loaded' | 'error' }>(
     { uid, settings: emptyUserSettings, status: 'loading' },
   )
+  const [history, setHistory] = useState<{ uid: string; measurements: BodyMeasurement[] }>({ uid, measurements: [] })
 
   useEffect(() => {
     return repository.subscribe({
@@ -17,6 +18,11 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
       error() { setState({ uid, settings: emptyUserSettings, status: 'error' }) },
     })
   }, [repository, uid])
+
+  useEffect(() => repository.subscribeMeasurements({
+    next(measurements) { setHistory({ uid, measurements }) },
+    error() { setHistory({ uid, measurements: [] }) },
+  }), [repository, uid])
 
   const current = state.uid === uid ? state : { uid, settings: emptyUserSettings, status: 'loading' as const }
   async function saveConfirmed<K extends keyof UserSettings>(field: K, value: UserSettings[K], write: () => Promise<void>) {
@@ -28,9 +34,10 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
   return (
     <UserSettingsContext.Provider value={{
       settings: current.settings,
+      measurements: history.uid === uid ? history.measurements : [],
       status: current.status,
-      saveBodyWeight: (value) => saveConfirmed('bodyWeightKg', value, () => repository.saveBodyWeight(value)),
-      saveHeight: (value) => saveConfirmed('heightCm', value, () => repository.saveHeight(value)),
+      saveBodyWeight: (value, id) => saveConfirmed('bodyWeightKg', value, () => repository.saveBodyWeight(value, id)),
+      saveHeight: (value, id) => saveConfirmed('heightCm', value, () => repository.saveHeight(value, id)),
       saveMonthlyBudget: (value) => saveConfirmed('monthlyBudgetSen', value, () => repository.saveMonthlyBudget(value)),
       saveSavingsGoal: (value) => saveConfirmed('savingsGoalSen', value, () => repository.saveSavingsGoal(value)),
     }}>

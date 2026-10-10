@@ -1,6 +1,8 @@
 import { combineLocalDateTime } from '../src/lib/date'
 import { parseRinggitToSen } from '../src/lib/format'
 import type { ReceiptExtractionResponse } from '../src/types/receipt'
+import type { ExpenseCategory } from '../src/types/records'
+import { receiptCategory } from './receiptCategory'
 
 export interface ReceiptExtractionInput {
   image: Uint8Array
@@ -15,6 +17,7 @@ export interface ValidatedReceiptExtraction {
   merchant: string | null
   amountSen: number | null
   receiptDate: string | null
+  category: ExpenseCategory | null
   amountIssue: 'missing' | 'ambiguous' | null
   usableAmount: boolean
   schemaValid: boolean
@@ -23,7 +26,7 @@ export interface ValidatedReceiptExtraction {
 export type ReceiptExtractionResult = ReceiptExtractionResponse
 
 const blank: ValidatedReceiptExtraction = {
-  merchant: null, amountSen: null, receiptDate: null,
+  merchant: null, amountSen: null, receiptDate: null, category: null,
   amountIssue: 'missing', usableAmount: false, schemaValid: false,
 }
 
@@ -63,6 +66,12 @@ export function validateReceiptExtraction(value: unknown): ValidatedReceiptExtra
     receiptDate = fields.receiptDate
   } else schemaValid = false
 
+  const purchaseContext = fields.purchaseContext === null || fields.purchaseContext === undefined
+    ? null : typeof fields.purchaseContext === 'string' && fields.purchaseContext.length <= 120
+      ? fields.purchaseContext : null
+  if (fields.purchaseContext !== null && fields.purchaseContext !== undefined && purchaseContext === null) schemaValid = false
+  const category = receiptCategory(merchant, purchaseContext, fields.category)
+
   if (fields.dateEvidence !== null &&
       (typeof fields.dateEvidence !== 'string' || fields.dateEvidence.length > 120)) schemaValid = false
   if (fields.amountEvidence !== null &&
@@ -88,7 +97,7 @@ export function validateReceiptExtraction(value: unknown): ValidatedReceiptExtra
     } else amountIssue = null
   } else amountSen = null
 
-  return { merchant, amountSen, receiptDate, amountIssue,
+  return { merchant, amountSen, receiptDate, category, amountIssue,
     usableAmount: amountSen !== null && schemaValid, schemaValid }
 }
 
@@ -118,7 +127,7 @@ export function isRecoverableProviderError(error: unknown): boolean {
 
 function normalized(value: ValidatedReceiptExtraction, fallbackUsed: boolean): ReceiptExtractionResult {
   return { merchant: value.merchant, amountSen: value.amountSen, receiptDate: value.receiptDate,
-    amountIssue: value.amountIssue, fallbackUsed }
+    category: value.category, amountIssue: value.amountIssue, fallbackUsed }
 }
 
 export async function extractReceipt(
@@ -126,29 +135,21 @@ export async function extractReceipt(
   input: ReceiptExtractionInput,
   models: ReceiptModelConfig,
 ): Promise<ReceiptExtractionResult> {
-  let primary = { ...blank }
   try {
-    primary = validateReceiptExtraction(await provider.extract(input, models.primary))
-    if (primary.usableAmount) return normalized(primary, false)
+    return normalized(validateReceiptExtraction(await provider.extract(input, models.primary)), false)
   } catch (error) {
     if (!isRecoverableProviderError(error)) throw error
+    const details = error as { status?: unknown; code?: unknown }
+    console.warn('Receipt extraction switching to fallback model', {
+      status: typeof details.status === 'number' ? details.status : undefined,
+      code: typeof details.code === 'string' && /^[A-Z_]{1,40}$/.test(details.code) ? details.code : undefined,
+    })
   }
 
   try {
-    const fallback = validateReceiptExtraction(await provider.extract(input, models.fallback))
-    if (fallback.usableAmount) return normalized(fallback, true)
-    // Keep independently validated fields from either response, never an uncertain amount.
-    return normalized({ ...fallback,
-      merchant: fallback.merchant ?? primary.merchant,
-      receiptDate: fallback.receiptDate ?? primary.receiptDate,
-      amountSen: null,
-      amountIssue: fallback.amountIssue === 'ambiguous' || primary.amountIssue === 'ambiguous'
-        ? 'ambiguous' : 'missing',
-    }, true)
+    return normalized(validateReceiptExtraction(await provider.extract(input, models.fallback)), true)
   } catch (error) {
     if (!isRecoverableProviderError(error)) throw error
-    if (primary.merchant || primary.receiptDate) return normalized({ ...primary,
-      amountSen: null, amountIssue: primary.amountIssue ?? 'missing' }, true)
     throw new ReceiptExtractionUnavailableError()
   }
 }

@@ -7,7 +7,7 @@ import {
 
 const input = { image: new Uint8Array([1, 2]), mimeType: 'image/png' as const }
 const models = receiptModelConfig({})
-const receipt = {
+  const receipt = {
   merchant: 'ABC Cafe', amountSen: 1270, receiptDate: '2026-09-17',
   amountEvidence: 'GRAND TOTAL RM 12.70', dateEvidence: '17/09/2026',
   ambiguousAmount: false,
@@ -72,6 +72,12 @@ describe('receipt structured validation', () => {
     expect(validateReceiptExtraction({ ...receipt, ambiguousAmount: 'false' }).schemaValid).toBe(false)
     expect(validateReceiptExtraction(null).usableAmount).toBe(false)
   })
+
+  it('keeps missing and invalid AI categories unselected without losing a valid amount', () => {
+    expect(validateReceiptExtraction({ ...receipt, merchant: 'ABC Sdn Bhd', category: null }).category).toBeNull()
+    expect(validateReceiptExtraction({ ...receipt, merchant: 'ABC Sdn Bhd', category: 'personal-care' }))
+      .toMatchObject({ category: null, usableAmount: true })
+  })
 })
 
 describe('two-model receipt router', () => {
@@ -109,10 +115,10 @@ describe('two-model receipt router', () => {
     ['ambiguous amount', { ...receipt, ambiguousAmount: true }],
     ['evidence conflict', { ...receipt, amountSen: 1260 }],
     ['schema failure', { ...receipt, receiptDate: '2026-02-31' }],
-  ])('falls back for %s', async (_name, primary) => {
+  ])('leaves %s for manual correction without another model call', async (_name, primary) => {
     const source = provider(primary, receipt)
-    expect(await extractReceipt(source, input, models)).toMatchObject({ amountSen: 1270, fallbackUsed: true })
-    expect(source.extract).toHaveBeenCalledTimes(2)
+    expect(await extractReceipt(source, input, models)).toMatchObject({ fallbackUsed: false })
+    expect(source.extract).toHaveBeenCalledOnce()
   })
 
   it.each(['merchant', 'receiptDate'])('does not fall back when only %s is missing', async (field) => {
@@ -133,13 +139,13 @@ describe('two-model receipt router', () => {
     expect(source.extract).toHaveBeenCalledTimes(2)
   })
 
-  it('keeps a partial candidate without inventing an amount', async () => {
+  it('keeps a partial candidate without inventing an amount or making another call', async () => {
     const source = provider({ ...receipt, amountSen: null },
       { ...receipt, merchant: null, amountSen: null, receiptDate: null })
     expect(await extractReceipt(source, input, models)).toEqual({
       merchant: 'ABC Cafe', amountSen: null, receiptDate: '2026-09-17',
-      amountIssue: 'missing', fallbackUsed: true,
+      category: 'food', amountIssue: 'missing', fallbackUsed: false,
     })
-    expect(source.extract).toHaveBeenCalledTimes(2)
+    expect(source.extract).toHaveBeenCalledOnce()
   })
 })
