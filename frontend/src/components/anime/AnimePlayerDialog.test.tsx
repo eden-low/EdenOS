@@ -27,6 +27,24 @@ describe('AnimePlayerDialog', () => {
     expect(mock.load).toHaveBeenCalledWith('sample-anime')
   })
 
+  it('uses Escape to exit fullscreen without closing the playback dialog', async () => {
+    const close = vi.fn()
+    render(<AnimePlayerDialog target={target} onClose={close} />)
+    const video = await screen.findByTestId('video')
+    const exitFullscreen = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: video })
+    Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exitFullscreen })
+    try {
+      fireEvent.keyDown(document, { key: 'Escape' })
+      expect(exitFullscreen).toHaveBeenCalledOnce()
+      expect(close).not.toHaveBeenCalled()
+      expect(screen.getByRole('dialog', { name: 'Sample Anime' })).toBeTruthy()
+    } finally {
+      Reflect.deleteProperty(document, 'fullscreenElement')
+      Reflect.deleteProperty(document, 'exitFullscreen')
+    }
+  })
+
   it('marks an episode watched at 90 percent without duplicates', async () => {
     mock.items = [{ externalId: 'sample-anime', currentEpisode: 1, positionSeconds: 0, watchedEpisodes: [1], trackingStatus: 'watching' }]
     render(<AnimePlayerDialog target={target} onClose={vi.fn()} />); await screen.findByTestId('video')

@@ -28,7 +28,7 @@ describe('AnimeVideoPlayer', () => {
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
     hls.supported = true
   })
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => { vi.useRealTimers(); Reflect.deleteProperty(document, 'fullscreenElement'); Reflect.deleteProperty(document, 'exitFullscreen') })
 
   it('uses native playback for MP4', async () => {
     const { container } = render(<AnimeVideoPlayer {...baseProps} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
@@ -111,25 +111,79 @@ describe('AnimeVideoPlayer', () => {
   it('supports episode and playback keyboard shortcuts without hijacking inputs', () => {
     const onPrevious = vi.fn(); const onNext = vi.fn()
     const { container } = render(<AnimeVideoPlayer {...baseProps} onPrevious={onPrevious} onNext={onNext} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
+    ;(container.querySelector('[aria-label="Anime video player"]') as HTMLElement).focus()
     fireEvent.keyDown(window, { key: '[' }); fireEvent.keyDown(window, { key: ']' })
     expect(onPrevious).toHaveBeenCalledOnce(); expect(onNext).toHaveBeenCalledOnce()
     const input = document.createElement('input'); container.append(input); input.focus(); fireEvent.keyDown(input, { key: ']' })
     expect(onNext).toHaveBeenCalledOnce()
   })
 
-  it('supports seek, volume, fullscreen, and restores position after metadata', () => {
-    const requestFullscreen = vi.fn().mockResolvedValue(undefined)
-    const { container } = render(<AnimeVideoPlayer {...baseProps} resumeAt={120} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
+  it('seeks five seconds, clamps boundaries, and keeps progress callbacks on media events', () => {
+    const onProgress = vi.fn()
+    const { container } = render(<AnimeVideoPlayer {...baseProps} onProgress={onProgress} resumeAt={120} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
     const video = container.querySelector('video')!
+    const player = container.querySelector('[aria-label="Anime video player"]') as HTMLElement
+    player.focus()
     Object.defineProperty(video, 'duration', { configurable: true, value: 100 })
-    Object.defineProperty(video, 'requestFullscreen', { configurable: true, value: requestFullscreen })
-    video.currentTime = 20; video.volume = 0.5
+    video.currentTime = 20
     fireEvent.loadedMetadata(video)
     expect(video.currentTime).toBe(99.75)
-    fireEvent.keyDown(window, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(89.75)
+    fireEvent.keyDown(window, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(94.75)
     fireEvent.keyDown(window, { key: 'ArrowRight' }); expect(video.currentTime).toBe(99.75)
+    video.currentTime = 2
+    fireEvent.keyDown(window, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(0)
+    video.currentTime = 98
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); expect(video.currentTime).toBe(100)
+    expect(onProgress).not.toHaveBeenCalled()
+    fireEvent.timeUpdate(video)
+    expect(onProgress).toHaveBeenCalledOnce()
+    expect(onProgress).toHaveBeenCalledWith(100, 100)
+  })
+
+  it('toggles playback and fullscreen and restores player focus after Escape exits fullscreen', () => {
+    const requestFullscreen = vi.fn().mockResolvedValue(undefined)
+    const exitFullscreen = vi.fn().mockResolvedValue(undefined)
+    let fullscreenElement: Element | null = null
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, get: () => fullscreenElement })
+    Object.defineProperty(document, 'exitFullscreen', { configurable: true, value: exitFullscreen })
+    const onPause = vi.fn()
+    const { container } = render(<AnimeVideoPlayer {...baseProps} onPause={onPause} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
+    const video = container.querySelector('video')!
+    const player = container.querySelector('[aria-label="Anime video player"]') as HTMLElement
+    player.focus()
+    Object.defineProperty(video, 'requestFullscreen', { configurable: true, value: requestFullscreen })
+    fireEvent.keyDown(window, { key: ' ' }); expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce()
+    Object.defineProperty(video, 'paused', { configurable: true, value: false })
+    fireEvent.keyDown(window, { key: ' ' }); expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled()
+    fireEvent.pause(video); expect(onPause).toHaveBeenCalledOnce()
+    video.volume = 0.5
     fireEvent.keyDown(window, { key: 'ArrowDown' }); expect(video.volume).toBeCloseTo(0.4)
     fireEvent.keyDown(window, { key: 'ArrowUp' }); expect(video.volume).toBeCloseTo(0.5)
     fireEvent.keyDown(window, { key: 'f' }); expect(requestFullscreen).toHaveBeenCalledOnce()
+    fullscreenElement = video; fireEvent(document, new Event('fullscreenchange'))
+    fireEvent.keyDown(window, { key: 'f' }); expect(exitFullscreen).toHaveBeenCalledOnce()
+    fireEvent.keyDown(window, { key: 'Escape' }); expect(exitFullscreen).toHaveBeenCalledOnce()
+    fullscreenElement = null; fireEvent(document, new Event('fullscreenchange'))
+    expect(document.activeElement).toBe(player)
+  })
+
+  it('does not hijack keys outside the player, while typing, or after unmount', () => {
+    const onPrevious = vi.fn()
+    const { container, unmount, rerender } = render(<AnimeVideoPlayer {...baseProps} onPrevious={onPrevious} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
+    const video = container.querySelector('video')!
+    Object.defineProperty(video, 'duration', { configurable: true, value: 100 })
+    video.currentTime = 20
+    fireEvent.keyDown(window, { key: 'ArrowRight' }); expect(video.currentTime).toBe(20)
+    const player = container.querySelector('[aria-label="Anime video player"]') as HTMLElement
+    player.focus()
+    const input = document.createElement('input'); player.append(input); input.focus()
+    fireEvent.keyDown(input, { key: 'ArrowRight' }); expect(video.currentTime).toBe(20)
+    const editable = document.createElement('div'); editable.setAttribute('contenteditable', 'true'); player.append(editable); editable.focus()
+    fireEvent.keyDown(editable, { key: 'ArrowRight' }); expect(video.currentTime).toBe(20)
+    player.focus(); fireEvent.keyDown(window, { key: 'ArrowRight', ctrlKey: true }); expect(video.currentTime).toBe(20)
+    rerender(<AnimeVideoPlayer {...baseProps} onPrevious={onPrevious} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
+    fireEvent.keyDown(window, { key: '[' }); expect(onPrevious).toHaveBeenCalledOnce()
+    unmount()
+    fireEvent.keyDown(window, { key: '[' }); expect(onPrevious).toHaveBeenCalledOnce()
   })
 })
