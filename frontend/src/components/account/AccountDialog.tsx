@@ -9,6 +9,7 @@ import { InlineError } from '../ui/InlineError'
 import { triggerPressFeedback } from '../ui/pressFeedback'
 import { ThemeSettings } from './ThemeSettings'
 import { PrivacyLockSettings } from './PrivacyLockSettings'
+import { NetworkSpeedTest } from './NetworkSpeedTest'
 
 export function AccountDialog({ children }: { children: ReactNode }) {
   const { isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle } = useFirebaseAuth()
@@ -118,6 +119,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
 
         <ThemeSettings />
         <PrivacyLockSettings />
+        <NetworkSpeedTest />
 
         {isConflict ? (
           <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-[var(--border-strong)] bg-[var(--accent-teal-wash)] p-4 text-sm leading-6">

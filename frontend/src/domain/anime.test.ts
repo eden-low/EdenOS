@@ -36,6 +36,11 @@ describe('Anime domain', () => {
     expect(parseAnimeDetail(unsafe, 'sample-anime')).toBeNull()
   })
 
+  it('does not expose unsupported embedded players as keyboard-controllable sources', () => {
+    const embedded = animeDetail({ episodes: [{ episodeNumber: 1, sources: [{ label: 'Embed', url: 'https://media.example/embed', format: 'iframe' as 'mp4' }] }] })
+    expect(parseAnimeDetail(embedded, 'sample-anime')).toBeNull()
+  })
+
   it('rejects malformed details and duplicate episode numbers', () => {
     expect(parseAnimeDetail({ schemaVersion: 1 }, 'sample-anime')).toBeNull()
     const duplicate = animeDetail({ episodes: [animeDetail().episodes[0], animeDetail().episodes[0]] })

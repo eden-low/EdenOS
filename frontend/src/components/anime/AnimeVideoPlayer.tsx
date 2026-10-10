@@ -18,6 +18,9 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
 }) {
   const t = useAnimeText()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const playerRef = useRef<HTMLDivElement>(null)
+  const focusBeforeFullscreenRef = useRef<HTMLElement | null>(null)
+  const playerFullscreenRef = useRef(false)
   const failedRef = useRef(false)
   const activeRef = useRef(false)
   const callbacksRef = useRef({ onReady, onSourceFailure })
@@ -101,16 +104,37 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
 
   useEffect(() => {
     function handleKey(event: KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey) return
       const target = event.target
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return
+      if (target instanceof Element && (target.closest('input, textarea, select, [contenteditable], [role="dialog"]:not(.anime-player-dialog)') || (target instanceof HTMLElement && target.isContentEditable))) return
       const video = videoRef.current
-      if (!video) return
-      if (animePlayerShortcuts.toggle.includes(event.key as ' ' & 'k')) { event.preventDefault(); void (video.paused ? video.play() : Promise.resolve(video.pause())) }
-      if (event.key === 'ArrowLeft') { event.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 10) }
-      if (event.key === 'ArrowRight') { event.preventDefault(); video.currentTime = Math.min(video.duration || Infinity, video.currentTime + 10) }
+      const player = playerRef.current
+      if (!video || !player || !(player.contains(document.activeElement) || document.fullscreenElement === video)) return
+      if (animePlayerShortcuts.toggle.includes(event.key as ' ' & 'k')) {
+        if (event.repeat) return
+        event.preventDefault()
+        if (video.paused) void video.play()
+        else video.pause()
+      }
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const range = video.seekable
+        const start = range.length ? range.start(0) : 0
+        const end = range.length ? range.end(range.length - 1) : video.duration
+        if (Number.isFinite(video.currentTime) && Number.isFinite(end)) {
+          event.preventDefault()
+          video.currentTime = Math.min(end, Math.max(start, video.currentTime + (event.key === 'ArrowLeft' ? -5 : 5)))
+        }
+      }
       if (event.key === 'ArrowDown') { event.preventDefault(); video.volume = Math.max(0, video.volume - 0.1) }
       if (event.key === 'ArrowUp') { event.preventDefault(); video.volume = Math.min(1, video.volume + 0.1) }
-      if (event.key.toLocaleLowerCase() === 'f') { event.preventDefault(); void video.requestFullscreen?.() }
+      if (event.key.toLowerCase() === 'f' && !event.repeat) {
+        if (document.fullscreenElement === video) { event.preventDefault(); void document.exitFullscreen?.() }
+        else if (!document.fullscreenElement && video.requestFullscreen) {
+          event.preventDefault()
+          focusBeforeFullscreenRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : player
+          void video.requestFullscreen()
+        }
+      }
       if (event.key === '[') { event.preventDefault(); onPrevious() }
       if (event.key === ']') { event.preventDefault(); onNext() }
     }
@@ -118,7 +142,25 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
     return () => window.removeEventListener('keydown', handleKey)
   }, [onNext, onPrevious])
 
-  return <div className="relative aspect-video overflow-hidden rounded-xl bg-black">
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const video = videoRef.current
+      if (video && document.fullscreenElement === video) {
+        playerFullscreenRef.current = true
+        focusBeforeFullscreenRef.current ??= document.activeElement instanceof HTMLElement ? document.activeElement : playerRef.current
+      } else if (playerFullscreenRef.current) {
+        playerFullscreenRef.current = false
+        const focusTarget = focusBeforeFullscreenRef.current
+        focusBeforeFullscreenRef.current = null
+        if (focusTarget?.isConnected) focusTarget.focus({ preventScroll: true })
+        else playerRef.current?.focus({ preventScroll: true })
+      }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  return <div ref={playerRef} tabIndex={0} aria-label="Anime video player" className="relative aspect-video overflow-hidden rounded-xl bg-black outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]">
     <video
       ref={videoRef}
       controls
