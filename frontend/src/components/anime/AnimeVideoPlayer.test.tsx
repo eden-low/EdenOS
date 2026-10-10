@@ -128,16 +128,64 @@ describe('AnimeVideoPlayer', () => {
     video.currentTime = 20
     fireEvent.loadedMetadata(video)
     expect(video.currentTime).toBe(99.75)
-    fireEvent.keyDown(window, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(94.75)
-    fireEvent.keyDown(window, { key: 'ArrowRight' }); expect(video.currentTime).toBe(99.75)
+    fireEvent.keyDown(video, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(94.75)
+    fireEvent.keyUp(video, { key: 'ArrowLeft' })
+    fireEvent.keyDown(video, { key: 'ArrowRight' }); expect(video.currentTime).toBe(99.75)
+    fireEvent.keyUp(video, { key: 'ArrowRight' })
     video.currentTime = 2
-    fireEvent.keyDown(window, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(0)
+    fireEvent.keyDown(video, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(0)
+    fireEvent.keyUp(video, { key: 'ArrowLeft' })
     video.currentTime = 98
-    fireEvent.keyDown(window, { key: 'ArrowRight' }); expect(video.currentTime).toBe(100)
+    fireEvent.keyDown(video, { key: 'ArrowRight' }); expect(video.currentTime).toBe(100)
+    fireEvent.keyUp(video, { key: 'ArrowRight' })
     expect(onProgress).not.toHaveBeenCalled()
     fireEvent.timeUpdate(video)
     expect(onProgress).toHaveBeenCalledOnce()
     expect(onProgress).toHaveBeenCalledWith(100, 100)
+  })
+
+  it('owns Space keydown and keyup before native controls and toggles only once per press', () => {
+    const source = { label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' as const }
+    const { container, rerender } = render(<AnimeVideoPlayer {...baseProps} source={source} />)
+    const video = container.querySelector('video')!
+    let paused = false
+    Object.defineProperty(video, 'paused', { configurable: true, get: () => paused })
+    const pause = vi.spyOn(video, 'pause').mockImplementation(() => { paused = true })
+    const play = vi.spyOn(video, 'play').mockImplementation(() => { paused = false; return Promise.resolve() })
+    const nativeDown = vi.fn(); const nativeUp = vi.fn()
+    video.addEventListener('keydown', nativeDown); video.addEventListener('keyup', nativeUp)
+    ;(container.querySelector('[aria-label="Anime video player"]') as HTMLElement).focus()
+
+    fireEvent.keyDown(video, { key: ' ' })
+    expect(pause).toHaveBeenCalledOnce(); expect(paused).toBe(true)
+    rerender(<AnimeVideoPlayer {...baseProps} onNext={vi.fn()} source={source} />)
+    fireEvent.keyDown(video, { key: ' ', repeat: true })
+    fireEvent.keyDown(video, { key: ' ' })
+    expect(pause).toHaveBeenCalledOnce(); expect(play).not.toHaveBeenCalled()
+    fireEvent.keyUp(video, { key: ' ' })
+    expect(paused).toBe(true)
+    fireEvent.keyDown(video, { key: ' ' })
+    expect(play).toHaveBeenCalledOnce(); expect(paused).toBe(false)
+    fireEvent.keyUp(video, { key: ' ' })
+    expect(paused).toBe(false)
+    expect(nativeDown).not.toHaveBeenCalled(); expect(nativeUp).not.toHaveBeenCalled()
+  })
+
+  it('owns arrow keys before native controls and ignores held keydowns and keyup', () => {
+    const { container } = render(<AnimeVideoPlayer {...baseProps} source={{ label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' }} />)
+    const video = container.querySelector('video')!
+    Object.defineProperty(video, 'duration', { configurable: true, value: 100 })
+    video.currentTime = 50
+    ;(container.querySelector('[aria-label="Anime video player"]') as HTMLElement).focus()
+    const nativeDown = vi.fn(); const nativeUp = vi.fn()
+    video.addEventListener('keydown', nativeDown); video.addEventListener('keyup', nativeUp)
+    fireEvent.keyDown(video, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(45)
+    fireEvent.keyDown(video, { key: 'ArrowLeft', repeat: true })
+    fireEvent.keyDown(video, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(45)
+    fireEvent.keyUp(video, { key: 'ArrowLeft' }); expect(video.currentTime).toBe(45)
+    fireEvent.keyDown(video, { key: 'ArrowRight' }); expect(video.currentTime).toBe(50)
+    fireEvent.keyUp(video, { key: 'ArrowRight' }); expect(video.currentTime).toBe(50)
+    expect(nativeDown).not.toHaveBeenCalled(); expect(nativeUp).not.toHaveBeenCalled()
   })
 
   it('toggles playback and fullscreen and restores player focus after Escape exits fullscreen', () => {
@@ -153,15 +201,19 @@ describe('AnimeVideoPlayer', () => {
     player.focus()
     Object.defineProperty(video, 'requestFullscreen', { configurable: true, value: requestFullscreen })
     fireEvent.keyDown(window, { key: ' ' }); expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce()
+    fireEvent.keyUp(window, { key: ' ' })
     Object.defineProperty(video, 'paused', { configurable: true, value: false })
     fireEvent.keyDown(window, { key: ' ' }); expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled()
+    fireEvent.keyUp(window, { key: ' ' })
     fireEvent.pause(video); expect(onPause).toHaveBeenCalledOnce()
     video.volume = 0.5
     fireEvent.keyDown(window, { key: 'ArrowDown' }); expect(video.volume).toBeCloseTo(0.4)
     fireEvent.keyDown(window, { key: 'ArrowUp' }); expect(video.volume).toBeCloseTo(0.5)
     fireEvent.keyDown(window, { key: 'f' }); expect(requestFullscreen).toHaveBeenCalledOnce()
+    fireEvent.keyUp(window, { key: 'f' })
     fullscreenElement = video; fireEvent(document, new Event('fullscreenchange'))
     fireEvent.keyDown(window, { key: 'f' }); expect(exitFullscreen).toHaveBeenCalledOnce()
+    fireEvent.keyUp(window, { key: 'f' })
     fireEvent.keyDown(window, { key: 'Escape' }); expect(exitFullscreen).toHaveBeenCalledOnce()
     fullscreenElement = null; fireEvent(document, new Event('fullscreenchange'))
     expect(document.activeElement).toBe(player)
@@ -178,6 +230,8 @@ describe('AnimeVideoPlayer', () => {
     player.focus()
     const input = document.createElement('input'); player.append(input); input.focus()
     fireEvent.keyDown(input, { key: 'ArrowRight' }); expect(video.currentTime).toBe(20)
+    const button = document.createElement('button'); player.append(button); button.focus()
+    fireEvent.keyDown(button, { key: ' ' }); expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled()
     const editable = document.createElement('div'); editable.setAttribute('contenteditable', 'true'); player.append(editable); editable.focus()
     fireEvent.keyDown(editable, { key: 'ArrowRight' }); expect(video.currentTime).toBe(20)
     player.focus(); fireEvent.keyDown(window, { key: 'ArrowRight', ctrlKey: true }); expect(video.currentTime).toBe(20)
@@ -185,5 +239,18 @@ describe('AnimeVideoPlayer', () => {
     fireEvent.keyDown(window, { key: '[' }); expect(onPrevious).toHaveBeenCalledOnce()
     unmount()
     fireEvent.keyDown(window, { key: '[' }); expect(onPrevious).toHaveBeenCalledOnce()
+  })
+
+  it('does not retain duplicate keyboard listeners after remount', () => {
+    const source = { label: 'MP4', url: 'https://media.example/a.mp4', format: 'mp4' as const }
+    const first = render(<AnimeVideoPlayer {...baseProps} source={source} />)
+    first.unmount()
+    const second = render(<AnimeVideoPlayer {...baseProps} source={source} />)
+    const video = second.container.querySelector('video')!
+    Object.defineProperty(video, 'duration', { configurable: true, value: 100 })
+    video.currentTime = 20
+    ;(second.container.querySelector('[aria-label="Anime video player"]') as HTMLElement).focus()
+    fireEvent.keyDown(video, { key: 'ArrowRight' })
+    expect(video.currentTime).toBe(25)
   })
 })

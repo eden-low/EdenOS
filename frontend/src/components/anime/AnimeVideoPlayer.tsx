@@ -5,6 +5,7 @@ import { animePlayerShortcuts } from '../../domain/animePlayerShortcuts'
 import { animeSourceStartupTimeoutMs } from '../../domain/anime'
 
 export type AnimeSourceFailureReason = 'startup-timeout' | 'media-error' | 'hls-fatal' | 'unsupported'
+const shortcutKeys = new Set<string>(Object.values(animePlayerShortcuts).flat())
 
 export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrevious, onNext, onReady, onSourceFailure }: {
   source: AnimeEpisodeSource
@@ -21,11 +22,12 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
   const playerRef = useRef<HTMLDivElement>(null)
   const focusBeforeFullscreenRef = useRef<HTMLElement | null>(null)
   const playerFullscreenRef = useRef(false)
+  const pressedKeysRef = useRef(new Set<string>())
   const failedRef = useRef(false)
   const activeRef = useRef(false)
-  const callbacksRef = useRef({ onReady, onSourceFailure })
+  const callbacksRef = useRef({ onReady, onSourceFailure, onPrevious, onNext })
   const [error, setError] = useState<string | null>(null)
-  useEffect(() => { callbacksRef.current = { onReady, onSourceFailure } }, [onReady, onSourceFailure])
+  useEffect(() => { callbacksRef.current = { onReady, onSourceFailure, onPrevious, onNext } }, [onReady, onSourceFailure, onPrevious, onNext])
 
   useEffect(() => {
     const video = videoRef.current
@@ -103,44 +105,74 @@ export function AnimeVideoPlayer({ source, resumeAt, onProgress, onPause, onPrev
   }, [source, t])
 
   useEffect(() => {
-    function handleKey(event: KeyboardEvent) {
-      if (event.altKey || event.ctrlKey || event.metaKey) return
-      const target = event.target
-      if (target instanceof Element && (target.closest('input, textarea, select, [contenteditable], [role="dialog"]:not(.anime-player-dialog)') || (target instanceof HTMLElement && target.isContentEditable))) return
+    const pressedKeys = pressedKeysRef.current
+    function isInteractiveTarget(target: EventTarget | null) {
+      return target instanceof Element && Boolean(target.closest('input, textarea, select, button, a, summary, [contenteditable], [role="button"], [role="dialog"]:not(.anime-player-dialog)') || (target instanceof HTMLElement && target.isContentEditable))
+    }
+    function shortcutKey(event: KeyboardEvent) {
+      return event.key === 'F' ? 'f' : event.key === 'K' ? 'k' : event.key
+    }
+    function isPlayerTarget(event: KeyboardEvent) {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing) return false
+      if (isInteractiveTarget(event.target)) return false
       const video = videoRef.current
       const player = playerRef.current
-      if (!video || !player || !(player.contains(document.activeElement) || document.fullscreenElement === video)) return
-      if (animePlayerShortcuts.toggle.includes(event.key as ' ' & 'k')) {
-        if (event.repeat) return
-        event.preventDefault()
+      return Boolean(video && player && (player.contains(document.activeElement) || document.fullscreenElement === video))
+    }
+    function handleKey(event: KeyboardEvent) {
+      const key = shortcutKey(event)
+      if (!shortcutKeys.has(key) || !isPlayerTarget(event)) return
+      const video = videoRef.current
+      const player = playerRef.current
+      if (!video || !player) return
+      // Capture before the native video controls see the event. Chromium handles
+      // arrows on keydown and Space on keyup, even when a bubble listener cancels keydown.
+      event.preventDefault()
+      event.stopPropagation()
+      if (event.repeat || pressedKeys.has(key)) { pressedKeys.add(key); return }
+      pressedKeys.add(key)
+      if (key === ' ' || key === 'k') {
         if (video.paused) void video.play()
         else video.pause()
       }
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      if (key === 'ArrowLeft' || key === 'ArrowRight') {
         const range = video.seekable
         const start = range.length ? range.start(0) : 0
         const end = range.length ? range.end(range.length - 1) : video.duration
         if (Number.isFinite(video.currentTime) && Number.isFinite(end)) {
-          event.preventDefault()
-          video.currentTime = Math.min(end, Math.max(start, video.currentTime + (event.key === 'ArrowLeft' ? -5 : 5)))
+          video.currentTime = Math.min(end, Math.max(start, video.currentTime + (key === 'ArrowLeft' ? -5 : 5)))
         }
       }
-      if (event.key === 'ArrowDown') { event.preventDefault(); video.volume = Math.max(0, video.volume - 0.1) }
-      if (event.key === 'ArrowUp') { event.preventDefault(); video.volume = Math.min(1, video.volume + 0.1) }
-      if (event.key.toLowerCase() === 'f' && !event.repeat) {
-        if (document.fullscreenElement === video) { event.preventDefault(); void document.exitFullscreen?.() }
+      if (key === 'ArrowDown') video.volume = Math.max(0, video.volume - 0.1)
+      if (key === 'ArrowUp') video.volume = Math.min(1, video.volume + 0.1)
+      if (key === 'f') {
+        if (document.fullscreenElement === video) void document.exitFullscreen?.()
         else if (!document.fullscreenElement && video.requestFullscreen) {
-          event.preventDefault()
           focusBeforeFullscreenRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : player
           void video.requestFullscreen()
         }
       }
-      if (event.key === '[') { event.preventDefault(); onPrevious() }
-      if (event.key === ']') { event.preventDefault(); onNext() }
+      if (key === '[') callbacksRef.current.onPrevious()
+      if (key === ']') callbacksRef.current.onNext()
     }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [onNext, onPrevious])
+    function handleKeyUp(event: KeyboardEvent) {
+      const key = shortcutKey(event)
+      if (!pressedKeys.delete(key) || isInteractiveTarget(event.target)) return
+      // Native controls may act on keyup after our keydown action.
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    function clearPressedKeys() { pressedKeys.clear() }
+    window.addEventListener('keydown', handleKey, true)
+    window.addEventListener('keyup', handleKeyUp, true)
+    window.addEventListener('blur', clearPressedKeys)
+    return () => {
+      window.removeEventListener('keydown', handleKey, true)
+      window.removeEventListener('keyup', handleKeyUp, true)
+      window.removeEventListener('blur', clearPressedKeys)
+      pressedKeys.clear()
+    }
+  }, [])
 
   useEffect(() => {
     function handleFullscreenChange() {
