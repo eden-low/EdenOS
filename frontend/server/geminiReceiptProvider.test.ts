@@ -28,7 +28,8 @@ describe('Gemini receipt adapter', () => {
         inlineData: { mimeType: 'image/png', data: 'AQID' },
       })]),
       config: expect.objectContaining({ responseMimeType: 'application/json',
-        responseJsonSchema: expect.objectContaining({ type: 'OBJECT' }) }),
+        responseJsonSchema: expect.objectContaining({ type: 'OBJECT',
+          required: expect.arrayContaining(['category', 'purchaseContext']) }) }),
     }))
   })
 

@@ -5,6 +5,13 @@ export interface UserSettings {
   savingsGoalSen: number | null
 }
 
+export interface BodyMeasurement {
+  id: string
+  kind: 'weight' | 'height'
+  value: number
+  recordedAt: string
+}
+
 export const emptyUserSettings: UserSettings = {
   bodyWeightKg: null,
   heightCm: null,

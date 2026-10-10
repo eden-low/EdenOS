@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing'
-import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore'
 
 const rules = readFileSync(new URL('../../firestore.rules', import.meta.url), 'utf8')
 const environment = await initializeTestEnvironment({ projectId: 'demo-edenos-rules', firestore: { rules } })
@@ -38,6 +38,25 @@ try {
   await assertFails(setDoc(own, { monthlyBudgetSen: 1.5, updatedAt: serverTimestamp() }, { merge: true }))
   await assertFails(setDoc(own, { savingsGoalSen: -1, updatedAt: serverTimestamp() }, { merge: true }))
   await assertFails(setDoc(own, { admin: true, updatedAt: serverTimestamp() }, { merge: true }))
+
+  const measurementPath = 'users/alice/bodyMeasurements/11111111-1111-4111-8111-111111111111'
+  const measurement = doc(alice, measurementPath)
+  await assertSucceeds(setDoc(measurement, { kind: 'weight', value: 68.5, recordedAt: serverTimestamp() }))
+  const newerMeasurement = doc(alice, 'users/alice/bodyMeasurements/55555555-5555-4555-8555-555555555555')
+  await assertSucceeds(setDoc(newerMeasurement, { kind: 'weight', value: 68.5, recordedAt: serverTimestamp() }))
+  const chronological = await getDocs(query(collection(alice, 'users/alice/bodyMeasurements'), orderBy('recordedAt', 'desc')))
+  assert.equal(chronological.docs[0].id, newerMeasurement.id)
+  await assertSucceeds(getDoc(measurement))
+  await assertSucceeds(getDocs(collection(anotherAliceDevice, 'users/alice/bodyMeasurements')))
+  await assertFails(getDoc(doc(bob, measurementPath)))
+  await assertFails(setDoc(doc(bob, 'users/alice/bodyMeasurements/22222222-2222-4222-8222-222222222222'),
+    { kind: 'height', value: 170, recordedAt: serverTimestamp() }))
+  await assertFails(updateDoc(measurement, { value: 69 }))
+  await assertFails(deleteDoc(measurement))
+  await assertFails(setDoc(doc(alice, 'users/alice/bodyMeasurements/33333333-3333-4333-8333-333333333333'),
+    { kind: 'weight', value: 0, recordedAt: serverTimestamp() }))
+  await assertFails(setDoc(doc(alice, 'users/alice/bodyMeasurements/44444444-4444-4444-8444-444444444444'),
+    { kind: 'height', value: 175.5, recordedAt: serverTimestamp() }))
 
   const exercise = {
     activity: 'Badminton', durationSeconds: 1800, source: 'text',
@@ -162,7 +181,7 @@ try {
   await assertFails(getDocs(collection(alice, 'users/alice/weeklyReviews')))
   await assertFails(setDoc(doc(bob, 'users/alice/weeklyReviews/2026-09-21'), review))
   await assertFails(setDoc(doc(alice, 'users/alice/weeklyReviews/too-long'), { ...review, wentWell: 'x'.repeat(2001) }))
-  process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, goals, budgets, allocations, Weekly Reviews, and settings rules passed.\n')
+  process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, goals, budgets, allocations, Weekly Reviews, settings, and body measurements rules passed.\n')
 } finally {
   await environment.cleanup()
 }

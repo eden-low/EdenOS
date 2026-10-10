@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from '@google/genai'
 import type { ReceiptExtractionInput, ReceiptExtractionProvider } from './receiptExtraction'
 
-const instruction = `Read this purchase receipt image. Return only the merchant, final amount actually due or paid in integer Malaysian sen, and receipt date (YYYY-MM-DD). RM 12.70 is 1270 sen. Do not use subtotal, tax, cash tendered, change, or discount as the total. Do not extract line items, card numbers, or receipt IDs. If a field cannot be determined reliably, return null. If multiple final totals cannot be distinguished, set ambiguousAmount true and amountSen null. Give only short image text for amountEvidence and dateEvidence; no explanation.`
+const instruction = `Read this purchase receipt image. Return the merchant, final amount actually due or paid in integer Malaysian sen, receipt date (YYYY-MM-DD), and the best expense category. RM 12.70 is 1270 sen. Do not use subtotal, tax, cash tendered, change, or discount as the total. Do not extract card numbers or receipt IDs. Choose category only from food, transport, shopping, entertainment, housing, health, education, other. Use merchant, purchased items, services, and context: restaurants and groceries are food; petrol is transport; pharmacies are health; haircuts and barbershops are other. Return null category when the purchase type is unclear. Give a short purchaseContext describing the dominant items or service, and short image text for amountEvidence and dateEvidence; no explanation. If a field cannot be determined reliably, return null. If multiple final totals cannot be distinguished, set ambiguousAmount true and amountSen null.`
 
 const nullableString = { anyOf: [{ type: Type.STRING }, { type: Type.NULL }] }
 const schema = {
@@ -10,12 +10,14 @@ const schema = {
     merchant: nullableString,
     amountSen: { anyOf: [{ type: Type.INTEGER }, { type: Type.NULL }] },
     receiptDate: nullableString,
+    category: { anyOf: [{ type: Type.STRING, enum: ['food', 'transport', 'shopping', 'entertainment', 'housing', 'health', 'education', 'other'] }, { type: Type.NULL }] },
+    purchaseContext: nullableString,
     amountEvidence: nullableString,
     dateEvidence: nullableString,
     ambiguousAmount: { type: Type.BOOLEAN },
   },
-  required: ['merchant', 'amountSen', 'receiptDate', 'amountEvidence', 'dateEvidence', 'ambiguousAmount'],
-  propertyOrdering: ['merchant', 'amountSen', 'receiptDate', 'amountEvidence', 'dateEvidence', 'ambiguousAmount'],
+  required: ['merchant', 'amountSen', 'receiptDate', 'category', 'purchaseContext', 'amountEvidence', 'dateEvidence', 'ambiguousAmount'],
+  propertyOrdering: ['merchant', 'amountSen', 'receiptDate', 'category', 'purchaseContext', 'amountEvidence', 'dateEvidence', 'ambiguousAmount'],
 }
 
 export function createGeminiReceiptProvider(apiKey: string): ReceiptExtractionProvider {
