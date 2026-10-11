@@ -49,4 +49,27 @@ describe('Expense form conversion', () => {
       amountSen: 1251, note: undefined, source: 'text',
     }))
   })
+
+  it('requires a category for an uncertain receipt and saves a manual override', () => {
+    const onSubmit = vi.fn()
+    render(<ExpenseForm receiptCandidate={{ title: 'Unknown Shop', amountSen: 1200, occurredAt }}
+      submitLabel="Review" onSubmit={onSubmit} onCancel={vi.fn()} />)
+    expect((screen.getByLabelText('Category') as HTMLSelectElement).value).toBe('')
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(screen.getByText('Choose a category.')).toBeTruthy()
+    setInput('Category', 'other')
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ category: 'other', source: 'photo' }))
+  })
+
+  it('preselects a classified receipt category but keeps it editable', () => {
+    const onSubmit = vi.fn()
+    render(<ExpenseForm receiptCandidate={{ title: 'Petronas', category: 'transport', amountSen: 4500, occurredAt }}
+      submitLabel="Review" onSubmit={onSubmit} onCancel={vi.fn()} />)
+    expect((screen.getByLabelText('Category') as HTMLSelectElement).value).toBe('transport')
+    setInput('Category', 'other')
+    fireEvent.click(screen.getByRole('button', { name: 'Review' }))
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ category: 'other' }))
+  })
 })

@@ -135,13 +135,15 @@ For Netlify, add the same six variables under **Site configuration > Environment
 
 Receipt Capture sends a transient image to `/.netlify/functions/receipt-ocr`. The Netlify Function is in `frontend/netlify/functions/`; it verifies the user's Firebase ID token, then uses Gemini structured multimodal extraction. The returned fields are validated before becoming an editable Expense candidate. Only the existing Review and Confirm flow can save an Expense. Ordinary `npm run dev` serves only Vite, so use Netlify Dev when testing this endpoint locally.
 
+Receipt extraction suggests an existing Expense category from the merchant and dominant purchase context. Recognizable restaurants, grocers, petrol stations, pharmacies, and barbershops are checked against that context before accepting the model's category. An unknown or conflicting category stays unselected until the user chooses one; manual Expense entry retains its usual Food default. The user can change every suggested category before Review and Confirm.
+
 For the intended Netlify deploy context, an operator must set these **Functions** environment variables:
 
 1. `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON`: the Firebase project's server service-account JSON, with `project_id`, `client_email`, and `private_key`, for Firebase Admin ID-token verification only.
 2. `GEMINI_API_KEY`: server-side Gemini API key for receipt extraction.
 3. Optionally set `RECEIPT_AI_PROVIDER=gemini`, `RECEIPT_GEMINI_PRIMARY_MODEL=gemini-3.6-flash`, and `RECEIPT_GEMINI_FALLBACK_MODEL=gemini-2.5-flash`. These are the pinned code defaults; no latest-model alias is used. Model changes require a separate regression evaluation.
 
-Keep both credentials out of `VITE_*`, Git, and browser storage. Once Firebase Admin verification is configured, the endpoint safely reports `not-configured` if the Gemini key is absent. The primary model falls back to the secondary model once for uncertain amounts or recoverable availability errors; fallback is best effort and does not guarantee separate quota. Uploaded files are limited to JPEG, PNG, and WebP. Large phone photos are compressed in browser memory to fit the Netlify Function's binary payload limit; an image that remains too large is rejected. EdenOS does not persist the image in Storage, Firestore, localStorage, IndexedDB, or the function filesystem. Preview object URLs are revoked when replaced, removed, or closed. Gemini's provider-side data handling and retention depend on the applicable Gemini API tier and Google policy; EdenOS cannot control that retention.
+Keep both credentials out of `VITE_*`, Git, and browser storage. Once Firebase Admin verification is configured, the endpoint safely reports `not-configured` if the Gemini key is absent. The primary model falls back to the secondary model at most once for quota, temporary provider failure, or model unavailability. An uncertain extraction goes directly to editable review without another model call. Fallback is logged without receipt contents or credentials and does not guarantee separate quota. Uploaded files are limited to JPEG, PNG, and WebP. Large phone photos are compressed in browser memory to fit the Netlify Function's binary payload limit; an image that remains too large is rejected. EdenOS does not persist the image in Storage, Firestore, localStorage, IndexedDB, or the function filesystem. Preview object URLs are revoked when replaced, removed, or closed. Gemini's provider-side data handling and retention depend on the applicable Gemini API tier and Google policy; EdenOS cannot control that retention.
 
 ## Validation and production build
 
@@ -153,6 +155,15 @@ monthly spending limit in integer sen), and `savingsGoalSen` (one target amount 
 integer sen, with no deadline or progress tracking). The document has a server
 `updatedAt` timestamp. The same UID owns settings and records, including for a
 guest account that is later linked to Google.
+
+Body Metrics preserves the current weight and height in this settings document. Each
+manual measurement also creates one immutable record at
+`users/{uid}/bodyMeasurements/{measurementId}` with `kind`, `value`, and a server
+`recordedAt` timestamp. The settings update and history creation share one Firestore
+transaction. Repeating the same submission ID does not create another record.
+Existing settings values remain visible without a fabricated historical date or
+backfill. The new collection is readable and creatable only by its owner; prior
+settings writes remain valid under the expanded rules.
 
 Estimated Calories are derived from the current weight and Exercise record; kcal
 is never written to Firestore. The formula is `MET × 3.5 × kg / 200 × minutes`.

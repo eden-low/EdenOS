@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { parseBodyWeightKg } from '../../domain/userSettings'
 import { useUserSettings } from '../../state/useUserSettings'
 import { Button } from '../ui/button'
@@ -10,28 +10,35 @@ export function BodyWeightSettings() {
   const [input, setInput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
+  const measurementId = useRef<string | null>(null)
 
   function begin() {
     setInput(settings.bodyWeightKg === null ? '' : String(settings.bodyWeightKg))
     setError(null)
     setEditing(true)
+    measurementId.current = crypto.randomUUID()
   }
 
   async function save(event: FormEvent) {
     event.preventDefault()
+    if (savingRef.current) return
     const weight = parseBodyWeightKg(input)
     if (weight === null) {
       setError('Enter a body weight from 20 to 500 kg, to one decimal place.')
       return
     }
+    savingRef.current = true
     setSaving(true)
     setError(null)
     try {
-      await saveBodyWeight(weight)
+      await saveBodyWeight(weight, measurementId.current ?? undefined)
+      measurementId.current = null
       setEditing(false)
     } catch {
       setError('Could not save body weight. Try again.')
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }
@@ -47,7 +54,7 @@ export function BodyWeightSettings() {
             onChange={(event) => setInput(event.target.value)} aria-invalid={Boolean(error)} autoFocus />
           {error && <InlineError message={error} />}
           <div className="mt-4 flex flex-wrap justify-end gap-2">
-            <Button type="button" variant="ghost" disabled={saving} onClick={() => { setEditing(false); setError(null) }}>Cancel</Button>
+            <Button type="button" variant="ghost" disabled={saving} onClick={() => { setEditing(false); setError(null); measurementId.current = null }}>Cancel</Button>
             <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save weight'}</Button>
           </div>
         </form>

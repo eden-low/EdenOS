@@ -304,6 +304,25 @@ service cloud.firestore {
             && request.resource.data.savingsGoalSen <= 9007199254740991));
     }
 
+    match /users/{userId}/bodyMeasurements/{measurementId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && measurementId.matches('^[0-9a-fA-F-]{36}$')
+        && request.resource.data.keys().hasAll(['kind', 'value', 'recordedAt'])
+        && request.resource.data.keys().hasOnly(['kind', 'value', 'recordedAt'])
+        && request.resource.data.recordedAt is timestamp
+        && request.resource.data.recordedAt == request.time
+        && ((request.resource.data.kind == 'weight'
+          && request.resource.data.value is number
+          && request.resource.data.value >= 20
+          && request.resource.data.value <= 500)
+          || (request.resource.data.kind == 'height'
+            && request.resource.data.value is int
+            && request.resource.data.value >= 80
+            && request.resource.data.value <= 250));
+      allow update, delete: if false;
+    }
+
     match /users/{userId}/animeWatchProgress/{progressId} {
       allow get, list: if isOwner(userId);
       allow create, update: if isOwner(userId)

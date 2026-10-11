@@ -43,7 +43,7 @@ export function ExpenseForm({
         : receiptCandidate?.amountSen !== undefined
           ? (receiptCandidate.amountSen / 100).toFixed(2)
           : '',
-      category: initialData?.category ?? 'food',
+      category: (initialData?.category ?? receiptCandidate?.category ?? (receiptCandidate ? '' : 'food')) as ExpenseCategory | '',
       title: initialData?.title ?? receiptCandidate?.title ?? '',
       date: toLocalDateInput(initialDate),
       time: toLocalTimeInput(initialDate),
@@ -51,7 +51,7 @@ export function ExpenseForm({
     }
   })
   const [amount, setAmount] = useState(initialValues.amount)
-  const [category, setCategory] = useState<ExpenseCategory>(initialValues.category)
+  const [category, setCategory] = useState<ExpenseCategory | ''>(initialValues.category)
   const [title, setTitle] = useState(initialValues.title)
   const [date, setDate] = useState(initialValues.date)
   const [time, setTime] = useState(initialValues.time)
@@ -92,7 +92,7 @@ export function ExpenseForm({
     if (!occurredAt) nextErrors.occurredAt = 'Choose a valid date and time.'
 
     setErrors(nextErrors)
-    if (!amountSen || !occurredAt || Object.keys(nextErrors).length > 0) return
+    if (!amountSen || !occurredAt || !isExpenseCategory(category) || Object.keys(nextErrors).length > 0) return
 
     onSubmit({
       amountSen,
@@ -141,6 +141,7 @@ export function ExpenseForm({
             aria-invalid={Boolean(errors.category)}
             className="form-control"
           >
+            {receiptCandidate && <option value="">Choose a category</option>}
             {expenseCategoryOptions.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}

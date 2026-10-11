@@ -132,7 +132,10 @@ export function AnimePlayerDialog({ target, onClose }: { target: AnimePlayerTarg
   }
 
   return <Dialog open={Boolean(target)} onOpenChange={(open) => !open && close()}>
-    <DialogContent variant="player" className="anime-player-dialog" onEscapeKeyDown={() => target && persist(latestRef.current.position, latestRef.current.duration, true)}>
+    <DialogContent variant="player" className="anime-player-dialog" onEscapeKeyDown={(event) => {
+      if (document.fullscreenElement) { event.preventDefault(); void document.exitFullscreen?.(); return }
+      if (target) persist(latestRef.current.position, latestRef.current.duration, true)
+    }}>
       {target && <>
         <DialogTitle className="pr-12 text-xl font-semibold">{target.title}</DialogTitle>
         <DialogDescription className="mt-1 text-sm text-[var(--text-secondary)]">{t('onlinePlayer')}</DialogDescription>

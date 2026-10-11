@@ -17,7 +17,7 @@ function request(token: string | null = 'valid', bytes: Uint8Array = png, type =
 function dependencies(): ReceiptOcrDependencies {
   return { verifyToken: vi.fn(async (token) => token === 'valid'), isConfigured: () => true,
     extract: vi.fn(async () => ({ merchant: 'SHOP', amountSen: 123, receiptDate: null,
-      amountIssue: null, fallbackUsed: false })) }
+      category: 'shopping' as const, amountIssue: null, fallbackUsed: false })) }
 }
 
 describe('receipt OCR endpoint', () => {
@@ -27,7 +27,7 @@ describe('receipt OCR endpoint', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('Cache-Control')).toBe('no-store')
     expect(await response.json()).toEqual({ merchant: 'SHOP', amountSen: 123,
-      receiptDate: null, amountIssue: null, fallbackUsed: false })
+      receiptDate: null, category: 'shopping', amountIssue: null, fallbackUsed: false })
     expect(deps.verifyToken).toHaveBeenCalledWith('valid')
     expect(deps.extract).toHaveBeenCalledOnce()
   })
