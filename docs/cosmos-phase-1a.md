@@ -69,9 +69,9 @@ concise Chinese meanings is suggested before any future production promotion.
 
 ## Staging status
 
-Deployment is blocked because the existing staging frontend is not isolated from
-production backend resources. The existing local Netlify authentication was used
-for read-only API inspection on 2026-10-12:
+The existing staging frontend is not isolated from production backend resources.
+The existing local Netlify authentication was used for read-only API inspection
+on 2026-10-12:
 
 - Netlify site `edenos` (`ebaf0d87-d98d-4598-bf77-1186fb0e81ec`) is linked to
   `eden-low/EdenOS`.
@@ -91,18 +91,18 @@ for read-only API inspection on 2026-10-12:
   production and branch-deploy contexts. Secret values were not printed or
   changed.
 
-Therefore a staging build would still authenticate against and read/write the
-production Firebase project, and its Netlify Functions would use the same server
-credentials. This fails the requested safe-isolation gate even though this Tarot
-feature itself does not call Firebase or Gemini.
+Therefore a staging build still authenticates against and can read/write the
+production Firebase project in the existing modules, and its Netlify Functions
+use the same server credentials. The project owner reviewed this finding and
+explicitly authorized deploying Phase 1A through the existing shared staging
+configuration. The Tarot feature itself does not import or call Firebase,
+Firestore, Storage, Gemini, Netlify Functions, or any other remote API.
 
 The known GitHub Firestore rules workflow targets `main` and project
 `edenos-e1bbb`; it is not a staging frontend deployment workflow and was not used.
-No branches were pushed or merged, no Netlify configuration was changed, and no
-deployment was triggered. Deployment can continue after a separate staging
-Firebase project and context-specific branch values (including server credentials
-and external data origins) are configured and verified, or after the owner gives
-an explicit revised staging policy that accepts shared production resources.
+No Netlify configuration, Firebase configuration, credentials, database schema,
+or production branch is changed by the Phase 1A staging deployment. Testing on
+the shared staging site must avoid mutations in existing cloud-backed modules.
 
 ## Mobile and visual review checklist (pending)
 
