@@ -1,6 +1,7 @@
-import type { TarotReading } from './drawTarotCard'
+import type { TarotCard } from './tarotDeck'
+import type { TarotOrientation } from './tarotSelection'
 
-export function TarotCardVisual({ reading }: { reading: TarotReading | null }) {
+export function TarotCardVisual({ reading }: { reading: { card: TarotCard; orientation: TarotOrientation } | null }) {
   return <div className="cosmos-card" aria-hidden="true">
     <div className="cosmos-card-inner">
       <span className="cosmos-card-corner">✦</span>

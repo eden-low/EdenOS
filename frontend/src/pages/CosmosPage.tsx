@@ -1,19 +1,75 @@
-import { useState } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
 import { Button } from '../components/ui/button'
 import { TarotCardVisual } from '../cosmos/TarotCardVisual'
-import { drawTarotCard, type TarotReading } from '../cosmos/drawTarotCard'
+import { combinedTarotReflection } from '../cosmos/tarotReflection'
+import { selectTarotCards, validateTarotPositions, type TarotSelection } from '../cosmos/tarotSelection'
+import { shuffleTarotDeck } from '../cosmos/tarotShuffle'
+import type { TarotCard } from '../cosmos/tarotDeck'
 import './cosmos.css'
 
-export function CosmosPage() {
-  const [reading, setReading] = useState<TarotReading | null>(null)
-  const [error, setError] = useState(false)
+type ReadingMode = 'single' | 'three'
+type ReadingStage = 'shuffle' | 'select' | 'reveal'
 
-  function draw() {
+const emptyNumbers = () => ['', '', '']
+const spreadPositions = [
+  { label: '过去', englishLabel: 'Past' },
+  { label: '现在', englishLabel: 'Present' },
+  { label: '发展方向', englishLabel: 'Future Direction' },
+] as const
+
+export function CosmosPage() {
+  const [mode, setMode] = useState<ReadingMode>('single')
+  const [stage, setStage] = useState<ReadingStage>('shuffle')
+  const [shuffledDeck, setShuffledDeck] = useState<TarotCard[] | null>(null)
+  const [numbers, setNumbers] = useState(emptyNumbers)
+  const [reading, setReading] = useState<TarotSelection[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [shuffleVersion, setShuffleVersion] = useState(0)
+
+  function resetReading(nextMode: ReadingMode = mode) {
+    setMode(nextMode)
+    setStage('shuffle')
+    setShuffledDeck(null)
+    setNumbers(emptyNumbers())
+    setReading([])
+    setError(null)
+  }
+
+  function changeMode(nextMode: ReadingMode) {
+    if (nextMode !== mode) resetReading(nextMode)
+  }
+
+  function shuffle() {
     try {
-      setReading(drawTarotCard())
-      setError(false)
+      setShuffledDeck(shuffleTarotDeck())
+      setNumbers(emptyNumbers())
+      setReading([])
+      setError(null)
+      setShuffleVersion((value) => value + 1)
+      setStage('select')
     } catch {
-      setError(true)
+      setError('暂时无法完成洗牌，请重试。')
+    }
+  }
+
+  function reveal(event: FormEvent) {
+    event.preventDefault()
+    if (!shuffledDeck) {
+      setError('请先洗牌。')
+      return
+    }
+    const count = mode === 'single' ? 1 : 3
+    const validation = validateTarotPositions(numbers.slice(0, count), count, shuffledDeck.length)
+    if (!validation.ok) {
+      setError(validation.error)
+      return
+    }
+    try {
+      setReading(selectTarotCards(shuffledDeck, validation.positions))
+      setError(null)
+      setStage('reveal')
+    } catch {
+      setError('暂时无法揭示牌面，请重试。')
     }
   }
 
@@ -21,36 +77,78 @@ export function CosmosPage() {
     <header className="cosmos-header">
       <p className="section-label">Eden OS · Cosmos</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Cosmos <span className="cosmos-title-zh">星象探索</span></h1>
-      <p className="mt-3 max-w-xl text-sm leading-7">从一张塔罗牌开始，借传统象征停下来看看当下的想法。</p>
+      <p className="mt-3 max-w-xl text-sm leading-7">亲手洗牌，选择数字，再从传统塔罗象征中留一个角度给此刻。</p>
     </header>
 
-    <section className="cosmos-reading mx-auto mt-7 max-w-4xl rounded-[var(--card-radius)] p-5 sm:mt-9 sm:p-8" aria-labelledby="cosmos-reading-heading">
+    <section className="cosmos-reading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5 sm:mt-9 sm:p-8" aria-labelledby="cosmos-reading-heading">
       <div className="cosmos-reading-copy">
-        <p className="section-label">单张塔罗抽牌 · One card reading</p>
-        <h2 id="cosmos-reading-heading" className="mt-2 text-2xl font-semibold tracking-[-0.03em]">给此刻一点空间</h2>
-        <p className="mt-3 text-sm leading-7">在心里留一个问题，按下抽牌。每次从完整的 78 张牌中随机抽取，并随机呈现正位或逆位。</p>
+        <p className="section-label">Tarot reading · 本地塔罗解读</p>
+        <h2 id="cosmos-reading-heading" className="mt-2 text-2xl font-semibold tracking-[-0.03em]">洗牌、选择、揭示</h2>
+        <p className="mt-3 text-sm leading-7">数字代表本次洗牌后的牌堆位置。相同数字在下一次洗牌后可能对应不同的牌。</p>
       </div>
 
-      <div className="cosmos-reading-layout mt-7">
-        <TarotCardVisual reading={reading} />
-        <div className="cosmos-result" aria-live="polite">
-          {reading ? <>
-            <p className="section-label">你抽到的牌 · {reading.orientation === 'upright' ? '正位' : '逆位'}</p>
-            <h3 className="mt-3 text-3xl font-semibold">{reading.card.name}</h3>
-            <p className="cosmos-english mt-1 text-sm">{reading.card.englishName}</p>
-            <p className="cosmos-meaning mt-6 text-base leading-8">{reading.card[reading.orientation]}</p>
-            <p className="cosmos-context mt-4 text-sm">这张牌的象征可以作为一个提问：它与你眼下的经历有什么关联？</p>
-          </> : <>
-            <p className="section-label">等待揭晓</p>
-            <h3 className="mt-3 text-2xl font-semibold">一张牌，一个观察自己的角度</h3>
-            <p className="cosmos-context mt-4 text-sm leading-7">结果只停留在此页。想再看一次时，随时重新抽取。</p>
-          </>}
-          <Button type="button" className="cosmos-draw mt-7 min-h-12 w-full sm:w-auto" onClick={draw}>{reading ? '再抽一次' : '抽一张牌'}</Button>
-          {error && <p role="alert" className="cosmos-error mt-3 text-sm">暂时无法抽牌，请重试。</p>}
-        </div>
+      <div className="cosmos-mode-selector mt-6" aria-label="Reading mode">
+        <button type="button" aria-pressed={mode === 'single'} onClick={() => changeMode('single')}>单张牌 <span>Single Card</span></button>
+        <button type="button" aria-pressed={mode === 'three'} onClick={() => changeMode('three')}>三张牌 <span>Three Cards</span></button>
       </div>
+
+      <ol className="cosmos-steps mt-6" aria-label="Reading steps">
+        {([['shuffle', '1', '洗牌'], ['select', '2', '选数字'], ['reveal', '3', '揭示']] as const).map(([step, number, label]) => <li key={step} aria-current={stage === step ? 'step' : undefined}><span>{number}</span>{label}</li>)}
+      </ol>
+
+      {stage !== 'reveal' ? <div className="cosmos-reading-layout mt-7">
+        <div key={shuffleVersion} className={stage === 'select' ? 'cosmos-shuffle-visual' : undefined}><TarotCardVisual reading={null} /></div>
+        <div className="cosmos-result" aria-live="polite">
+          {stage === 'shuffle' ? <>
+            <p className="section-label">第一步 · Shuffle</p>
+            <h3 className="mt-3 text-2xl font-semibold">先为这次解读洗牌</h3>
+            <p className="cosmos-context mt-4 text-sm leading-7">完整的 78 张牌会在你的设备上重新排列。牌面会保持隐藏，直到你完成数字选择。</p>
+            <Button type="button" className="cosmos-draw mt-7 min-h-12 w-full sm:w-auto" onClick={shuffle}>洗牌 / Shuffle</Button>
+          </> : <form onSubmit={reveal} noValidate>
+            <p className="section-label">第二步 · Select numbers</p>
+            <h3 className="mt-3 text-2xl font-semibold">{mode === 'single' ? '选择一个数字' : '为三个位置选择数字'}</h3>
+            <p className="cosmos-context mt-3 text-sm leading-7">请输入 1 至 78 的整数。{mode === 'three' ? '三个数字不能重复，并共用当前这一次洗牌顺序。' : ''}</p>
+            <div className={`cosmos-number-grid mt-5 ${mode === 'three' ? 'cosmos-number-grid-three' : ''}`}>
+              {Array.from({ length: mode === 'single' ? 1 : 3 }, (_, index) => {
+                const position = spreadPositions[index]
+                const label = mode === 'single' ? '选牌数字 / Card number' : `${position.label} / ${position.englishLabel}`
+                return <label key={position?.englishLabel ?? 'single'}><span>{label}</span><input type="text" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={numbers[index]} onChange={(event) => { const next = [...numbers]; next[index] = event.target.value; setNumbers(next); setError(null) }} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? 'tarot-selection-error' : undefined} placeholder="1–78" /></label>
+              })}
+            </div>
+            {error && <p id="tarot-selection-error" role="alert" className="cosmos-error mt-4 text-sm">{error}</p>}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button type="submit" className="cosmos-draw min-h-12">揭示牌面 / Reveal</Button>
+              <Button type="button" variant="secondary" className="cosmos-secondary" onClick={shuffle}>重新洗牌 / Reshuffle</Button>
+            </div>
+            <p className="cosmos-context mt-3 text-xs">重新洗牌会清空尚未揭示的数字。</p>
+          </form>}
+          {stage === 'shuffle' && error && <p role="alert" className="cosmos-error mt-4 text-sm">{error}</p>}
+        </div>
+      </div> : <div className="mt-8" aria-live="polite">
+        <p className="section-label">第三步 · Reveal</p>
+        <h3 className="mt-2 text-2xl font-semibold">{mode === 'single' ? '你的单张牌' : '过去、现在与发展方向'}</h3>
+        <div className={`cosmos-revealed-grid mt-7 ${mode === 'three' ? 'cosmos-revealed-grid-three' : ''}`}>
+          {reading.map((selection, index) => <RevealedCard key={`${selection.card.id}-${index}`} selection={selection} index={index} mode={mode} />)}
+        </div>
+        {mode === 'three' && reading.length === 3 && <section className="cosmos-combined mt-7" aria-labelledby="combined-reflection-heading"><p className="section-label">Combined reflection · 综合反思</p><h4 id="combined-reflection-heading" className="mt-2 text-xl font-semibold">把三张牌连成一条线索</h4><p className="mt-3 text-sm leading-7">{combinedTarotReflection(reading)}</p></section>}
+        <div className="mt-7 text-center"><Button type="button" className="cosmos-draw min-h-12" onClick={() => resetReading()}>新解读 / New Reading</Button><p className="cosmos-context mt-3 text-xs">开始新解读会清除本次结果，并回到洗牌步骤。</p></div>
+      </div>}
     </section>
 
-    <p className="cosmos-disclaimer mx-auto mt-6 max-w-4xl text-xs leading-6">塔罗仅供文化探索、娱乐与个人反思，不是可靠的预测，也不应代替专业建议。</p>
+    <p className="cosmos-disclaimer mx-auto mt-6 max-w-5xl text-xs leading-6">塔罗仅供文化探索、娱乐与个人反思，不是可靠的预测，也不应代替专业建议。</p>
   </div>
+}
+
+function RevealedCard({ selection, index, mode }: { selection: TarotSelection; index: number; mode: ReadingMode }) {
+  const spreadPosition = spreadPositions[index]
+  const positionLabel = mode === 'single' ? '单张牌 · Single Card' : `${spreadPosition.label} · ${spreadPosition.englishLabel}`
+  const orientationLabel = selection.orientation === 'upright' ? '正位 · Upright' : '逆位 · Reversed'
+  return <article className="cosmos-revealed-card" style={{ '--reveal-index': index } as CSSProperties} aria-label={`${positionLabel}: ${selection.card.name}, ${orientationLabel}`}>
+    <p className="section-label">{positionLabel}</p>
+    <div className="mt-4"><TarotCardVisual reading={selection} /></div>
+    <p className="cosmos-card-position mt-4">牌堆位置 {selection.position} · {orientationLabel}</p>
+    <h4 className="mt-2 text-xl font-semibold">{selection.card.name}</h4>
+    <p className="cosmos-english mt-1 text-sm">{selection.card.englishName}</p>
+    <p className="cosmos-meaning mt-4 text-sm leading-7">{selection.card[selection.orientation]}</p>
+  </article>
 }

@@ -1,36 +1,103 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { CosmosPage } from './CosmosPage'
-import { drawTarotCard } from '../cosmos/drawTarotCard'
 import { tarotDeck } from '../cosmos/tarotDeck'
+import { CosmosPage } from './CosmosPage'
 
-vi.mock('../cosmos/drawTarotCard', () => ({ drawTarotCard: vi.fn() }))
+const tarotMocks = vi.hoisted(() => ({
+  shuffle: vi.fn(),
+  randomIndex: vi.fn(),
+}))
 
-describe('Cosmos Tarot page', () => {
-  beforeEach(() => vi.mocked(drawTarotCard).mockReset())
+vi.mock('../cosmos/tarotShuffle', () => ({ shuffleTarotDeck: tarotMocks.shuffle }))
+vi.mock('../cosmos/tarotRandom', () => ({ browserRandomIndex: tarotMocks.randomIndex }))
 
-  it('starts with a card back and reveals a local reading, then draws again', () => {
-    vi.mocked(drawTarotCard)
-      .mockReturnValueOnce({ card: tarotDeck[0], orientation: 'upright' })
-      .mockReturnValueOnce({ card: tarotDeck[77], orientation: 'reversed' })
-    render(<CosmosPage />)
-    expect(screen.getByRole('heading', { name: /Cosmos/ })).toBeTruthy()
-    expect(screen.getByText('COSMOS')).toBeTruthy()
-    expect(screen.getByText(/塔罗仅供文化探索/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: '抽一张牌' }))
-    expect(screen.getByText(tarotDeck[0].upright)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: '再抽一次' }))
-    expect(screen.getByText(tarotDeck[77].reversed)).toBeTruthy()
-    expect(drawTarotCard).toHaveBeenCalledTimes(2)
+function enterNumber(label: string | RegExp, value: string) {
+  fireEvent.change(screen.getByRole('textbox', { name: label }), { target: { value } })
+}
+
+describe('Cosmos interactive Tarot page', () => {
+  beforeEach(() => {
+    tarotMocks.shuffle.mockReset().mockReturnValue([...tarotDeck].reverse())
+    tarotMocks.randomIndex.mockReset().mockReturnValue(0)
   })
 
-  it('shows a retryable error when secure randomness is unavailable', () => {
-    vi.mocked(drawTarotCard).mockImplementationOnce(() => { throw new Error('unavailable') })
-      .mockReturnValueOnce({ card: tarotDeck[0], orientation: 'upright' })
+  it('keeps one shuffled deck stable through single-card selection and restarts explicitly', () => {
     render(<CosmosPage />)
-    fireEvent.click(screen.getByRole('button', { name: '抽一张牌' }))
-    expect(screen.getByRole('alert').textContent).toContain('暂时无法抽牌')
-    fireEvent.click(screen.getByRole('button', { name: '抽一张牌' }))
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('button', { name: /单张牌 Single Card/ }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText('COSMOS')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '洗牌 / Shuffle' }))
+    enterNumber(/Card number/, '17')
+    expect(tarotMocks.shuffle).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: '揭示牌面 / Reveal' }))
+    expect(screen.getByText('牌堆位置 17 · 正位 · Upright')).toBeTruthy()
+    expect(screen.getAllByText(tarotDeck[61].name).length).toBeGreaterThan(0)
+    expect(screen.getByText(tarotDeck[61].upright)).toBeTruthy()
+    expect(screen.getByText(/塔罗仅供文化探索/)).toBeTruthy()
+    expect(tarotMocks.shuffle).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: '新解读 / New Reading' }))
+    expect(screen.getByRole('button', { name: '洗牌 / Shuffle' })).toBeTruthy()
+    expect(screen.queryByText('牌堆位置 17 · 正位 · Upright')).toBeNull()
+  })
+
+  it('reshuffles only on request and clears pending number selections', () => {
+    tarotMocks.shuffle
+      .mockReturnValueOnce([...tarotDeck])
+      .mockReturnValueOnce([...tarotDeck].reverse())
+    render(<CosmosPage />)
+    fireEvent.click(screen.getByRole('button', { name: '洗牌 / Shuffle' }))
+    enterNumber(/Card number/, '22')
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: /Card number/ }).value).toBe('22')
+    fireEvent.click(screen.getByRole('button', { name: '重新洗牌 / Reshuffle' }))
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: /Card number/ }).value).toBe('')
+    expect(tarotMocks.shuffle).toHaveBeenCalledTimes(2)
+  })
+
+  it('validates three unique integer positions', () => {
+    render(<CosmosPage />)
+    fireEvent.click(screen.getByRole('button', { name: /三张牌 Three Cards/ }))
+    fireEvent.click(screen.getByRole('button', { name: '洗牌 / Shuffle' }))
+    enterNumber(/Past/, '4')
+    enterNumber(/Present/, '4')
+    enterNumber(/Future Direction/, '12')
+    fireEvent.click(screen.getByRole('button', { name: '揭示牌面 / Reveal' }))
+    expect(screen.getByRole('alert').textContent).toContain('三个不同的数字')
+    enterNumber(/Present/, '1.5')
+    fireEvent.click(screen.getByRole('button', { name: '揭示牌面 / Reveal' }))
+    expect(screen.getByRole('alert').textContent).toContain('整数')
+    enterNumber(/Present/, '79')
+    fireEvent.click(screen.getByRole('button', { name: '揭示牌面 / Reveal' }))
+    expect(screen.getByRole('alert').textContent).toContain('1 至 78')
+  })
+
+  it('reveals a three-card spread with independent orientations and a local combined reflection', () => {
+    tarotMocks.shuffle.mockReturnValue([...tarotDeck])
+    tarotMocks.randomIndex.mockReturnValueOnce(0).mockReturnValueOnce(1).mockReturnValueOnce(0)
+    render(<CosmosPage />)
+    fireEvent.click(screen.getByRole('button', { name: /三张牌 Three Cards/ }))
+    fireEvent.click(screen.getByRole('button', { name: '洗牌 / Shuffle' }))
+    enterNumber(/Past/, '1')
+    enterNumber(/Present/, '17')
+    enterNumber(/Future Direction/, '78')
+    fireEvent.click(screen.getByRole('button', { name: '揭示牌面 / Reveal' }))
+    expect(screen.getByLabelText(/过去 · Past:.*正位/)).toBeTruthy()
+    expect(screen.getByLabelText(/现在 · Present:.*逆位/)).toBeTruthy()
+    expect(screen.getByLabelText(/发展方向 · Future Direction:.*正位/)).toBeTruthy()
+    const reflection = screen.getByRole('region', { name: '把三张牌连成一条线索' })
+    expect(reflection.textContent).toContain(tarotDeck[0].name)
+    expect(reflection.textContent).toContain(tarotDeck[16].name)
+    expect(reflection.textContent).toContain(tarotDeck[77].name)
+    expect(reflection.textContent).toContain('不保证未来结果')
+  })
+
+  it('switching modes clears reading state and shuffle errors remain retryable', () => {
+    tarotMocks.shuffle.mockImplementationOnce(() => { throw new Error('unavailable') }).mockReturnValueOnce([...tarotDeck])
+    render(<CosmosPage />)
+    fireEvent.click(screen.getByRole('button', { name: '洗牌 / Shuffle' }))
+    expect(screen.getByRole('alert').textContent).toContain('无法完成洗牌')
+    fireEvent.click(screen.getByRole('button', { name: '洗牌 / Shuffle' }))
+    enterNumber(/Card number/, '1')
+    fireEvent.click(screen.getByRole('button', { name: /三张牌 Three Cards/ }))
+    expect(screen.getByRole('button', { name: '洗牌 / Shuffle' })).toBeTruthy()
+    expect(screen.queryByRole('textbox')).toBeNull()
   })
 })
