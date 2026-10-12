@@ -14,6 +14,13 @@ export interface ZonedCandidate {
   offsetLabel: string
 }
 
+export interface TimeZonePresentation {
+  status: 'ready' | 'pending' | 'ambiguous' | 'nonexistent' | 'invalid-zone'
+  names: string[]
+  offsets: string[]
+  timeZone: string
+}
+
 export type ZonedResolution =
   | { status: 'valid'; candidate: ZonedCandidate }
   | { status: 'ambiguous'; candidates: ZonedCandidate[] }
@@ -63,7 +70,7 @@ function sameParts(left: LocalParts, right: LocalParts): boolean {
   return left.year === right.year && left.month === right.month && left.day === right.day && left.hour === right.hour && left.minute === right.minute
 }
 
-function offsetLabel(minutes: number): string {
+export function formatUtcOffset(minutes: number): string {
   const sign = minutes >= 0 ? '+' : '-'
   const absolute = Math.abs(minutes)
   return `UTC${sign}${String(Math.floor(absolute / 60)).padStart(2, '0')}:${String(absolute % 60).padStart(2, '0')}`
@@ -89,11 +96,46 @@ export function resolveZonedDateTime(input: LocalDateTimeInput): ZonedResolution
     .sort((a, b) => a - b)
     .map((utcMs): ZonedCandidate => {
       const offsetMinutes = Math.round((nominalUtc - utcMs) / 60_000)
-      return { utcMs, isoUtc: new Date(utcMs).toISOString(), offsetMinutes, offsetLabel: offsetLabel(offsetMinutes) }
+      return { utcMs, isoUtc: new Date(utcMs).toISOString(), offsetMinutes, offsetLabel: formatUtcOffset(offsetMinutes) }
     })
   if (candidates.length === 0) return { status: 'nonexistent' }
   if (candidates.length > 1) return { status: 'ambiguous', candidates }
   return { status: 'valid', candidate: candidates[0] }
+}
+
+function zoneNameAt(utcMs: number, timeZone: string): string {
+  const part = new Intl.DateTimeFormat('en', {
+    timeZone,
+    timeZoneName: 'long',
+    hour: '2-digit',
+  }).formatToParts(utcMs).find(({ type }) => type === 'timeZoneName')
+  return part?.value ?? timeZone
+}
+
+function offsetAt(utcMs: number, timeZone: string): string {
+  const local = partsAt(utcMs, timeZone)
+  const localAsUtc = Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute)
+  return formatUtcOffset(Math.round((localAsUtc - utcMs) / 60_000))
+}
+
+export function describeTimeZone(timeZone: string, date: string, time?: string): TimeZonePresentation {
+  if (!isValidIanaTimeZone(timeZone)) return { status: timeZone ? 'invalid-zone' : 'pending', names: [], offsets: [], timeZone }
+  if (!parseDate(date)) return { status: 'pending', names: [], offsets: [], timeZone }
+  let instants: number[] = []
+  let status: TimeZonePresentation['status'] = 'ready'
+  if (time) {
+    const resolution = resolveZonedDateTime({ date, time, timeZone })
+    if (resolution.status === 'invalid-zone' || resolution.status === 'nonexistent') return { status: resolution.status, names: [], offsets: [], timeZone }
+    instants = resolution.status === 'ambiguous' ? resolution.candidates.map(({ utcMs }) => utcMs) : [resolution.candidate.utcMs]
+    if (resolution.status === 'ambiguous') status = 'ambiguous'
+  } else {
+    const range = utcRangeForLocalDate(date, timeZone)
+    if (!range) return { status: 'nonexistent', names: [], offsets: [], timeZone }
+    instants = [range.startMs, range.endMs]
+  }
+  const names = [...new Set(instants.map((utcMs) => zoneNameAt(utcMs, timeZone)))]
+  const offsets = [...new Set(instants.map((utcMs) => offsetAt(utcMs, timeZone)))]
+  return { status, names, offsets, timeZone }
 }
 
 export function utcRangeForLocalDate(date: string, timeZone: string): { startMs: number; endMs: number } | null {

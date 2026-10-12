@@ -203,6 +203,49 @@
 .astrology-field input { width: 100%; min-height: 3.2rem; border: 1px solid rgba(206, 164, 92, .3); border-radius: .8rem; outline: none; background: #101110; padding: .65rem .8rem; color: #f5efe2; color-scheme: dark; font-size: .9rem; }
 .astrology-field input::placeholder { color: #746e64; }
 .astrology-field input:focus-visible { border-color: #d9b779; box-shadow: 0 0 0 3px rgba(242, 211, 144, .25); }
+.astrology-search-field { position: relative; min-width: 0; color: #d7cbb8; }
+.astrology-search-field > label { display: block; margin-bottom: .5rem; font-size: .78rem; font-weight: 650; }
+.astrology-search-field > small { display: block; margin-top: .4rem; color: #968d80; font-size: .65rem; line-height: 1.5; }
+.astrology-search-input { position: relative; }
+.astrology-search-input > span { position: absolute; top: 50%; left: .8rem; color: #d9b779; font-size: 1rem; transform: translateY(-50%); pointer-events: none; }
+.astrology-search-input input { width: 100%; min-height: 3.2rem; border: 1px solid rgba(206, 164, 92, .3); border-radius: .8rem; outline: none; background: #101110; padding: .65rem .8rem .65rem 2.35rem; color: #f5efe2; font-size: .9rem; }
+.astrology-search-input input::-webkit-search-cancel-button { filter: invert(.8); }
+.astrology-search-input input::placeholder { color: #746e64; }
+.astrology-search-input input:focus-visible { border-color: #d9b779; box-shadow: 0 0 0 3px rgba(242, 211, 144, .25); }
+.astrology-search-results { position: absolute; z-index: 20; top: calc(100% - .2rem); left: 0; width: 100%; max-height: min(19rem, 52dvh); overflow-y: auto; border: 1px solid rgba(217, 183, 121, .38); border-radius: .85rem; background: #151612; padding: .35rem; box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, .45); }
+.astrology-search-results > button { display: block; width: 100%; min-height: 3.25rem; border-radius: .65rem; padding: .6rem .7rem; outline: none; color: #f5efe2; text-align: left; }
+.astrology-search-results > button + button { border-top: 1px solid rgba(206, 164, 92, .1); }
+.astrology-search-results > button:hover, .astrology-search-results > button:focus-visible, .astrology-search-results > button[aria-selected="true"] { background: rgba(194, 151, 80, .15); box-shadow: inset 0 0 0 1px rgba(217, 183, 121, .18); }
+.astrology-search-results > button strong, .astrology-search-results > button span { display: block; }
+.astrology-search-results > button strong { font-size: .76rem; }
+.astrology-search-results > button span { margin-top: .2rem; color: #aaa195; font-size: .62rem; overflow-wrap: anywhere; }
+.astrology-search-empty { padding: .8rem; color: #aaa195; font-size: .7rem; line-height: 1.55; }
+.astrology-search-empty strong, .astrology-search-empty span { display: block; }
+.astrology-search-empty strong { color: #f5efe2; }
+.astrology-search-empty button { min-height: 2.75rem; margin-top: .65rem; border: 1px solid rgba(206, 164, 92, .25); border-radius: .65rem; padding: .5rem .7rem; color: #f2d390; font-weight: 700; }
+.astrology-selected-iana { color: #d9b779 !important; overflow-wrap: anywhere; }
+.astrology-city-card { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: .75rem; border: 1px solid rgba(206, 164, 92, .22); border-radius: .9rem; background: rgba(194, 151, 80, .08); padding: .8rem; }
+.astrology-city-card strong, .astrology-city-card span { display: block; }
+.astrology-city-card strong { color: #f5efe2; font-size: .8rem; }
+.astrology-city-card span, .astrology-city-card > small { margin-top: .15rem; color: #968d80; font-size: .62rem; }
+.astrology-city-card > small { flex: none; margin: 0; font-variant-numeric: tabular-nums; }
+.astrology-timezone-summary { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; gap: .2rem .7rem; border-left: 2px solid #b08a50; border-radius: 0 .8rem .8rem 0; background: rgba(194, 151, 80, .08); padding: .7rem .8rem; color: #d7cbb8; }
+.astrology-timezone-summary strong { color: #f2d390; font-size: .78rem; }
+.astrology-timezone-summary > span { color: #f5efe2; font-size: .72rem; text-align: right; }
+.astrology-timezone-summary code { grid-column: 1 / -1; color: #aaa195; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .64rem; overflow-wrap: anywhere; }
+.astrology-timezone-summary small { grid-column: 1 / -1; color: #d9998d; font-size: .62rem; }
+.astrology-timezone-summary.is-pending { display: block; color: #aaa195; font-size: .7rem; line-height: 1.55; }
+.astrology-timezone-summary.is-error { border-color: #d8877d; }
+.astrology-timezone-summary.is-error strong { color: #f4aaa5; }
+.astrology-advanced { border: 1px solid rgba(206, 164, 92, .18); border-radius: .9rem; background: #101110; }
+.astrology-advanced > button { display: grid; width: 100%; min-height: 3.2rem; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .1rem .6rem; border-radius: .9rem; padding: .65rem .8rem; outline: none; color: #d9b779; text-align: left; }
+.astrology-advanced > button span, .astrology-advanced > button small { display: block; }
+.astrology-advanced > button span { font-size: .78rem; font-weight: 700; }
+.astrology-advanced > button small { color: #8e877b; font-size: .6rem; }
+.astrology-advanced > button i { grid-column: 2; grid-row: 1 / span 2; font-style: normal; transition: transform .2s ease; }
+.astrology-advanced > button[aria-expanded="true"] i { transform: rotate(180deg); }
+.astrology-advanced > button:focus-visible { box-shadow: 0 0 0 3px var(--focus); }
+.astrology-advanced-fields { display: grid; gap: 1rem; border-top: 1px solid rgba(206, 164, 92, .14); padding: 1rem; }
 .astrology-time-choice, .astrology-offset-choice { display: flex; flex-wrap: wrap; gap: .6rem; }
 .astrology-time-choice legend, .astrology-offset-choice legend { width: 100%; margin-bottom: .1rem; color: #d7cbb8; font-size: .78rem; font-weight: 650; }
 .astrology-time-choice label, .astrology-offset-choice label { display: flex; min-height: 2.8rem; align-items: center; gap: .5rem; border: 1px solid rgba(206, 164, 92, .2); border-radius: .75rem; padding: .55rem .75rem; color: #c5bbaa; font-size: .74rem; overflow-wrap: anywhere; }
@@ -324,4 +367,5 @@
   .cosmos-shuffle-visual, .cosmos-revealed-card { animation: none; }
   .iching-progress > div i { transition: none; }
   .iching-coins > span { animation: none; }
+  .astrology-advanced > button i { transition: none; }
 }

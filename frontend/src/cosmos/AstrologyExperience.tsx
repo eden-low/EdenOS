@@ -1,8 +1,10 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Button } from '../components/ui/button'
+import { CityPicker, TimeZonePicker, TimeZoneSummary } from './BirthplaceFields'
 import { calculateDateOnlyNatal, calculateExactNatal, calculateSunSignForDate, type NatalChart } from './astrologyAdapter'
 import { ELEMENT_LABELS, HOUSE_MEANINGS, MODALITY_LABELS, ZODIAC_SIGNS, planetMeta, zodiacForLongitude } from './astrologyData'
 import { dateInTimeZone, isValidIanaTimeZone, resolveZonedDateTime, validateAstrologyDate, type ZonedCandidate } from './astrologyTime'
+import type { BirthCity } from './birthplaceData'
 import { NatalChartWheel, PlanetLegend } from './NatalChartWheel'
 
 interface FormFields {
@@ -33,6 +35,10 @@ export function AstrologyExperience() {
   const [sunSigns, setSunSigns] = useState<string[] | null>(null)
   const [sunError, setSunError] = useState<string | null>(null)
   const [fields, setFields] = useState(initialFields)
+  const [selectedCity, setSelectedCity] = useState<BirthCity | null>(null)
+  const [cityPickerVersion, setCityPickerVersion] = useState(0)
+  const [zonePickerVersion, setZonePickerVersion] = useState(0)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [chart, setChart] = useState<NatalChart | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [ambiguous, setAmbiguous] = useState<ZonedCandidate[]>([])
@@ -40,9 +46,34 @@ export function AstrologyExperience() {
 
   function update<K extends keyof FormFields>(key: K, value: FormFields[K]) {
     setFields((current) => ({ ...current, [key]: value }))
+    setChart(null)
     setError(null)
     setAmbiguous([])
     setSelectedUtc(null)
+  }
+
+  function chooseCity(city: BirthCity) {
+    setSelectedCity(city)
+    setFields((current) => ({ ...current, timeZone: city.timeZone, latitude: String(city.latitude), longitude: String(city.longitude) }))
+    setChart(null)
+    setError(null)
+    setAmbiguous([])
+    setSelectedUtc(null)
+  }
+
+  function beginCitySearch() {
+    setChart(null)
+    setError(null)
+    setAmbiguous([])
+    setSelectedUtc(null)
+    setSelectedCity(null)
+    setFields((current) => ({ ...current, timeZone: '', latitude: '', longitude: '' }))
+  }
+
+  function updateManualLocation(key: 'latitude' | 'longitude', value: string) {
+    setSelectedCity(null)
+    setCityPickerVersion((version) => version + 1)
+    update(key, value)
   }
 
   function submitSun(event: FormEvent) {
@@ -127,8 +158,9 @@ export function AstrologyExperience() {
       <form className="astrology-sun-tool mt-7" onSubmit={submitSun} noValidate>
         <div><p className="section-label">Simple Sun Sign · 太阳星座</p><h3 className="mt-1">按当天真实太阳黄经判断</h3><p className="cosmos-context mt-2 text-xs leading-5">交界日会计算出生地时区内整天的太阳位置；若当天换座，会明确标示不确定。</p></div>
         <label className="astrology-field"><span>出生日期 / Date</span><input type="date" min="1970-01-01" value={sunDate} onChange={(event) => { setSunDate(event.target.value); setSunSigns(null); setSunError(null) }} /></label>
-        <label className="astrology-field"><span>IANA 时区 / Timezone</span><input type="text" autoCapitalize="none" autoCorrect="off" spellCheck="false" placeholder="Asia/Kuala_Lumpur" value={sunTimeZone} onChange={(event) => { setSunTimeZone(event.target.value.trim()); setSunSigns(null); setSunError(null) }} /></label>
+        <TimeZonePicker value={sunTimeZone} onChange={(timeZone) => { setSunTimeZone(timeZone); setSunSigns(null); setSunError(null) }} label="出生地时区 / Birth timezone" />
         <Button type="submit" className="cosmos-secondary min-h-12">查看太阳星座</Button>
+        <div className="astrology-form-wide"><TimeZoneSummary timeZone={sunTimeZone} date={sunDate} /></div>
         {sunError && <p className="cosmos-error astrology-form-wide text-sm" role="alert">{sunError}</p>}
         {sunSigns && <p className="astrology-sun-result astrology-form-wide" role="status">{sunSigns.length === 1
           ? <>太阳星座：<strong>{ZODIAC_SIGNS.find((sign) => sign.id === sunSigns[0])?.glyph} {ZODIAC_SIGNS.find((sign) => sign.id === sunSigns[0])?.chinese}</strong></>
@@ -142,32 +174,41 @@ export function AstrologyExperience() {
       <p className="cosmos-context mt-2 text-sm leading-6">日期与时间须为出生地点当时钟表显示的本地民用时间。不会采用设备时区，也不会自动猜测出生城市。</p>
       <form className="astrology-form mt-6" onSubmit={submitChart} noValidate>
         <label className="astrology-field"><span>公历出生日期 / Birth date</span><input type="date" min="1970-01-01" value={fields.date} onChange={(event) => update('date', event.target.value)} /></label>
-        <label className="astrology-field"><span>IANA 出生时区 / Birthplace timezone</span><input type="text" autoCapitalize="none" autoCorrect="off" spellCheck="false" placeholder="Asia/Kuala_Lumpur" value={fields.timeZone} onChange={(event) => update('timeZone', event.target.value.trim())} /><small>示例：Asia/Kuala_Lumpur、Europe/London、America/New_York</small></label>
         <fieldset className="astrology-time-choice astrology-form-wide"><legend>出生时间 / Birth time</legend><label><input type="radio" name="astrology-time-known" checked={fields.timeKnown} onChange={() => update('timeKnown', true)} />已知 / Known</label><label><input type="radio" name="astrology-time-known" checked={!fields.timeKnown} onChange={() => { update('timeKnown', false); update('time', '') }} />未知 / Unknown</label></fieldset>
         {fields.timeKnown && <label className="astrology-field"><span>本地时间 / Local civil time</span><input type="time" step="60" value={fields.time} onChange={(event) => update('time', event.target.value)} /></label>}
-        <div className="astrology-coordinate-fields astrology-form-wide">
-          <label className="astrology-field"><span>纬度 / Latitude</span><input type="number" inputMode="decimal" min="-89.999" max="89.999" step="any" placeholder="3.1390" value={fields.latitude} onChange={(event) => update('latitude', event.target.value)} /></label>
-          <label className="astrology-field"><span>经度 / Longitude</span><input type="number" inputMode="decimal" min="-180" max="180" step="any" placeholder="101.6869" value={fields.longitude} onChange={(event) => update('longitude', event.target.value)} /></label>
+        <div className="astrology-form-wide"><CityPicker key={cityPickerVersion} selectedCity={selectedCity} onSelect={chooseCity} onSearchChange={beginCitySearch} onManual={() => setAdvancedOpen(true)} /></div>
+        {selectedCity && <div className="astrology-city-card astrology-form-wide"><div><strong>{selectedCity.chineseName} · {selectedCity.name}</strong><span>{selectedCity.country}</span></div><small>{selectedCity.latitude.toFixed(5)}°, {selectedCity.longitude.toFixed(5)}°</small></div>}
+        <div className="astrology-form-wide"><TimeZonePicker key={`${selectedCity?.id ?? 'manual-zone'}-${zonePickerVersion}`} value={fields.timeZone} onChange={(timeZone) => update('timeZone', timeZone)} label="出生地时区 / Birthplace timezone" /></div>
+        <div className="astrology-form-wide"><TimeZoneSummary timeZone={fields.timeZone} date={fields.date} time={fields.timeKnown && fields.time ? fields.time : undefined} /></div>
+        <div className="astrology-advanced astrology-form-wide">
+          <button type="button" aria-expanded={advancedOpen} aria-controls="astrology-advanced-fields" onClick={() => setAdvancedOpen((open) => !open)}><span>高级设置 / Advanced</span><small>手动坐标与 IANA 时区</small><i aria-hidden="true">⌄</i></button>
+          {advancedOpen && <div id="astrology-advanced-fields" className="astrology-advanced-fields">
+            <div className="astrology-coordinate-fields">
+              <label className="astrology-field"><span>纬度 / Latitude</span><input type="number" inputMode="decimal" min="-89.999" max="89.999" step="any" placeholder="3.1412" value={fields.latitude} onChange={(event) => updateManualLocation('latitude', event.target.value)} /></label>
+              <label className="astrology-field"><span>经度 / Longitude</span><input type="number" inputMode="decimal" min="-180" max="180" step="any" placeholder="101.68653" value={fields.longitude} onChange={(event) => updateManualLocation('longitude', event.target.value)} /></label>
+            </div>
+            <label className="astrology-field"><span>IANA 时区手动覆盖 / Manual timezone override</span><input type="text" autoCapitalize="none" autoCorrect="off" spellCheck="false" placeholder="Europe/Prague" value={fields.timeZone} onChange={(event) => { setZonePickerVersion((version) => version + 1); update('timeZone', event.target.value.trim()) }} /><small>时区是民用时间规则身份，不是固定 UTC 偏移。仅输入完整有效的 IANA 名称。</small></label>
+          </div>}
         </div>
-        <p className="astrology-location-note astrology-form-wide">东经、北纬为正；西经、南纬为负。坐标可留空，此时仍计算行星，但不显示上升、天顶与宫位。精确宫位必须同时有出生时间与地点。</p>
+        <p className="astrology-location-note astrology-form-wide">城市资料会填入地理坐标与 IANA 时区。UTC 偏移随后按出生日期和时间从时区规则计算。若城市不在列表中，请手动输入；系统不会猜测。离线城市资料来自 GeoNames（CC BY 4.0）。</p>
         {!fields.timeKnown && <p className="astrology-unknown-note astrology-form-wide">不会代填中午。系统会检查这个本地日期从开始到结束的行星星座；可能换座的天体会标为不确定，上升、天顶、宫位、相位与精确度数不显示。</p>}
-        {ambiguous.length > 1 && <fieldset className="astrology-offset-choice astrology-form-wide"><legend>选择当时的 UTC 偏移</legend>{ambiguous.map((candidate) => <label key={candidate.utcMs}><input type="radio" name="astrology-offset" checked={selectedUtc === candidate.utcMs} onChange={() => { setSelectedUtc(candidate.utcMs); setError(null) }} />{candidate.offsetLabel} · {candidate.isoUtc}</label>)}</fieldset>}
+        {ambiguous.length > 1 && <fieldset className="astrology-offset-choice astrology-form-wide"><legend>选择当时的 UTC 偏移</legend>{ambiguous.map((candidate) => <label key={candidate.utcMs}><input type="radio" name="astrology-offset" checked={selectedUtc === candidate.utcMs} onChange={() => { setSelectedUtc(candidate.utcMs); setChart(null); setError(null) }} />{candidate.offsetLabel} · {candidate.isoUtc}</label>)}</fieldset>}
         {error && <p id="astrology-form-error" className="cosmos-error astrology-form-wide text-sm" role="alert">{error}</p>}
         <Button type="submit" className="cosmos-draw astrology-form-wide min-h-12 w-full sm:w-auto">计算本命盘 / Calculate</Button>
       </form>
     </section>
 
-    {chart && <AstrologyResult chart={chart} fields={fields} />}
+    {chart && <AstrologyResult chart={chart} fields={fields} city={selectedCity} />}
     <ZodiacReference />
   </div>
 }
 
-function AstrologyResult({ chart, fields }: { chart: NatalChart; fields: FormFields }) {
+function AstrologyResult({ chart, fields, city }: { chart: NatalChart; fields: FormFields; city: BirthCity | null }) {
   const sun = chart.placements.find((placement) => placement.id === 'sun')
   const moon = chart.placements.find((placement) => placement.id === 'moon')
   const ascendant = chart.kind === 'exact' && chart.ascendant !== null ? zodiacForLongitude(chart.ascendant) : null
   return <section className="astrology-results mx-auto mt-6 max-w-5xl" aria-labelledby="astrology-results-heading" aria-live="polite">
-    <div className="astrology-result-title"><div><p className="section-label">Calculation result · 本地计算结果</p><h2 id="astrology-results-heading">{fields.date}{fields.timeKnown ? ` · ${fields.time}` : ' · 时间未知'}</h2></div><span>{fields.timeZone} · Tropical</span></div>
+    <div className="astrology-result-title"><div><p className="section-label">Calculation result · 本地计算结果</p><h2 id="astrology-results-heading">{fields.date}{fields.timeKnown ? ` · ${fields.time}` : ' · 时间未知'}</h2></div><span>{city ? `${city.chineseName} · ` : ''}{fields.timeZone} · Tropical</span></div>
     <div className="astrology-chart-layout mt-5">
       <div><NatalChartWheel chart={chart} /><PlanetLegend chart={chart} /></div>
       <div className="astrology-big-three">
