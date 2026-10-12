@@ -13,7 +13,7 @@
 .cosmos-title-zh { color: #d9b779; font-size: .66em; }
 .cosmos-reading { border: 1px solid rgba(206, 164, 92, .25); background: #171713; box-shadow: 0 20px 65px rgba(0, 0, 0, .22); }
 .cosmos-reading-layout { display: grid; justify-items: center; gap: 2rem; }
-.cosmos-experience-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 28rem); gap: .4rem; border: 1px solid rgba(206, 164, 92, .25); border-radius: 1rem; background: #111210; padding: .4rem; }
+.cosmos-experience-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: min(100%, 34rem); gap: .4rem; border: 1px solid rgba(206, 164, 92, .25); border-radius: 1rem; background: #111210; padding: .4rem; }
 .cosmos-experience-tabs button { min-height: 3.4rem; border-radius: .75rem; padding: .55rem 1rem; color: #aaa195; outline: none; text-align: left; }
 .cosmos-experience-tabs button strong, .cosmos-experience-tabs button span { display: block; }
 .cosmos-experience-tabs button strong { font-size: .92rem; }
@@ -121,6 +121,77 @@
 .iching-bagua-grid h3 { color: #f5efe2; font-size: .88rem; font-weight: 700; }
 .iching-bagua-grid h3 small { color: #aaa195; font-size: .62rem; font-weight: 500; }
 .iching-bagua-grid p { margin-top: .1rem; color: #aaa195; font-size: .65rem; }
+.bazi-form, .bazi-panel, .bazi-pillar, .bazi-assumptions { border: 1px solid rgba(206, 164, 92, .22); background: #111210; }
+.bazi-loading { color: #d7cbb8; }
+.bazi-form { border-radius: 1.2rem; padding: 1rem; }
+.bazi-form-grid { display: grid; gap: 1rem; }
+.bazi-field { display: block; min-width: 0; color: #d7cbb8; font-size: .78rem; font-weight: 650; }
+.bazi-field > span, .bazi-field > small { display: block; }
+.bazi-field > span { margin-bottom: .5rem; }
+.bazi-field > small { margin-top: .45rem; color: #968d80; font-size: .68rem; font-weight: 500; line-height: 1.5; }
+.bazi-field input, .bazi-field select { width: 100%; min-height: 3.2rem; border: 1px solid rgba(206, 164, 92, .3); border-radius: .8rem; outline: none; background: #101110; padding: .65rem .8rem; color: #f5efe2; color-scheme: dark; font-size: .9rem; }
+.bazi-field select:disabled { cursor: not-allowed; color: #c5bbaa; opacity: 1; }
+.bazi-field input:focus-visible, .bazi-field select:focus-visible { border-color: #d9b779; box-shadow: 0 0 0 3px rgba(242, 211, 144, .25); }
+.bazi-field input[aria-invalid="true"] { border-color: #d8877d; }
+.bazi-time-field { max-width: 20rem; }
+.bazi-time-choice { display: flex; flex-wrap: wrap; gap: .65rem; }
+.bazi-time-choice legend { width: 100%; margin-bottom: .1rem; color: #d7cbb8; font-size: .78rem; font-weight: 650; }
+.bazi-time-choice label { display: flex; min-height: 2.8rem; align-items: center; gap: .5rem; border: 1px solid rgba(206, 164, 92, .2); border-radius: .75rem; padding: .55rem .75rem; color: #c5bbaa; font-size: .78rem; }
+.bazi-time-choice input { width: 1.1rem; height: 1.1rem; accent-color: #c29750; }
+.bazi-time-choice label:has(input:checked) { border-color: #b08a50; background: rgba(194, 151, 80, .12); color: #f2d390; }
+.bazi-unknown-note, .bazi-boundary-warning { border-left: 2px solid #b08a50; padding-left: .8rem; color: #c5bbaa; }
+.bazi-result-title { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .75rem; }
+.bazi-result-title h2 { margin-top: .3rem; color: #f5efe2; font-size: 1.35rem; font-weight: 700; }
+.bazi-result-title > span { color: #aaa195; font-size: .7rem; }
+.bazi-boundary-warning { border-radius: 0 .8rem .8rem 0; background: rgba(194, 151, 80, .08); padding-block: .65rem; padding-right: .8rem; font-size: .78rem; }
+.bazi-boundary-warning strong { color: #f2d390; }
+.bazi-boundary-warning p { margin-top: .25rem; color: #d7cbb8; }
+.bazi-pillars { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+.bazi-pillar { position: relative; min-width: 0; border-radius: 1rem; padding: .9rem; text-align: center; }
+.bazi-pillar > p { color: #d9b779; font-size: .72rem; font-weight: 700; }
+.bazi-pillar > p span { display: block; margin-top: .1rem; color: #8e877b; font-size: .58rem; font-weight: 500; }
+.bazi-pillar-chars { display: flex; justify-content: center; gap: .25rem; margin-top: .65rem; }
+.bazi-pillar-chars strong { color: #f5efe2; font-family: ui-serif, "Noto Serif SC", "Songti SC", serif; font-size: clamp(2.2rem, 10vw, 3.6rem); font-weight: 650; line-height: 1; text-shadow: 0 0 1.2rem rgba(217, 183, 121, .14); }
+.bazi-pillar-meta { display: grid; gap: .15rem; margin-top: .65rem; color: #aaa195; font-size: .62rem; }
+.bazi-pillar-god { display: inline-block; margin-top: .6rem; border-radius: 999px; background: rgba(194, 151, 80, .15); padding: .2rem .55rem; color: #f2d390; font-size: .65rem; font-weight: 700; }
+.bazi-pillar.is-unknown { display: flex; min-height: 10.5rem; flex-direction: column; align-items: center; justify-content: center; }
+.bazi-pillar.is-unknown > strong { margin-top: .8rem; color: #aaa195; font-size: 1.5rem; }
+.bazi-pillar.is-unknown > small { margin-top: .45rem; color: #746e64; font-size: .65rem; }
+.bazi-analysis-grid { display: grid; gap: 1rem; }
+.bazi-panel { min-width: 0; border-radius: 1.2rem; padding: 1.1rem; }
+.bazi-panel > h3 { color: #f5efe2; font-size: 1rem; font-weight: 700; }
+.bazi-day-master-value { display: flex; align-items: center; gap: .85rem; }
+.bazi-day-master-value > strong { color: #f2d390; font-family: ui-serif, "Noto Serif SC", "Songti SC", serif; font-size: 3.5rem; line-height: 1; }
+.bazi-day-master-value h3 { color: #f5efe2; font-size: 1.05rem; font-weight: 700; }
+.bazi-day-master-value p { margin-top: .2rem; color: #c5bbaa; font-size: .72rem; }
+.bazi-elements { display: grid; gap: .55rem; }
+.bazi-element { display: grid; grid-template-columns: 3.6rem minmax(0, 1fr) 1.2rem; align-items: center; gap: .55rem; color: #d7cbb8; font-size: .72rem; }
+.bazi-element > span { font-weight: 700; }
+.bazi-element > span small { display: block; color: #8e877b; font-size: .55rem; font-weight: 500; }
+.bazi-element > div { height: .42rem; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, .07); }
+.bazi-element > div i { display: block; height: 100%; border-radius: inherit; background: #a68a5a; }
+.bazi-element.is-wood > div i { background: #6f9b75; }
+.bazi-element.is-fire > div i { background: #bd6f5c; }
+.bazi-element.is-earth > div i { background: #ad8b58; }
+.bazi-element.is-metal > div i { background: #b9b9ad; }
+.bazi-element.is-water > div i { background: #668aa3; }
+.bazi-element > strong { color: #f5efe2; text-align: right; }
+.bazi-ten-gods { display: grid; gap: .55rem; }
+.bazi-ten-gods > div { display: grid; grid-template-columns: 3.2rem 3rem minmax(0, 1fr); align-items: center; gap: .55rem; border-bottom: 1px solid rgba(206, 164, 92, .12); padding: .5rem 0; }
+.bazi-ten-gods span { color: #aaa195; font-size: .7rem; }
+.bazi-ten-gods strong { color: #f2d390; font-size: .78rem; }
+.bazi-ten-gods small { color: #968d80; font-size: .66rem; line-height: 1.5; }
+.bazi-ten-gods .is-unknown strong { color: #aaa195; }
+.bazi-glossary { color: #c5bbaa; }
+.bazi-glossary summary { cursor: pointer; color: #d9b779; font-size: .76rem; font-weight: 700; }
+.bazi-glossary summary:focus-visible { border-radius: .25rem; outline: 3px solid var(--focus); outline-offset: .25rem; }
+.bazi-glossary dl { display: grid; gap: .4rem; margin-top: .8rem; }
+.bazi-glossary dl > div { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: .5rem; }
+.bazi-glossary dt { color: #f2d390; font-size: .7rem; font-weight: 700; }
+.bazi-glossary dd { color: #968d80; font-size: .66rem; line-height: 1.5; }
+.bazi-assumptions { border-radius: 1rem; padding: 1rem; }
+.bazi-assumptions h2 { color: #f2d390; font-size: .82rem; font-weight: 700; }
+.bazi-assumptions ul { display: grid; gap: .45rem; margin-top: .65rem; padding-left: 1rem; color: #aaa195; font-size: .7rem; line-height: 1.65; }
 @keyframes cosmos-shuffle { 0% { opacity: .55; transform: translateX(-.65rem) rotate(-2deg); } 38% { transform: translateX(.7rem) rotate(2.5deg); } 72% { transform: translateX(-.3rem) rotate(-1deg); } 100% { opacity: 1; transform: translateX(0) rotate(0); } }
 @keyframes cosmos-reveal { from { opacity: 0; transform: translateY(.8rem) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes iching-coin { from { opacity: .45; transform: rotateY(90deg) scale(.9); } to { opacity: 1; transform: rotateY(0) scale(1); } }
@@ -130,6 +201,18 @@
   .iching-casting-layout { grid-template-columns: minmax(13rem, .8fr) minmax(0, 1.2fr); gap: 2rem; }
   .iching-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .iching-bagua-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bazi-form { padding: 1.25rem; }
+  .bazi-form-grid, .bazi-analysis-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bazi-pillars { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bazi-pillar-chars strong { font-size: clamp(2.35rem, 5vw, 3.6rem); }
+}
+@media (max-width: 380px) {
+  .cosmos-experience-tabs { gap: .25rem; padding: .3rem; }
+  .cosmos-experience-tabs button { min-height: 3.1rem; padding: .45rem .35rem; text-align: center; }
+  .cosmos-experience-tabs button strong { font-size: .82rem; }
+  .cosmos-experience-tabs button span { font-size: .6rem; }
+  .bazi-pillar { padding: .75rem .5rem; }
+  .bazi-ten-gods > div { grid-template-columns: 2.7rem 2.6rem minmax(0, 1fr); gap: .35rem; }
 }
 @media (min-width: 900px) {
   .cosmos-revealed-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }

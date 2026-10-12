@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type FormEvent } from 'react'
+import { lazy, Suspense, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { Button } from '../components/ui/button'
 import { IChingExperience } from '../cosmos/IChingExperience'
 import { TarotCardVisual } from '../cosmos/TarotCardVisual'
@@ -8,9 +8,17 @@ import { shuffleTarotDeck } from '../cosmos/tarotShuffle'
 import type { TarotCard } from '../cosmos/tarotDeck'
 import './cosmos.css'
 
+const BaZiExperience = lazy(() => import('../cosmos/BaZiExperience').then((module) => ({ default: module.BaZiExperience })))
+
 type ReadingMode = 'single' | 'three'
 type ReadingStage = 'shuffle' | 'select' | 'reveal'
-type CosmosExperience = 'tarot' | 'iching'
+type CosmosExperience = 'tarot' | 'iching' | 'bazi'
+
+const cosmosExperiences: { id: CosmosExperience; chinese: string; english: string }[] = [
+  { id: 'tarot', chinese: '塔罗', english: 'Tarot' },
+  { id: 'iching', chinese: '易经', english: 'I Ching' },
+  { id: 'bazi', chinese: '八字', english: 'BaZi' },
+]
 
 const emptyNumbers = () => ['', '', '']
 const spreadPositions = [
@@ -21,6 +29,7 @@ const spreadPositions = [
 
 export function CosmosPage() {
   const [experience, setExperience] = useState<CosmosExperience>('tarot')
+  const tabRefs = useRef<Partial<Record<CosmosExperience, HTMLButtonElement | null>>>({})
   const [mode, setMode] = useState<ReadingMode>('single')
   const [stage, setStage] = useState<ReadingStage>('shuffle')
   const [shuffledDeck, setShuffledDeck] = useState<TarotCard[] | null>(null)
@@ -76,6 +85,20 @@ export function CosmosPage() {
     }
   }
 
+  function handleExperienceKeyDown(event: KeyboardEvent<HTMLButtonElement>, current: CosmosExperience) {
+    const index = cosmosExperiences.findIndex((item) => item.id === current)
+    let nextIndex = index
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % cosmosExperiences.length
+    else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + cosmosExperiences.length) % cosmosExperiences.length
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = cosmosExperiences.length - 1
+    else return
+    event.preventDefault()
+    const next = cosmosExperiences[nextIndex].id
+    setExperience(next)
+    tabRefs.current[next]?.focus()
+  }
+
   return <div className="cosmos-page mx-auto min-h-[calc(100dvh-6rem)] w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
     <header className="cosmos-header">
       <p className="section-label">Eden OS · Cosmos</p>
@@ -84,8 +107,7 @@ export function CosmosPage() {
     </header>
 
     <div className="cosmos-experience-tabs mt-6" role="tablist" aria-label="Cosmos experiences">
-      <button id="cosmos-tarot-tab" type="button" role="tab" aria-selected={experience === 'tarot'} aria-controls="cosmos-tarot-panel" onClick={() => setExperience('tarot')}><strong>塔罗</strong><span>Tarot</span></button>
-      <button id="cosmos-iching-tab" type="button" role="tab" aria-selected={experience === 'iching'} aria-controls="cosmos-iching-panel" onClick={() => setExperience('iching')}><strong>易经</strong><span>I Ching</span></button>
+      {cosmosExperiences.map((item) => <button key={item.id} ref={(node) => { tabRefs.current[item.id] = node }} id={`cosmos-${item.id}-tab`} type="button" role="tab" tabIndex={experience === item.id ? 0 : -1} aria-selected={experience === item.id} aria-controls={`cosmos-${item.id}-panel`} onClick={() => setExperience(item.id)} onKeyDown={(event) => handleExperienceKeyDown(event, item.id)}><strong>{item.chinese}</strong><span>{item.english}</span></button>)}
     </div>
 
     {experience === 'tarot' ? <div id="cosmos-tarot-panel" role="tabpanel" aria-labelledby="cosmos-tarot-tab">
@@ -145,7 +167,7 @@ export function CosmosPage() {
     </section>
 
     <p className="cosmos-disclaimer mx-auto mt-6 max-w-5xl text-xs leading-6">塔罗仅供文化探索、娱乐与个人反思，不是可靠的预测，也不应代替专业建议。</p>
-    </div> : <div id="cosmos-iching-panel" role="tabpanel" aria-labelledby="cosmos-iching-tab"><IChingExperience /></div>}
+    </div> : experience === 'iching' ? <div id="cosmos-iching-panel" role="tabpanel" aria-labelledby="cosmos-iching-tab"><IChingExperience /></div> : <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地历法引擎…</div>}><BaZiExperience /></Suspense>}
   </div>
 }
 
