@@ -21,6 +21,17 @@ describe('Cosmos interactive Tarot page', () => {
     tarotMocks.randomIndex.mockReset().mockReturnValue(0)
   })
 
+  it('switches between the existing Tarot flow and the local I Ching experience', () => {
+    render(<CosmosPage />)
+    expect(screen.getByRole('tab', { name: /塔罗/ }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('heading', { name: '洗牌、选择、揭示' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: /易经/ }))
+    expect(screen.getByRole('tab', { name: /易经/ }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('heading', { name: '六次掷币，由下而上成卦' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: /塔罗/ }))
+    expect(screen.getByRole('button', { name: '洗牌 / Shuffle' })).toBeTruthy()
+  })
+
   it('keeps one shuffled deck stable through single-card selection and restarts explicitly', () => {
     render(<CosmosPage />)
     expect(screen.getByRole('button', { name: /单张牌 Single Card/ }).getAttribute('aria-pressed')).toBe('true')

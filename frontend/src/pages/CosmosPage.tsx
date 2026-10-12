@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from 'react'
 import { Button } from '../components/ui/button'
+import { IChingExperience } from '../cosmos/IChingExperience'
 import { TarotCardVisual } from '../cosmos/TarotCardVisual'
 import { combinedTarotReflection } from '../cosmos/tarotReflection'
 import { selectTarotCards, validateTarotPositions, type TarotSelection } from '../cosmos/tarotSelection'
@@ -9,6 +10,7 @@ import './cosmos.css'
 
 type ReadingMode = 'single' | 'three'
 type ReadingStage = 'shuffle' | 'select' | 'reveal'
+type CosmosExperience = 'tarot' | 'iching'
 
 const emptyNumbers = () => ['', '', '']
 const spreadPositions = [
@@ -18,6 +20,7 @@ const spreadPositions = [
 ] as const
 
 export function CosmosPage() {
+  const [experience, setExperience] = useState<CosmosExperience>('tarot')
   const [mode, setMode] = useState<ReadingMode>('single')
   const [stage, setStage] = useState<ReadingStage>('shuffle')
   const [shuffledDeck, setShuffledDeck] = useState<TarotCard[] | null>(null)
@@ -76,10 +79,16 @@ export function CosmosPage() {
   return <div className="cosmos-page mx-auto min-h-[calc(100dvh-6rem)] w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
     <header className="cosmos-header">
       <p className="section-label">Eden OS · Cosmos</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Cosmos <span className="cosmos-title-zh">星象探索</span></h1>
-      <p className="mt-3 max-w-xl text-sm leading-7">亲手洗牌，选择数字，再从传统塔罗象征中留一个角度给此刻。</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Cosmos <span className="cosmos-title-zh">象数探索</span></h1>
+      <p className="mt-3 max-w-xl text-sm leading-7">选择一种传统象征系统，在完全本地的互动中留一个角度给此刻。</p>
     </header>
 
+    <div className="cosmos-experience-tabs mt-6" role="tablist" aria-label="Cosmos experiences">
+      <button id="cosmos-tarot-tab" type="button" role="tab" aria-selected={experience === 'tarot'} aria-controls="cosmos-tarot-panel" onClick={() => setExperience('tarot')}><strong>塔罗</strong><span>Tarot</span></button>
+      <button id="cosmos-iching-tab" type="button" role="tab" aria-selected={experience === 'iching'} aria-controls="cosmos-iching-panel" onClick={() => setExperience('iching')}><strong>易经</strong><span>I Ching</span></button>
+    </div>
+
+    {experience === 'tarot' ? <div id="cosmos-tarot-panel" role="tabpanel" aria-labelledby="cosmos-tarot-tab">
     <section className="cosmos-reading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5 sm:mt-9 sm:p-8" aria-labelledby="cosmos-reading-heading">
       <div className="cosmos-reading-copy">
         <p className="section-label">Tarot reading · 本地塔罗解读</p>
@@ -136,6 +145,7 @@ export function CosmosPage() {
     </section>
 
     <p className="cosmos-disclaimer mx-auto mt-6 max-w-5xl text-xs leading-6">塔罗仅供文化探索、娱乐与个人反思，不是可靠的预测，也不应代替专业建议。</p>
+    </div> : <div id="cosmos-iching-panel" role="tabpanel" aria-labelledby="cosmos-iching-tab"><IChingExperience /></div>}
   </div>
 }
 
