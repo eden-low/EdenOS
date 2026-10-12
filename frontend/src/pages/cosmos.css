@@ -1,0 +1,35 @@
+.cosmos-page {
+  --accent-primary: #aa8246;
+  --accent-soft: #ddbd7a;
+  --accent-wash: rgba(194, 151, 80, .16);
+  --accent-shadow: 0 10px 30px rgba(0, 0, 0, .24);
+  --focus: #f2d390;
+  --surface-primary: #171611;
+  color: #f5efe2;
+  background: radial-gradient(circle at 68% 8%, rgba(144, 105, 49, .18), transparent 30rem), #0d0e0e;
+}
+.cosmos-page .section-label { color: #d9b779; }
+.cosmos-header > p:last-child, .cosmos-reading-copy > p:last-child, .cosmos-context, .cosmos-disclaimer { color: #c5bbaa; }
+.cosmos-title-zh { color: #d9b779; font-size: .66em; }
+.cosmos-reading { border: 1px solid rgba(206, 164, 92, .25); background: #171713; box-shadow: 0 20px 65px rgba(0, 0, 0, .22); }
+.cosmos-reading-layout { display: grid; justify-items: center; gap: 2rem; }
+.cosmos-card { width: min(100%, 14rem); aspect-ratio: 2 / 3; padding: .55rem; border: 1px solid #b08a50; border-radius: 1.1rem; color: #d9b779; background: linear-gradient(145deg, #30271c, #111515 60%, #30271c); box-shadow: 0 16px 35px rgba(0, 0, 0, .38); }
+.cosmos-card-inner { height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: .6rem; border: 1px solid rgba(217, 183, 121, .55); border-radius: .65rem; }
+.cosmos-card-corner { font-size: .7rem; line-height: 1; }
+.cosmos-card-corner:last-child { align-self: end; }
+.cosmos-card-back, .cosmos-card-face { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.cosmos-card-back svg { width: 80%; max-width: 10rem; }
+.cosmos-card-back span { margin-top: .8rem; font-size: .7rem; letter-spacing: .35em; }
+.cosmos-card-face { gap: .65rem; }
+.cosmos-card-arcana { font-size: .7rem; letter-spacing: .1em; }
+.cosmos-card-sigil { font-size: 4rem; line-height: 1; }
+.cosmos-card-face strong { color: #f5efe2; font-size: 1.5rem; }
+.cosmos-card-english { font-size: .7rem; }
+.cosmos-result { width: 100%; align-self: center; }
+.cosmos-english { color: #c5bbaa; }
+.cosmos-meaning { color: #f5efe2; }
+.cosmos-draw { color: #17140f; }
+.cosmos-draw:hover { color: #17140f; }
+.cosmos-error { color: #f4aaa5; }
+@media (min-width: 640px) { .cosmos-reading-layout { grid-template-columns: 14rem minmax(0, 1fr); align-items: center; justify-items: stretch; gap: clamp(2rem, 5vw, 4rem); } }
+@media (prefers-reduced-motion: reduce) { .cosmos-page button { transition: none; } }

@@ -5,14 +5,14 @@ afterEach(() => window.history.replaceState(null, '', '/'))
 
 describe('application routes', () => {
   it.each([
-    ['/expenses', 'expenses'], ['/exercise', 'exercise'], ['/anime', 'anime'], ['/records', 'records'], ['/weekly-review', 'review'], ['/', 'today'],
+    ['/expenses', 'expenses'], ['/exercise', 'exercise'], ['/anime', 'anime'], ['/cosmos', 'cosmos'], ['/records', 'records'], ['/weekly-review', 'review'], ['/', 'today'],
   ])('recognizes clean path %s', (path, page) => {
     window.history.replaceState(null, '', path)
     expect(appPageFromLocation()).toBe(page)
   })
 
   it.each([
-    ['/#/expenses', 'expenses'], ['/#/exercise', 'exercise'], ['/#/anime', 'anime'], ['/#/weekly-review', 'review'],
+    ['/#/expenses', 'expenses'], ['/#/exercise', 'exercise'], ['/#/anime', 'anime'], ['/#/cosmos', 'cosmos'], ['/#/weekly-review', 'review'],
   ])('preserves hash-route compatibility for %s', (path, page) => {
     window.history.replaceState(null, '', path)
     expect(appPageFromLocation()).toBe(page)

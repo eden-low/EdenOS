@@ -13,6 +13,7 @@ const ExercisePage = lazy(() => import('./pages/ExercisePage').then((module) => 
 const RecordsPage = lazy(() => import('./pages/RecordsPage').then((module) => ({ default: module.RecordsPage })))
 const WeeklyReviewPage = lazy(() => import('./pages/WeeklyReviewPage').then((module) => ({ default: module.WeeklyReviewPage })))
 const AnimePage = lazy(() => import('./pages/AnimePage').then((module) => ({ default: module.AnimePage })))
+const CosmosPage = lazy(() => import('./pages/CosmosPage').then((module) => ({ default: module.CosmosPage })))
 const CommandPalette = lazy(() => import('./components/command/CommandPalette').then((module) => ({ default: module.CommandPalette })))
 
 function App() {
@@ -66,6 +67,8 @@ function App() {
             <RecordsPage />
           ) : activePage === 'anime' ? (
             <AnimePage />
+          ) : activePage === 'cosmos' ? (
+            <CosmosPage />
           ) : (
             <WeeklyReviewPage />
           )}

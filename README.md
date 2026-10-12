@@ -1,5 +1,28 @@
 # Eden OS
 
+## Cosmos Phase 1A: Tarot
+
+Cosmos is available at `/cosmos` through the desktop sidebar, mobile app drawer,
+and command navigation. Its single-card reading draws from a local 78-card deck
+(22 Major, 56 Minor), with original concise Chinese upright and reversed text.
+Each draw uses the browser's cryptographic random-number API. Readings stay in
+page memory only; this feature makes no network request, saves no reading, and
+has no usage limit.
+
+Source review for this phase:
+
+- [`smallcat419/tarot-card-data`](https://github.com/smallcat419/tarot-card-data)
+  declares CC0 1.0 in its README and JSON metadata. Its JSON has 78 unique IDs
+  and both meanings for every card, but omits `arcana` on the 56 Minor cards;
+  the repository has no standalone license file. No content was copied.
+- [`StarTarotOnline/tarot-rws-dataset`](https://github.com/StarTarotOnline/tarot-rws-dataset)
+  has 78 English historical records and a CC BY 4.0 license file. It is useful
+  as a traditional reference, but no dataset content was imported or translated.
+
+The card-back geometry is original SVG/CSS. No third-party artwork is included.
+Future content work may review the concise interpretations with a subject-matter
+editor; that review is not part of Phase 1A.
+
 Eden OS is a private Personal OS for seeing the most important parts of the day and capturing trusted personal records without unnecessary complexity.
 
 ## Current staging scope

@@ -17,6 +17,7 @@ const destinations: Array<{ aliases: string[]; page: AppPage; label: string }> =
   { aliases: ['records', 'activity'], page: 'records', label: 'Records' },
   { aliases: ['weekly review', 'review'], page: 'review', label: 'Weekly Review' },
   { aliases: ['anime', 'catalogue'], page: 'anime', label: 'Anime' },
+  { aliases: ['cosmos', 'tarot', '塔罗'], page: 'cosmos', label: 'Cosmos' },
 ]
 
 function occurredNow(referenceDate: Date): string {

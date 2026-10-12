@@ -12,6 +12,7 @@ describe('EdenOS commands', () => {
   it('recognizes exercise capture, navigation, and Anime fallback', () => {
     expect(parseCommand('Log running', now)).toEqual({ kind: 'exercise', activity: 'Running' })
     expect(parseCommand('Weekly review', now)).toMatchObject({ kind: 'navigation', page: 'review' })
+    expect(parseCommand('tarot', now)).toMatchObject({ kind: 'navigation', page: 'cosmos' })
     expect(parseCommand('Frieren', now)).toEqual({ kind: 'anime-search', query: 'Frieren' })
     expect(matchingDestinations('exp')).toEqual([{ page: 'expenses', label: 'Finance' }])
   })

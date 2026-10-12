@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardCheck, Dumbbell, Layers3, Menu, Plus, ReceiptText, Tv, UserRound } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, Dumbbell, Layers3, Menu, Plus, ReceiptText, Sparkles, Tv, UserRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { AccountDialog } from '../account/AccountDialog'
 import { CaptureSheet } from '../capture/CaptureSheet'
@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } 
 import { triggerPressFeedback } from '../ui/pressFeedback'
 import { usePrivacyLock } from '../../privacy/usePrivacyLock'
 
-export type AppPage = 'today' | 'expenses' | 'exercise' | 'records' | 'review' | 'anime'
+export type AppPage = 'today' | 'expenses' | 'exercise' | 'records' | 'review' | 'anime' | 'cosmos'
 
 const navItems: Array<{ label: string; icon: typeof CalendarDays; page: AppPage }> = [
   { label: 'Today', icon: CalendarDays, page: 'today' },
@@ -15,6 +15,7 @@ const navItems: Array<{ label: string; icon: typeof CalendarDays; page: AppPage 
   { label: 'Records', icon: Layers3, page: 'records' },
   { label: 'Review', icon: ClipboardCheck, page: 'review' },
   { label: 'Anime', icon: Tv, page: 'anime' },
+  { label: 'Cosmos', icon: Sparkles, page: 'cosmos' },
 ]
 
 export function DesktopNavigation({ activePage, onNavigate }: { activePage: AppPage; onNavigate: (page: AppPage) => void }) {

@@ -13,10 +13,16 @@ describe('Mobile Navigation V2', () => {
     expect(screen.getAllByRole('button', { name: 'Capture something' })).toHaveLength(1)
     fireEvent.click(screen.getByRole('button', { name: 'Open apps' }))
     const drawer = await screen.findByRole('dialog', { name: 'Apps' })
-    for (const label of ['Today', 'Expenses', 'Exercise', 'Records', 'Review', 'Anime', 'Account']) expect(drawer.textContent).toContain(label)
-    expect(drawer.querySelectorAll('nav button')).toHaveLength(7)
+    for (const label of ['Today', 'Expenses', 'Exercise', 'Records', 'Review', 'Anime', 'Cosmos', 'Account']) expect(drawer.textContent).toContain(label)
+    expect(drawer.querySelectorAll('nav button')).toHaveLength(8)
     fireEvent.click(screen.getByRole('button', { name: 'Expenses' }))
     expect(navigate).toHaveBeenCalledWith('expenses')
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Apps' })).toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Open apps' }))
+    await screen.findByRole('dialog', { name: 'Apps' })
+    fireEvent.click(screen.getByRole('button', { name: 'Cosmos' }))
+    expect(navigate).toHaveBeenCalledWith('cosmos')
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Apps' })).toBeNull())
   })
 
   it('opens for a deliberate left-edge swipe and ignores vertical or short gestures', async () => {
@@ -35,8 +41,12 @@ describe('Mobile Navigation V2', () => {
   })
 
   it('preserves the approved desktop destinations', () => {
-    render(<DesktopNavigation activePage="exercise" onNavigate={vi.fn()} />)
+    const navigate = vi.fn()
+    render(<DesktopNavigation activePage="exercise" onNavigate={navigate} />)
     expect(screen.getByRole('button', { name: 'Exercise' }).getAttribute('aria-current')).toBe('page')
-    expect(screen.getByRole('navigation', { name: 'Primary navigation' }).querySelectorAll('button')).toHaveLength(6)
+    expect(screen.getByRole('navigation', { name: 'Primary navigation' }).querySelectorAll('button')).toHaveLength(7)
+    expect(screen.getByRole('button', { name: 'Cosmos' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Cosmos' }))
+    expect(navigate).toHaveBeenCalledWith('cosmos')
   })
 })
