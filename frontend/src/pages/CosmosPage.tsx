@@ -9,15 +9,17 @@ import type { TarotCard } from '../cosmos/tarotDeck'
 import './cosmos.css'
 
 const BaZiExperience = lazy(() => import('../cosmos/BaZiExperience').then((module) => ({ default: module.BaZiExperience })))
+const AstrologyExperience = lazy(() => import('../cosmos/AstrologyExperience').then((module) => ({ default: module.AstrologyExperience })))
 
 type ReadingMode = 'single' | 'three'
 type ReadingStage = 'shuffle' | 'select' | 'reveal'
-type CosmosExperience = 'tarot' | 'iching' | 'bazi'
+type CosmosExperience = 'tarot' | 'iching' | 'bazi' | 'astrology'
 
 const cosmosExperiences: { id: CosmosExperience; chinese: string; english: string }[] = [
   { id: 'tarot', chinese: '塔罗', english: 'Tarot' },
   { id: 'iching', chinese: '易经', english: 'I Ching' },
   { id: 'bazi', chinese: '八字', english: 'BaZi' },
+  { id: 'astrology', chinese: '占星', english: 'Astrology' },
 ]
 
 const emptyNumbers = () => ['', '', '']
@@ -167,7 +169,7 @@ export function CosmosPage() {
     </section>
 
     <p className="cosmos-disclaimer mx-auto mt-6 max-w-5xl text-xs leading-6">塔罗仅供文化探索、娱乐与个人反思，不是可靠的预测，也不应代替专业建议。</p>
-    </div> : experience === 'iching' ? <div id="cosmos-iching-panel" role="tabpanel" aria-labelledby="cosmos-iching-tab"><IChingExperience /></div> : <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地历法引擎…</div>}><BaZiExperience /></Suspense>}
+    </div> : experience === 'iching' ? <div id="cosmos-iching-panel" role="tabpanel" aria-labelledby="cosmos-iching-tab"><IChingExperience /></div> : experience === 'bazi' ? <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地历法引擎…</div>}><BaZiExperience /></Suspense> : <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地天文引擎…</div>}><AstrologyExperience /></Suspense>}
   </div>
 }
 
