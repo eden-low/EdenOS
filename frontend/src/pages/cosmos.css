@@ -13,7 +13,8 @@
 .cosmos-title-zh { color: #d9b779; font-size: .66em; }
 .cosmos-reading { border: 1px solid rgba(206, 164, 92, .25); background: #171713; box-shadow: 0 20px 65px rgba(0, 0, 0, .22); }
 .cosmos-reading-layout { display: grid; justify-items: center; gap: 2rem; }
-.cosmos-experience-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 40rem); gap: .4rem; border: 1px solid rgba(206, 164, 92, .25); border-radius: 1rem; background: #111210; padding: .4rem; }
+.cosmos-experience-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 46rem); gap: .4rem; border: 1px solid rgba(206, 164, 92, .25); border-radius: 1rem; background: #111210; padding: .4rem; }
+.cosmos-experience-tabs button:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .cosmos-experience-tabs button { min-height: 3.4rem; border-radius: .75rem; padding: .55rem 1rem; color: #aaa195; outline: none; text-align: left; }
 .cosmos-experience-tabs button strong, .cosmos-experience-tabs button span { display: block; }
 .cosmos-experience-tabs button strong { font-size: .92rem; }
@@ -322,11 +323,95 @@
 .astrology-house-reference summary:focus-visible { border-radius: .25rem; outline: 3px solid var(--focus); outline-offset: .25rem; }
 .astrology-house-reference ol { display: grid; gap: .35rem; margin-top: .8rem; padding-left: 1.5rem; color: #aaa195; font-size: .66rem; }
 .astrology-house-reference li strong { margin-right: .5rem; color: #f2d390; }
+.ziwei-form { display: grid; gap: 1rem; }
+.ziwei-form-wide { grid-column: 1 / -1; }
+.ziwei-time-choice { align-self: end; }
+.ziwei-unknown-note { align-self: end; }
+.ziwei-manual-note { border-left: 2px solid #b08a50; border-radius: 0 .8rem .8rem 0; background: rgba(194, 151, 80, .07); padding: .7rem .8rem; color: #aaa195; font-size: .68rem; line-height: 1.6; }
+.ziwei-gender { display: flex; flex-wrap: wrap; gap: .6rem; }
+.ziwei-gender legend { width: 100%; color: #d7cbb8; font-size: .78rem; font-weight: 650; }
+.ziwei-gender label { display: flex; min-width: 6.5rem; min-height: 2.9rem; align-items: center; gap: .5rem; border: 1px solid rgba(206, 164, 92, .22); border-radius: .75rem; padding: .6rem .8rem; color: #c5bbaa; font-size: .74rem; }
+.ziwei-gender label:has(input:checked) { border-color: #b08a50; background: rgba(194, 151, 80, .13); color: #f2d390; }
+.ziwei-gender input { width: 1.1rem; height: 1.1rem; accent-color: #c29750; }
+.ziwei-gender > small { width: 100%; color: #8e877b; font-size: .64rem; line-height: 1.55; }
+.ziwei-results { color: #f5efe2; }
+.ziwei-result-title { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem; }
+.ziwei-result-title h2 { margin-top: .3rem; font-size: 1.35rem; font-weight: 700; }
+.ziwei-summary-grid { display: grid; gap: .65rem; }
+.ziwei-summary-grid article { min-width: 0; border: 1px solid rgba(206, 164, 92, .2); border-radius: 1rem; background: #111210; padding: .85rem; }
+.ziwei-summary-grid span, .ziwei-summary-grid strong, .ziwei-summary-grid small { display: block; }
+.ziwei-summary-grid span { color: #968d80; font-size: .62rem; }
+.ziwei-summary-grid strong { margin-top: .35rem; color: #f2d390; font-size: .92rem; }
+.ziwei-summary-grid small { margin-top: .3rem; color: #aaa195; font-size: .61rem; line-height: 1.5; overflow-wrap: anywhere; }
+.ziwei-transform-summary { border: 1px solid rgba(206, 164, 92, .2); border-radius: 1rem; background: #111210; padding: 1rem; }
+.ziwei-transform-summary h3 { margin-top: .2rem; font-size: 1rem; font-weight: 700; }
+.ziwei-transform-summary > div:last-child { display: grid; gap: .55rem; margin-top: .85rem; }
+.ziwei-transform-summary article { border-left: 2px solid #b08a50; padding: .45rem .65rem; }
+.ziwei-transform-summary article strong, .ziwei-transform-summary article span, .ziwei-transform-summary article small { display: block; }
+.ziwei-transform-summary article strong { color: #f2d390; font-size: .76rem; }
+.ziwei-transform-summary article span { margin-top: .15rem; color: #c5bbaa; font-size: .62rem; }
+.ziwei-transform-summary article small { margin-top: .25rem; color: #8e877b; font-size: .58rem; line-height: 1.45; }
+.ziwei-chart-layout { display: grid; gap: 1rem; align-items: start; }
+.ziwei-chart-figure { min-width: 0; border: 1px solid rgba(206, 164, 92, .22); border-radius: 1.1rem; background: #0d0f0e; padding: .45rem; }
+.ziwei-chart-grid { display: grid; min-width: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: "ziwei-si ziwei-wu ziwei-wei ziwei-shen" "ziwei-chen ziwei-center ziwei-center ziwei-you" "ziwei-mao ziwei-center ziwei-center ziwei-xu" "ziwei-yin ziwei-chou ziwei-zi ziwei-hai"; gap: 2px; }
+.ziwei-palace-cell { position: relative; min-width: 0; min-height: 5.3rem; border: 1px solid rgba(206, 164, 92, .14); border-radius: .45rem; background: #151612; padding: .38rem; outline: none; color: #c5bbaa; text-align: left; }
+.ziwei-palace-cell:hover { background: #1a1914; }
+.ziwei-palace-cell:focus-visible { z-index: 2; box-shadow: 0 0 0 3px var(--focus); }
+.ziwei-palace-cell[aria-pressed="true"] { border-color: #d9b779; background: rgba(194, 151, 80, .16); box-shadow: inset 0 0 0 1px rgba(242, 211, 144, .16); }
+.ziwei-palace-heading { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: .2rem; }
+.ziwei-palace-heading strong { color: #e8d4a7; font-size: clamp(.52rem, 2vw, .68rem); overflow-wrap: anywhere; }
+.ziwei-palace-heading small { flex: none; color: #8e877b; font-size: .5rem; }
+.ziwei-cell-markers { display: flex; position: absolute; top: 1.55rem; right: .25rem; gap: .14rem; }
+.ziwei-cell-markers i { display: grid; width: 1rem; height: 1rem; place-items: center; border: 1px solid rgba(242, 211, 144, .55); border-radius: 999px; color: #f2d390; font-size: .48rem; font-style: normal; font-weight: 800; }
+.ziwei-cell-stars { display: grid; gap: .16rem; margin-top: .45rem; }
+.ziwei-cell-stars b { color: #f5efe2; font-size: clamp(.55rem, 2.25vw, .72rem); font-weight: 700; line-height: 1.25; }
+.ziwei-cell-stars em { margin-left: .15rem; border-radius: .2rem; background: rgba(176, 138, 80, .18); padding: .05rem .12rem; color: #d9b779; font-size: .45rem; font-style: normal; white-space: nowrap; }
+.ziwei-cell-stars small { color: #746e64; font-size: .5rem; }
+.ziwei-chart-center { display: flex; min-width: 0; grid-area: ziwei-center; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(206, 164, 92, .2); border-radius: .5rem; background: radial-gradient(circle, rgba(176, 138, 80, .12), transparent 70%); padding: .55rem; text-align: center; }
+.ziwei-chart-center p { color: #8e877b; font-size: .55rem; letter-spacing: .14em; }
+.ziwei-chart-center strong { margin-top: .28rem; color: #f2d390; font-family: serif; font-size: 1.15rem; }
+.ziwei-chart-center span { margin-top: .25rem; color: #c5bbaa; font-size: .58rem; line-height: 1.35; }
+.ziwei-chart-center small { margin-top: .4rem; color: #9f8659; font-size: .52rem; }
+.ziwei-chart-figure figcaption { padding: .65rem .35rem .2rem; color: #8e877b; font-size: .59rem; line-height: 1.5; }
+.ziwei-palace-detail { min-width: 0; border: 1px solid rgba(206, 164, 92, .22); border-radius: 1.1rem; background: #111210; padding: 1rem; }
+.ziwei-palace-detail > header { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: .7rem; }
+.ziwei-palace-detail h3 { margin-top: .3rem; color: #f5efe2; font-size: 1.25rem; font-weight: 700; }
+.ziwei-palace-detail h3 small { color: #8e877b; font-size: .62rem; font-weight: 500; }
+.ziwei-palace-markers { display: flex; flex-wrap: wrap; gap: .3rem; }
+.ziwei-palace-markers span { border: 1px solid rgba(217, 183, 121, .35); border-radius: 999px; padding: .25rem .5rem; color: #f2d390; font-size: .6rem; }
+.ziwei-stem-branch { display: flex; align-items: center; gap: .5rem; margin: .8rem 0; }
+.ziwei-stem-branch span { color: #8e877b; font-size: .62rem; }
+.ziwei-stem-branch strong { color: #d9b779; font-family: serif; font-size: 1.2rem; }
+.ziwei-detail-section { margin-top: 1rem; border-top: 1px solid rgba(206, 164, 92, .13); padding-top: .85rem; }
+.ziwei-detail-section h4 { color: #d9b779; font-size: .72rem; font-weight: 700; }
+.ziwei-detail-stars, .ziwei-transform-detail { display: grid; gap: .55rem; margin-top: .6rem; }
+.ziwei-detail-stars > div, .ziwei-transform-detail > div { border-left: 2px solid rgba(176, 138, 80, .65); padding-left: .65rem; }
+.ziwei-detail-stars p, .ziwei-transform-detail p { margin-top: .25rem; color: #968d80; font-size: .62rem; line-height: 1.5; }
+.ziwei-star-label { display: inline-flex; align-items: center; gap: .3rem; }
+.ziwei-star-label strong { color: #f5efe2; font-size: .76rem; }
+.ziwei-star-label small { color: #8e877b; font-size: .54rem; }
+.ziwei-star-label i { border-radius: .25rem; background: rgba(194, 151, 80, .16); padding: .12rem .25rem; color: #f2d390; font-size: .52rem; font-style: normal; }
+.ziwei-supporting-list { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.ziwei-supporting-list .ziwei-star-label { border: 1px solid rgba(206, 164, 92, .17); border-radius: .55rem; padding: .35rem .45rem; }
+.ziwei-empty { margin-top: .55rem; color: #746e64; font-size: .65rem; }
+.ziwei-reference, .ziwei-assumptions { border: 1px solid rgba(206, 164, 92, .2); border-radius: 1.1rem; background: #111210; padding: 1rem; color: #c5bbaa; }
+.ziwei-reference > h2, .ziwei-assumptions > h2 { color: #f2d390; font-size: .85rem; font-weight: 700; }
+.ziwei-reference details { margin-top: .7rem; border-top: 1px solid rgba(206, 164, 92, .12); padding-top: .7rem; }
+.ziwei-reference summary { cursor: pointer; color: #d9b779; font-size: .72rem; font-weight: 700; }
+.ziwei-reference summary:focus-visible { border-radius: .25rem; outline: 3px solid var(--focus); outline-offset: .25rem; }
+.ziwei-reference details > p { margin-top: .65rem; color: #968d80; font-size: .66rem; line-height: 1.65; }
+.ziwei-reference-grid { display: grid; gap: .5rem; margin-top: .65rem; }
+.ziwei-reference-grid article { border: 1px solid rgba(206, 164, 92, .12); border-radius: .65rem; padding: .6rem; }
+.ziwei-reference-grid strong { color: #f5efe2; font-size: .7rem; }
+.ziwei-reference-grid small { margin-left: .35rem; color: #8e877b; font-size: .55rem; }
+.ziwei-reference-grid p { margin-top: .25rem; color: #968d80; font-size: .6rem; line-height: 1.5; }
+.ziwei-assumptions ul { display: grid; gap: .45rem; margin-top: .65rem; padding-left: 1rem; color: #aaa195; font-size: .68rem; line-height: 1.65; }
 @keyframes cosmos-shuffle { 0% { opacity: .55; transform: translateX(-.65rem) rotate(-2deg); } 38% { transform: translateX(.7rem) rotate(2.5deg); } 72% { transform: translateX(-.3rem) rotate(-1deg); } 100% { opacity: 1; transform: translateX(0) rotate(0); } }
 @keyframes cosmos-reveal { from { opacity: 0; transform: translateY(.8rem) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes iching-coin { from { opacity: .45; transform: rotateY(90deg) scale(.9); } to { opacity: 1; transform: rotateY(0) scale(1); } }
 @media (min-width: 640px) {
-  .cosmos-experience-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cosmos-experience-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .cosmos-experience-tabs button:last-child:nth-child(odd) { grid-column: auto; }
   .cosmos-reading-layout { grid-template-columns: 14rem minmax(0, 1fr); align-items: center; justify-items: stretch; gap: clamp(2rem, 5vw, 4rem); }
   .cosmos-number-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 34rem; }
   .iching-casting-layout { grid-template-columns: minmax(13rem, .8fr) minmax(0, 1.2fr); gap: 2rem; }
@@ -346,6 +431,12 @@
   .astrology-angle-values { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
   .astrology-zodiac-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .astrology-house-reference ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ziwei-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ziwei-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ziwei-transform-summary > div:last-child { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ziwei-palace-cell { min-height: 7rem; padding: .55rem; }
+  .ziwei-chart-figure { padding: .7rem; }
+  .ziwei-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 380px) {
   .cosmos-experience-tabs { gap: .25rem; padding: .3rem; }
@@ -361,6 +452,7 @@
 @media (min-width: 900px) {
   .cosmos-revealed-grid-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cosmos-revealed-grid-three .cosmos-card { width: min(100%, 11rem); }
+  .ziwei-chart-layout { grid-template-columns: minmax(0, 1.6fr) minmax(18rem, .75fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   .cosmos-page button { transition: none; }

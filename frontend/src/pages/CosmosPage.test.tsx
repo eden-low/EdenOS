@@ -21,7 +21,7 @@ describe('Cosmos interactive Tarot page', () => {
     tarotMocks.randomIndex.mockReset().mockReturnValue(0)
   })
 
-  it('switches between Tarot, I Ching, BaZi, and the lazy keyboard-accessible Astrology tab', async () => {
+  it('switches across all five keyboard-accessible Cosmos experiences', async () => {
     render(<CosmosPage />)
     expect(screen.getByRole('tab', { name: /塔罗/ }).getAttribute('aria-selected')).toBe('true')
     expect(screen.getByRole('heading', { name: '洗牌、选择、揭示' })).toBeTruthy()
@@ -34,7 +34,10 @@ describe('Cosmos interactive Tarot page', () => {
     fireEvent.keyDown(screen.getByRole('tab', { name: /八字/ }), { key: 'ArrowRight' })
     expect(screen.getByRole('tab', { name: /占星/ }).getAttribute('aria-selected')).toBe('true')
     expect(await screen.findByRole('heading', { name: '热带黄道与本命盘' })).toBeTruthy()
-    fireEvent.keyDown(screen.getByRole('tab', { name: /占星/ }), { key: 'Home' })
+    fireEvent.keyDown(screen.getByRole('tab', { name: /占星/ }), { key: 'ArrowRight' })
+    expect(screen.getByRole('tab', { name: /紫微/ }).getAttribute('aria-selected')).toBe('true')
+    expect(await screen.findByRole('heading', { name: '十二宫与十四主星' })).toBeTruthy()
+    fireEvent.keyDown(screen.getByRole('tab', { name: /紫微/ }), { key: 'Home' })
     expect(screen.getByRole('tab', { name: /塔罗/ }).getAttribute('aria-selected')).toBe('true')
     fireEvent.click(screen.getByRole('tab', { name: /塔罗/ }))
     expect(screen.getByRole('button', { name: '洗牌 / Shuffle' })).toBeTruthy()
