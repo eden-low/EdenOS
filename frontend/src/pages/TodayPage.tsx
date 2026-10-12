@@ -7,6 +7,7 @@ import { ExerciseCard } from '../components/dashboard/ExerciseCard'
 import { RecentActivity } from '../components/dashboard/RecentActivity'
 import { SpendingCard } from '../components/dashboard/SpendingCard'
 import { CalendarCard } from '../components/dashboard/CalendarCard'
+import { CosmosTodayCard } from '../components/dashboard/CosmosTodayCard'
 import { TodaySummary } from '../components/dashboard/TodaySummary'
 import { WeeklyReviewCard } from '../components/dashboard/WeeklyReviewCard'
 import { DashboardEditor } from '../components/dashboard/DashboardEditor'
@@ -95,6 +96,7 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
     finance: <SpendingCard spending={dashboard.monthlySpending} finance={dashboard.monthlyFinance} goals={financePlanning.goals} goalAllocations={goalAllocations} planningStatus={financePlanning.status === 'error' || goalAllocationsStatus === 'error' ? 'error' : financePlanning.status === 'loaded' && goalAllocationsStatus === 'loaded' ? 'loaded' : 'loading'} status={expenseStatus} incomeStatus={incomeStatus} error={expenseError} incomeError={incomeError} onRetry={retryExpenseSubscription} onRetryIncome={retryIncomeSubscription} onOpen={() => onNavigate('expenses')} />,
     exercise: <ExerciseCard exercise={dashboard.exercise} status={exerciseStatus} error={exerciseError} onRetry={retryExerciseSubscription} onOpen={() => onNavigate('exercise')} />,
     anime: <AnimeHomeCard watching={animeProgress.filter((item) => item.trackingStatus === 'watching').sort((left, right) => right.updatedAt - left.updatedAt)} recent={anime.recent} status={anime.status} onOpen={() => onNavigate('anime')} />,
+    cosmos: <CosmosTodayCard referenceDate={referenceDate} onOpen={() => onNavigate('cosmos')} />,
     review: <WeeklyReviewCard referenceDate={referenceDate} onOpen={() => onNavigate('review')} />,
     records: <RecentActivity items={dashboard.recentActivity} sourceLabel={recentActivitySource} emptyMessage="No recent records yet." onOpen={() => onNavigate('records')} />,
     calendar: <CalendarCard referenceDate={referenceDate} />,

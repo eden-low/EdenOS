@@ -65,8 +65,9 @@ describe('Today V2', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open Finance' }))
     fireEvent.click(screen.getByRole('button', { name: 'Open Exercise' }))
     fireEvent.click(screen.getByRole('button', { name: 'Open Anime' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open Cosmos' }))
     fireEvent.click(screen.getByRole('button', { name: 'Review this week' }))
-    expect(navigate.mock.calls.map(([page]) => page)).toEqual(['expenses', 'exercise', 'anime', 'review'])
+    expect(navigate.mock.calls.map(([page]) => page)).toEqual(['expenses', 'exercise', 'anime', 'cosmos', 'review'])
   })
 
   it('keeps domain errors scoped and the rest of Home usable', async () => {

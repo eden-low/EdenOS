@@ -4,7 +4,7 @@ import { type DashboardSection } from '../../domain/dashboardPreferences'
 import { useDashboardPreferences } from '../../state/useDashboardPreferences'
 import { Button } from '../ui/button'
 
-const labels: Record<DashboardSection, string> = { finance: 'Finance', exercise: 'Exercise', anime: 'Anime', review: 'Weekly Review', records: 'Records', calendar: 'Calendar' }
+const labels: Record<DashboardSection, string> = { finance: 'Finance', exercise: 'Exercise', anime: 'Anime', cosmos: 'Cosmos Today', review: 'Weekly Review', records: 'Records', calendar: 'Calendar' }
 
 export function DashboardEditor({ dashboard }: { dashboard: ReturnType<typeof useDashboardPreferences> }) {
   const [editing, setEditing] = useState(false)

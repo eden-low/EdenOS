@@ -10,8 +10,9 @@ describe('device-local dashboard preferences', () => {
   it('isolates preferences by UID and restores missing sections safely', () => {
     const storage = memoryStorage()
     writeDashboardPreferences(storage, 'alice', { order: ['anime', 'finance', 'exercise', 'review', 'records', 'calendar'], hidden: ['records'] })
-    expect(readDashboardPreferences(storage, 'alice')).toMatchObject({ order: ['anime', 'finance', 'exercise', 'review', 'records', 'calendar'], hidden: ['records'] })
+    expect(readDashboardPreferences(storage, 'alice')).toMatchObject({ order: ['anime', 'finance', 'exercise', 'review', 'records', 'calendar', 'cosmos'], hidden: ['records'] })
     expect(readDashboardPreferences(storage, 'bob')).toEqual(defaultDashboardPreferences)
+    expect(defaultDashboardPreferences.order).toContain('cosmos')
   })
 
   it('resets to the strong default layout', () => {

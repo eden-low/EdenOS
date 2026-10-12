@@ -1,4 +1,4 @@
-export const dashboardSections = ['finance', 'exercise', 'anime', 'review', 'records', 'calendar'] as const
+export const dashboardSections = ['finance', 'exercise', 'anime', 'cosmos', 'review', 'records', 'calendar'] as const
 export type DashboardSection = (typeof dashboardSections)[number]
 
 export interface DashboardPreferences {
