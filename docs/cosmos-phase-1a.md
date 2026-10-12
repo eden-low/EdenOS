@@ -69,17 +69,40 @@ concise Chinese meanings is suggested before any future production promotion.
 
 ## Staging status
 
-Deployment is pending verified staging configuration. The repository contains
-`origin/staging` and generic Netlify build configuration, but `netlify.toml` does
-not specify the site, production branch, or staging branch mapping. GitHub has
-no registered deployments or environments identifying a staging target, and no
-usable Netlify CLI session or browser is available in this session.
+Deployment is blocked because the existing staging frontend is not isolated from
+production backend resources. The existing local Netlify authentication was used
+for read-only API inspection on 2026-10-12:
+
+- Netlify site `edenos` (`ebaf0d87-d98d-4598-bf77-1186fb0e81ec`) is linked to
+  `eden-low/EdenOS`.
+- The configured production branch is `main`.
+- Allowed branch deploys are `main` and `staging`. Historical deploy records
+  confirm `staging` uses the `branch-deploy` context and resolves to
+  `https://staging--edenos.netlify.app`.
+- The latest successful staging branch deploy was commit `c5af095` on 2026-10-10.
+  A later `aa46958` build was reported as `error` only because Netlify canceled it
+  for having no content change. The current staging URL responds with HTTP 200.
+- Build configuration is shared: repository `netlify.toml`, base `frontend`,
+  command `npm run build`, publish directory `dist`, and the same site Functions.
+- Production and branch-deploy contexts resolve to identical values for
+  `VITE_FIREBASE_PROJECT_ID`, Auth domain, App ID, Storage bucket, and Anime
+  details origin. The environment inventory also exposes the Firebase web API
+  configuration, Firebase server service account, and Gemini key to both
+  production and branch-deploy contexts. Secret values were not printed or
+  changed.
+
+Therefore a staging build would still authenticate against and read/write the
+production Firebase project, and its Netlify Functions would use the same server
+credentials. This fails the requested safe-isolation gate even though this Tarot
+feature itself does not call Firebase or Gemini.
 
 The known GitHub Firestore rules workflow targets `main` and project
-`edenos-e1bbb`; it is not a staging frontend deployment workflow and must not be
-used for this feature. No branches have been pushed or merged and no deployment
-has been triggered. Before deploying, verify the existing Netlify site and its
-production/staging branch mapping, then follow that site's existing workflow.
+`edenos-e1bbb`; it is not a staging frontend deployment workflow and was not used.
+No branches were pushed or merged, no Netlify configuration was changed, and no
+deployment was triggered. Deployment can continue after a separate staging
+Firebase project and context-specific branch values (including server credentials
+and external data origins) are configured and verified, or after the owner gives
+an explicit revised staging policy that accepts shared production resources.
 
 ## Mobile and visual review checklist (pending)
 
