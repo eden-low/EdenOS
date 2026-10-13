@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getIdToken, auth } = vi.hoisted(() => ({ getIdToken: vi.fn(async () => 'id-token'), auth: { currentUser: null as null | { getIdToken: () => Promise<string> } } }))
+const { getIdToken, auth } = vi.hoisted(() => ({ getIdToken: vi.fn(async (_forceRefresh?: boolean) => 'id-token'), auth: { currentUser: null as null | { getIdToken: (forceRefresh?: boolean) => Promise<string> } } }))
 vi.mock('../lib/firebase', () => ({ firebaseInitialization: { status: 'ready', services: { auth } } }))
 import { requestCosmosInterpretation, CosmosAiError } from './cosmosAiService'
 import type { CosmosAiRequest, CosmosAiResponse } from '../cosmos/cosmosAiTypes'
@@ -14,6 +14,7 @@ describe('Cosmos AI browser boundary', () => {
   it('sends one authenticated same-origin JSON request with no-store', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(result), { status: 200 }))
     expect(await requestCosmosInterpretation(request)).toEqual(result)
+    expect(getIdToken).toHaveBeenCalledExactlyOnceWith(true)
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(fetchMock.mock.calls[0][0]).toBe('/.netlify/functions/cosmos-reading')
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: 'POST', cache: 'no-store', headers: { Authorization: 'Bearer id-token', 'Content-Type': 'application/json' } })

@@ -12,9 +12,10 @@ import { PrivacyLockSettings } from './PrivacyLockSettings'
 import { NetworkSpeedTest } from './NetworkSpeedTest'
 
 export function AccountDialog({ children }: { children: ReactNode }) {
-  const { isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle } = useFirebaseAuth()
+  const { uid, isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle } = useFirebaseAuth()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState<'link' | 'switch' | 'sign-out' | null>(null)
+  const [uidCopyStatus, setUidCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [conflict, setConflict] = useState<GuestDataSummary | 'unavailable' | null>(null)
   const isConflict = conflict !== null
@@ -36,7 +37,18 @@ export function AccountDialog({ children }: { children: ReactNode }) {
     setOpen(false)
     setError(null)
     setConflict(null)
+    setUidCopyStatus('idle')
     discardExistingGoogleChoice()
+  }
+
+  async function handleCopyUid() {
+    setUidCopyStatus('idle')
+    try {
+      await navigator.clipboard.writeText(uid)
+      setUidCopyStatus('copied')
+    } catch {
+      setUidCopyStatus('failed')
+    }
   }
 
   async function handleConnect() {
@@ -86,7 +98,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
     <Dialog open={open} onOpenChange={(nextOpen) => {
       if (pending) return
       setOpen(nextOpen)
-      if (!nextOpen) { setError(null); setConflict(null); discardExistingGoogleChoice() }
+      if (!nextOpen) { setError(null); setConflict(null); setUidCopyStatus('idle'); discardExistingGoogleChoice() }
     }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent variant="account" closeDisabled={pending !== null} className="sm:w-[min(30rem,calc(100vw-2rem))]">
@@ -106,14 +118,22 @@ export function AccountDialog({ children }: { children: ReactNode }) {
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--accent-wash)] text-[var(--accent-soft)]">
             {isAnonymous ? <UserRound aria-hidden="true" size={19} /> : <CircleCheck aria-hidden="true" size={19} />}
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="section-label">Current status</p>
-            <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-              {isAnonymous ? 'Guest' : 'Google connected'}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <p className="text-lg font-semibold text-[var(--text-primary)]">
+                {isAnonymous ? 'Guest' : 'Google connected'}
+              </p>
+              <Button type="button" variant="ghost" className="min-h-9 px-3 text-xs" onClick={() => void handleCopyUid()}>
+                {uidCopyStatus === 'copied' ? 'Firebase UID copied' : uidCopyStatus === 'failed' ? 'Could not copy UID' : 'Copy Firebase UID'}
+              </Button>
+            </div>
             {!isAnonymous && email && (
               <p className="mt-1 break-all text-sm text-[var(--text-secondary)]">{email}</p>
             )}
+            <span className="sr-only" aria-live="polite">
+              {uidCopyStatus === 'copied' ? 'Firebase UID copied to clipboard.' : uidCopyStatus === 'failed' ? 'Firebase UID could not be copied.' : ''}
+            </span>
           </div>
         </div>
 

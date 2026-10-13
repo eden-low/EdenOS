@@ -21,7 +21,9 @@ const serverCodes = new Set<CosmosAiErrorCode>([
 
 export async function requestCosmosInterpretation(request: CosmosAiRequest, signal?: AbortSignal): Promise<CosmosAiResponse> {
   if (firebaseInitialization.status !== 'ready' || !firebaseInitialization.services.auth.currentUser) throw new CosmosAiError('auth')
-  const token = await firebaseInitialization.services.auth.currentUser.getIdToken()
+  // A Google link can preserve the Firebase user while changing the provider claim.
+  // Force a fresh token for this owner-only endpoint so the server never sees a stale anonymous claim.
+  const token = await firebaseInitialization.services.auth.currentUser.getIdToken(true)
   let response: Response
   try {
     response = await fetch('/.netlify/functions/cosmos-reading', {

@@ -20,8 +20,9 @@ const emptySummary: GuestDataSummary = {
   otherBlockingData: [], hasBlockingData: false,
 }
 
-function renderAccount(isAnonymous = true, email: string | null = null) {
+function renderAccount(isAnonymous = true, email: string | null = null, uid = 'test-session-uid') {
   vi.mocked(useFirebaseAuth).mockReturnValue({
+    uid,
     isAnonymous,
     email,
     connectGoogle,
@@ -130,5 +131,19 @@ describe('Account dialog presentation', () => {
     expect(dialog.textContent).toContain('alex@example.com')
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Connect Google account' })).toBeNull()
+  })
+
+  it('copies only the current in-memory Firebase UID and keeps the account type visible', async () => {
+    const writeText = vi.fn(async () => undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    renderAccount(false, 'alex@example.com', 'linked-firebase-uid')
+
+    const dialog = screen.getByRole('dialog', { name: 'Account' })
+    expect(dialog.textContent).toContain('Google connected')
+    expect(dialog.textContent).not.toContain('linked-firebase-uid')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Firebase UID' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledExactlyOnceWith('linked-firebase-uid'))
+    expect(screen.getByRole('button', { name: 'Firebase UID copied' })).toBeTruthy()
   })
 })
