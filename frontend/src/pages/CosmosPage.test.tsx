@@ -10,6 +10,10 @@ const tarotMocks = vi.hoisted(() => ({
 
 vi.mock('../cosmos/tarotShuffle', () => ({ shuffleTarotDeck: tarotMocks.shuffle }))
 vi.mock('../cosmos/tarotRandom', () => ({ browserRandomIndex: tarotMocks.randomIndex }))
+vi.mock('../cosmos/BaZiExperience', () => ({ BaZiExperience: () => <h2>四柱、五行与十神</h2> }))
+vi.mock('../cosmos/AstrologyExperience', () => ({ AstrologyExperience: () => <h2>热带黄道与本命盘</h2> }))
+vi.mock('../cosmos/ZiWeiExperience', () => ({ ZiWeiExperience: () => <h2>十二宫与十四主星</h2> }))
+vi.mock('../cosmos/AskCosmosExperience', () => ({ AskCosmosExperience: () => <h2>AI 解读，建立在你的本地结果之上</h2> }))
 
 function enterNumber(label: string | RegExp, value: string) {
   fireEvent.change(screen.getByRole('textbox', { name: label }), { target: { value } })
@@ -21,7 +25,7 @@ describe('Cosmos interactive Tarot page', () => {
     tarotMocks.randomIndex.mockReset().mockReturnValue(0)
   })
 
-  it('switches across all five keyboard-accessible Cosmos experiences', async () => {
+  it('switches across all six keyboard-accessible Cosmos experiences', async () => {
     render(<CosmosPage />)
     expect(screen.getByRole('tab', { name: /塔罗/ }).getAttribute('aria-selected')).toBe('true')
     expect(screen.getByRole('heading', { name: '洗牌、选择、揭示' })).toBeTruthy()
@@ -37,7 +41,10 @@ describe('Cosmos interactive Tarot page', () => {
     fireEvent.keyDown(screen.getByRole('tab', { name: /占星/ }), { key: 'ArrowRight' })
     expect(screen.getByRole('tab', { name: /紫微/ }).getAttribute('aria-selected')).toBe('true')
     expect(await screen.findByRole('heading', { name: '十二宫与十四主星' })).toBeTruthy()
-    fireEvent.keyDown(screen.getByRole('tab', { name: /紫微/ }), { key: 'Home' })
+    fireEvent.keyDown(screen.getByRole('tab', { name: /紫微/ }), { key: 'ArrowRight' })
+    expect(screen.getByRole('tab', { name: /AI 解读/ }).getAttribute('aria-selected')).toBe('true')
+    expect(await screen.findByRole('heading', { name: 'AI 解读，建立在你的本地结果之上' })).toBeTruthy()
+    fireEvent.keyDown(screen.getByRole('tab', { name: /AI 解读/ }), { key: 'Home' })
     expect(screen.getByRole('tab', { name: /塔罗/ }).getAttribute('aria-selected')).toBe('true')
     fireEvent.click(screen.getByRole('tab', { name: /塔罗/ }))
     expect(screen.getByRole('button', { name: '洗牌 / Shuffle' })).toBeTruthy()

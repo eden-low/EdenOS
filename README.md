@@ -168,6 +168,10 @@ For the intended Netlify deploy context, an operator must set these **Functions*
 
 Keep both credentials out of `VITE_*`, Git, and browser storage. Once Firebase Admin verification is configured, the endpoint safely reports `not-configured` if the Gemini key is absent. The primary model falls back to the secondary model at most once for quota, temporary provider failure, or model unavailability. An uncertain extraction goes directly to editable review without another model call. Fallback is logged without receipt contents or credentials and does not guarantee separate quota. Uploaded files are limited to JPEG, PNG, and WebP. Large phone photos are compressed in browser memory to fit the Netlify Function's binary payload limit; an image that remains too large is rejected. EdenOS does not persist the image in Storage, Firestore, localStorage, IndexedDB, or the function filesystem. Preview object URLs are revoked when replaced, removed, or closed. Gemini's provider-side data handling and retention depend on the applicable Gemini API tier and Google policy; EdenOS cannot control that retention.
 
+### Ask Cosmos configuration
+
+Ask Cosmos uses the separate `POST /.netlify/functions/cosmos-reading` endpoint. In addition to the existing Firebase Admin and Gemini credentials, it requires the server-only `COSMOS_AUTHORIZED_FIREBASE_UIDS` comma-separated allowlist; the endpoint fails closed when the allowlist is absent. `COSMOS_GEMINI_MODEL` may optionally override the validated `gemini-2.5-flash` default. Never expose any of these as `VITE_*` variables. See [`frontend/src/cosmos/COSMOS_AI.md`](frontend/src/cosmos/COSMOS_AI.md) for request schemas, consent, minimization, prompt rules, failure behavior, and mocked local testing.
+
 ## Validation and production build
 
 ### Estimated Calories and account settings

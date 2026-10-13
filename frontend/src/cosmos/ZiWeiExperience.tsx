@@ -8,6 +8,8 @@ import type { BirthCity } from './birthplaceData'
 import { ZiWeiChart } from './ZiWeiChart'
 import { ZiWeiPalaceDetail } from './ZiWeiPalaceDetail'
 import { ZIWEI_MAX_DATE, ZIWEI_MIN_DATE, validateZiWeiDate, ziWeiHourLabel, ziWeiTimeIndex } from './ziweiTime'
+import type { CosmosReadingSnapshot } from './cosmosAiTypes'
+import { ziWeiSnapshot } from './ziweiSnapshot'
 
 interface FormFields {
   date: string
@@ -19,7 +21,7 @@ interface FormFields {
 
 const initialFields: FormFields = { date: '', time: '', timeKnown: true, timeZone: '', gender: '' }
 
-export function ZiWeiExperience() {
+export function ZiWeiExperience({ onSnapshotChange }: { onSnapshotChange?: (snapshot: CosmosReadingSnapshot | null) => void }) {
   const now = useMemo(() => new Date(), [])
   const [fields, setFields] = useState(initialFields)
   const [selectedCity, setSelectedCity] = useState<BirthCity | null>(null)
@@ -38,6 +40,7 @@ export function ZiWeiExperience() {
     setError(null)
     setAmbiguous([])
     setSelectedUtc(null)
+    onSnapshotChange?.(null)
   }
 
   function update<K extends keyof FormFields>(key: K, value: FormFields[K]) {
@@ -110,6 +113,7 @@ export function ZiWeiExperience() {
       const result = calculateZiWei({ date: fields.date, time: fields.time, gender: fields.gender as ZiWeiTraditionalGender }, dateInTimeZone(now, fields.timeZone))
       setChart(result)
       setSelectedPalace(result.palaces.find(({ isLifePalace }) => isLifePalace) ?? result.palaces[0])
+      onSnapshotChange?.(ziWeiSnapshot(result, fields.timeZone))
       setError(null)
     } catch (cause) {
       setChart(null)
@@ -137,7 +141,7 @@ export function ZiWeiExperience() {
 
         <fieldset className="ziwei-gender ziwei-form-wide"><legend>传统顺逆参数 / Traditional chart option</legend><label><input type="radio" name="ziwei-gender" checked={fields.gender === '男'} onChange={() => update('gender', '男')} />男盘</label><label><input type="radio" name="ziwei-gender" checked={fields.gender === '女'} onChange={() => update('gender', '女')} />女盘</label><small>这是传统排盘用于运序及部分星曜规则的计算参数，不用于推断或记录你的身份。不会预先选择。</small></fieldset>
 
-        {ambiguous.length > 0 && <fieldset className="astrology-offset-choice ziwei-form-wide"><legend>请选择当时采用的 UTC 偏移</legend>{ambiguous.map((candidate) => <label key={candidate.utcMs}><input type="radio" name="ziwei-offset" checked={selectedUtc === candidate.utcMs} onChange={() => { setSelectedUtc(candidate.utcMs); setError(null); setChart(null) }} />{candidate.offsetLabel} · {candidate.isoUtc}</label>)}</fieldset>}
+        {ambiguous.length > 0 && <fieldset className="astrology-offset-choice ziwei-form-wide"><legend>请选择当时采用的 UTC 偏移</legend>{ambiguous.map((candidate) => <label key={candidate.utcMs}><input type="radio" name="ziwei-offset" checked={selectedUtc === candidate.utcMs} onChange={() => { setSelectedUtc(candidate.utcMs); setError(null); setChart(null); onSnapshotChange?.(null) }} />{candidate.offsetLabel} · {candidate.isoUtc}</label>)}</fieldset>}
         {error && <p className="cosmos-error ziwei-form-wide text-sm" role="alert">{error}</p>}
         <div className="ziwei-form-wide"><Button type="submit" className="cosmos-draw min-h-12 w-full sm:w-auto">生成紫微命盘 / Calculate</Button></div>
       </form>
@@ -146,7 +150,7 @@ export function ZiWeiExperience() {
     {chart && selectedPalace && <section className="ziwei-results mx-auto mt-7 max-w-6xl" aria-labelledby="ziwei-results-heading" aria-live="polite">
       <header className="ziwei-result-title">
         <div><p className="section-label">Natal Chart · 本命盘</p><h2 id="ziwei-results-heading">{chart.input.date} · {chart.input.time} · {chart.input.gender}盘</h2></div>
-        <Button type="button" variant="secondary" className="cosmos-secondary" onClick={() => { setChart(null); setSelectedPalace(null) }}>重新输入 / New Chart</Button>
+        <Button type="button" variant="secondary" className="cosmos-secondary" onClick={() => { setChart(null); setSelectedPalace(null); onSnapshotChange?.(null) }}>重新输入 / New Chart</Button>
       </header>
 
       <div className="ziwei-summary-grid mt-5">

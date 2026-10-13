@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '../components/ui/button'
 import { HexagramDiagram } from './HexagramDiagram'
 import { lineValueName, tossThreeCoins, type CoinOutcome, type CoinToss } from './ichingCoins'
 import { createIChingReading, createIChingReflection, movingLineLabel, type IChingReading } from './ichingReading'
 import { getTrigram, trigrams, type YinYang } from './ichingTrigrams'
+import type { CosmosReadingSnapshot } from './cosmosAiTypes'
+import { iChingSnapshot } from './ichingSnapshot'
 
-export function IChingExperience() {
+export function IChingExperience({ onSnapshotChange }: { onSnapshotChange?: (snapshot: CosmosReadingSnapshot | null) => void }) {
   const [started, setStarted] = useState(false)
   const [question, setQuestion] = useState('')
   const [tosses, setTosses] = useState<CoinToss[]>([])
@@ -14,6 +16,10 @@ export function IChingExperience() {
   const reading = useMemo(() => tosses.length === 6 ? createIChingReading(tosses.map((toss) => toss.value)) : null, [tosses])
   const developingLines = Array.from({ length: 6 }, (_, index) => tosses[index] ? (tosses[index].value === 7 || tosses[index].value === 9 ? 1 : 0) : null) as Array<YinYang | null>
   const lastToss = tosses.at(-1)
+
+  useEffect(() => {
+    if (reading) onSnapshotChange?.(iChingSnapshot(reading))
+  }, [onSnapshotChange, reading])
 
   function startReading() {
     setStarted(true)
@@ -38,6 +44,7 @@ export function IChingExperience() {
     setQuestion('')
     setTosses([])
     setError(null)
+    onSnapshotChange?.(null)
   }
 
   return <>

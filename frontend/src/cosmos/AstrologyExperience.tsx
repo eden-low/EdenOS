@@ -6,6 +6,8 @@ import { ELEMENT_LABELS, HOUSE_MEANINGS, MODALITY_LABELS, ZODIAC_SIGNS, planetMe
 import { dateInTimeZone, isValidIanaTimeZone, resolveZonedDateTime, validateAstrologyDate, type ZonedCandidate } from './astrologyTime'
 import type { BirthCity } from './birthplaceData'
 import { NatalChartWheel, PlanetLegend } from './NatalChartWheel'
+import type { CosmosReadingSnapshot } from './cosmosAiTypes'
+import { astrologySnapshot } from './astrologySnapshot'
 
 interface FormFields {
   date: string
@@ -28,7 +30,7 @@ function formatLongitude(longitude: number): string {
   return `${sign.glyph} ${sign.chinese} ${degree.toFixed(2)}°`
 }
 
-export function AstrologyExperience() {
+export function AstrologyExperience({ onSnapshotChange }: { onSnapshotChange?: (snapshot: CosmosReadingSnapshot | null) => void }) {
   const now = useMemo(() => new Date(), [])
   const [sunDate, setSunDate] = useState('')
   const [sunTimeZone, setSunTimeZone] = useState('')
@@ -50,6 +52,7 @@ export function AstrologyExperience() {
     setError(null)
     setAmbiguous([])
     setSelectedUtc(null)
+    onSnapshotChange?.(null)
   }
 
   function chooseCity(city: BirthCity) {
@@ -59,6 +62,7 @@ export function AstrologyExperience() {
     setError(null)
     setAmbiguous([])
     setSelectedUtc(null)
+    onSnapshotChange?.(null)
   }
 
   function beginCitySearch() {
@@ -68,6 +72,7 @@ export function AstrologyExperience() {
     setSelectedUtc(null)
     setSelectedCity(null)
     setFields((current) => ({ ...current, timeZone: '', latitude: '', longitude: '' }))
+    onSnapshotChange?.(null)
   }
 
   function updateManualLocation(key: 'latitude' | 'longitude', value: string) {
@@ -118,7 +123,9 @@ export function AstrologyExperience() {
     }
     try {
       if (!fields.timeKnown) {
-        setChart(calculateDateOnlyNatal(fields.date, fields.timeZone))
+        const result = calculateDateOnlyNatal(fields.date, fields.timeZone)
+        setChart(result)
+        onSnapshotChange?.(astrologySnapshot(result, { date: fields.date, timeKnown: false, time: null, timeZone: fields.timeZone }))
         setAmbiguous([])
         setError(null)
         return
@@ -138,10 +145,14 @@ export function AstrologyExperience() {
           setError('这个本地时间在夏令时回拨时出现两次。请选择当时采用的 UTC 偏移。')
           return
         }
-        setChart(calculateExactNatal(selectedUtc, locationFrom(fields)))
+        const result = calculateExactNatal(selectedUtc, locationFrom(fields))
+        setChart(result)
+        onSnapshotChange?.(astrologySnapshot(result, { date: fields.date, timeKnown: true, time: fields.time, timeZone: fields.timeZone }))
       } else {
         setAmbiguous([])
-        setChart(calculateExactNatal(resolution.candidate.utcMs, locationFrom(fields)))
+        const result = calculateExactNatal(resolution.candidate.utcMs, locationFrom(fields))
+        setChart(result)
+        onSnapshotChange?.(astrologySnapshot(result, { date: fields.date, timeKnown: true, time: fields.time, timeZone: fields.timeZone }))
       }
       setError(null)
     } catch {
@@ -192,7 +203,7 @@ export function AstrologyExperience() {
         </div>
         <p className="astrology-location-note astrology-form-wide">城市资料会填入地理坐标与 IANA 时区。UTC 偏移随后按出生日期和时间从时区规则计算。若城市不在列表中，请手动输入；系统不会猜测。离线城市资料来自 GeoNames（CC BY 4.0）。</p>
         {!fields.timeKnown && <p className="astrology-unknown-note astrology-form-wide">不会代填中午。系统会检查这个本地日期从开始到结束的行星星座；可能换座的天体会标为不确定，上升、天顶、宫位、相位与精确度数不显示。</p>}
-        {ambiguous.length > 1 && <fieldset className="astrology-offset-choice astrology-form-wide"><legend>选择当时的 UTC 偏移</legend>{ambiguous.map((candidate) => <label key={candidate.utcMs}><input type="radio" name="astrology-offset" checked={selectedUtc === candidate.utcMs} onChange={() => { setSelectedUtc(candidate.utcMs); setChart(null); setError(null) }} />{candidate.offsetLabel} · {candidate.isoUtc}</label>)}</fieldset>}
+        {ambiguous.length > 1 && <fieldset className="astrology-offset-choice astrology-form-wide"><legend>选择当时的 UTC 偏移</legend>{ambiguous.map((candidate) => <label key={candidate.utcMs}><input type="radio" name="astrology-offset" checked={selectedUtc === candidate.utcMs} onChange={() => { setSelectedUtc(candidate.utcMs); setChart(null); setError(null); onSnapshotChange?.(null) }} />{candidate.offsetLabel} · {candidate.isoUtc}</label>)}</fieldset>}
         {error && <p id="astrology-form-error" className="cosmos-error astrology-form-wide text-sm" role="alert">{error}</p>}
         <Button type="submit" className="cosmos-draw astrology-form-wide min-h-12 w-full sm:w-auto">计算本命盘 / Calculate</Button>
       </form>

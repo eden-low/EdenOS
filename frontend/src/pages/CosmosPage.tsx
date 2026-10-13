@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useCallback, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { Button } from '../components/ui/button'
 import { IChingExperience } from '../cosmos/IChingExperience'
 import { TarotCardVisual } from '../cosmos/TarotCardVisual'
@@ -6,15 +6,18 @@ import { combinedTarotReflection } from '../cosmos/tarotReflection'
 import { selectTarotCards, validateTarotPositions, type TarotSelection } from '../cosmos/tarotSelection'
 import { shuffleTarotDeck } from '../cosmos/tarotShuffle'
 import type { TarotCard } from '../cosmos/tarotDeck'
+import type { CosmosReadingSnapshot, CosmosSnapshotMap, CosmosSystemId } from '../cosmos/cosmosAiTypes'
+import { tarotSnapshot } from '../cosmos/tarotSnapshot'
 import './cosmos.css'
 
 const BaZiExperience = lazy(() => import('../cosmos/BaZiExperience').then((module) => ({ default: module.BaZiExperience })))
 const AstrologyExperience = lazy(() => import('../cosmos/AstrologyExperience').then((module) => ({ default: module.AstrologyExperience })))
 const ZiWeiExperience = lazy(() => import('../cosmos/ZiWeiExperience').then((module) => ({ default: module.ZiWeiExperience })))
+const AskCosmosExperience = lazy(() => import('../cosmos/AskCosmosExperience').then((module) => ({ default: module.AskCosmosExperience })))
 
 type ReadingMode = 'single' | 'three'
 type ReadingStage = 'shuffle' | 'select' | 'reveal'
-type CosmosExperience = 'tarot' | 'iching' | 'bazi' | 'astrology' | 'ziwei'
+type CosmosExperience = CosmosSystemId | 'ai'
 
 const cosmosExperiences: { id: CosmosExperience; chinese: string; english: string }[] = [
   { id: 'tarot', chinese: '塔罗', english: 'Tarot' },
@@ -22,6 +25,7 @@ const cosmosExperiences: { id: CosmosExperience; chinese: string; english: strin
   { id: 'bazi', chinese: '八字', english: 'BaZi' },
   { id: 'astrology', chinese: '占星', english: 'Astrology' },
   { id: 'ziwei', chinese: '紫微', english: 'Zi Wei' },
+  { id: 'ai', chinese: 'AI 解读', english: 'Ask Cosmos' },
 ]
 
 const emptyNumbers = () => ['', '', '']
@@ -41,6 +45,21 @@ export function CosmosPage() {
   const [reading, setReading] = useState<TarotSelection[]>([])
   const [error, setError] = useState<string | null>(null)
   const [shuffleVersion, setShuffleVersion] = useState(0)
+  const [snapshots, setSnapshots] = useState<CosmosSnapshotMap>({})
+
+  const updateSnapshot = useCallback((system: CosmosSystemId, snapshot: CosmosReadingSnapshot | null) => {
+    setSnapshots((current) => {
+      if (snapshot) return current[system] === snapshot ? current : { ...current, [system]: snapshot }
+      if (!current[system]) return current
+      const next = { ...current }
+      delete next[system]
+      return next
+    })
+  }, [])
+  const handleIChingSnapshot = useCallback((snapshot: CosmosReadingSnapshot | null) => updateSnapshot('iching', snapshot), [updateSnapshot])
+  const handleBaZiSnapshot = useCallback((snapshot: CosmosReadingSnapshot | null) => updateSnapshot('bazi', snapshot), [updateSnapshot])
+  const handleAstrologySnapshot = useCallback((snapshot: CosmosReadingSnapshot | null) => updateSnapshot('astrology', snapshot), [updateSnapshot])
+  const handleZiWeiSnapshot = useCallback((snapshot: CosmosReadingSnapshot | null) => updateSnapshot('ziwei', snapshot), [updateSnapshot])
 
   function resetReading(nextMode: ReadingMode = mode) {
     setMode(nextMode)
@@ -49,6 +68,7 @@ export function CosmosPage() {
     setNumbers(emptyNumbers())
     setReading([])
     setError(null)
+    updateSnapshot('tarot', null)
   }
 
   function changeMode(nextMode: ReadingMode) {
@@ -63,6 +83,7 @@ export function CosmosPage() {
       setError(null)
       setShuffleVersion((value) => value + 1)
       setStage('select')
+      updateSnapshot('tarot', null)
     } catch {
       setError('暂时无法完成洗牌，请重试。')
     }
@@ -81,7 +102,9 @@ export function CosmosPage() {
       return
     }
     try {
-      setReading(selectTarotCards(shuffledDeck, validation.positions))
+      const result = selectTarotCards(shuffledDeck, validation.positions)
+      setReading(result)
+      updateSnapshot('tarot', tarotSnapshot(result, mode))
       setError(null)
       setStage('reveal')
     } catch {
@@ -107,7 +130,7 @@ export function CosmosPage() {
     <header className="cosmos-header">
       <p className="section-label">Eden OS · Cosmos</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Cosmos <span className="cosmos-title-zh">象数探索</span></h1>
-      <p className="mt-3 max-w-xl text-sm leading-7">选择一种传统象征系统，在完全本地的互动中留一个角度给此刻。</p>
+      <p className="mt-3 max-w-xl text-sm leading-7">先在设备上完成传统象征体验；如你明确同意，也可把所选衍生结果交给 Gemini 协助反思。</p>
     </header>
 
     <div className="cosmos-experience-tabs mt-6" role="tablist" aria-label="Cosmos experiences">
@@ -171,7 +194,7 @@ export function CosmosPage() {
     </section>
 
     <p className="cosmos-disclaimer mx-auto mt-6 max-w-5xl text-xs leading-6">塔罗仅供文化探索、娱乐与个人反思，不是可靠的预测，也不应代替专业建议。</p>
-    </div> : experience === 'iching' ? <div id="cosmos-iching-panel" role="tabpanel" aria-labelledby="cosmos-iching-tab"><IChingExperience /></div> : experience === 'bazi' ? <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地历法引擎…</div>}><BaZiExperience /></Suspense> : experience === 'astrology' ? <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地天文引擎…</div>}><AstrologyExperience /></Suspense> : <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地紫微排盘引擎…</div>}><ZiWeiExperience /></Suspense>}
+    </div> : experience === 'iching' ? <div id="cosmos-iching-panel" role="tabpanel" aria-labelledby="cosmos-iching-tab"><IChingExperience onSnapshotChange={handleIChingSnapshot} /></div> : experience === 'bazi' ? <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地历法引擎…</div>}><BaZiExperience onSnapshotChange={handleBaZiSnapshot} /></Suspense> : experience === 'astrology' ? <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地天文引擎…</div>}><AstrologyExperience onSnapshotChange={handleAstrologySnapshot} /></Suspense> : experience === 'ziwei' ? <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入本地紫微排盘引擎…</div>}><ZiWeiExperience onSnapshotChange={handleZiWeiSnapshot} /></Suspense> : <Suspense fallback={<div className="cosmos-reading bazi-loading mx-auto mt-7 max-w-5xl rounded-[var(--card-radius)] p-5" role="status">正在载入 Ask Cosmos…</div>}><AskCosmosExperience snapshots={snapshots} onOpenSystem={setExperience} /></Suspense>}
   </div>
 }
 

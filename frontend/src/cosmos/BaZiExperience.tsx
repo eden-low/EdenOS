@@ -20,6 +20,8 @@ import {
   type FiveElement,
   type TenGod,
 } from './baziData'
+import type { CosmosReadingSnapshot } from './cosmosAiTypes'
+import { baZiSnapshot } from './baziSnapshot'
 
 const PILLAR_LABELS: Record<PillarKey, { chinese: string; english: string }> = {
   year: { chinese: '年柱', english: 'Year' },
@@ -30,13 +32,19 @@ const PILLAR_LABELS: Record<PillarKey, { chinese: string; english: string }> = {
 
 const ELEMENT_ORDER: FiveElement[] = ['wood', 'fire', 'earth', 'metal', 'water']
 
-export function BaZiExperience() {
+export function BaZiExperience({ onSnapshotChange }: { onSnapshotChange?: (snapshot: CosmosReadingSnapshot | null) => void }) {
   const [date, setDate] = useState('')
   const [timeKnown, setTimeKnown] = useState(true)
   const [time, setTime] = useState('')
   const [chart, setChart] = useState<BaZiChart | null>(null)
   const [error, setError] = useState<string | null>(null)
   const today = useMemo(() => malaysiaToday(), [])
+
+  function invalidate() {
+    setChart(null)
+    setError(null)
+    onSnapshotChange?.(null)
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -47,7 +55,9 @@ export function BaZiExperience() {
       return
     }
     try {
-      setChart(calculateBaZi(input, today))
+      const result = calculateBaZi(input, today)
+      setChart(result)
+      onSnapshotChange?.(baZiSnapshot(result))
       setError(null)
     } catch {
       setError('暂时无法完成排盘，请检查输入后重试。')
@@ -64,7 +74,7 @@ export function BaZiExperience() {
         <div className="bazi-form-grid">
           <label className="bazi-field">
             <span>公历出生日期 / Gregorian birth date</span>
-            <input type="date" min={BAZI_MIN_DATE} max={today} value={date} onChange={(event) => { setDate(event.target.value); setError(null) }} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? 'bazi-form-error' : 'bazi-date-help'} />
+            <input type="date" min={BAZI_MIN_DATE} max={today} value={date} onChange={(event) => { setDate(event.target.value); invalidate() }} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? 'bazi-form-error' : 'bazi-date-help'} />
             <small id="bazi-date-help">支持 1982-01-01 至今天的现代马来西亚日期。</small>
           </label>
           <label className="bazi-field">
@@ -76,13 +86,13 @@ export function BaZiExperience() {
 
         <fieldset className="bazi-time-choice mt-5">
           <legend>出生时间是否已知？ / Is the birth time known?</legend>
-          <label><input type="radio" name="birth-time-known" checked={timeKnown} onChange={() => { setTimeKnown(true); setError(null) }} />已知 / Known</label>
-          <label><input type="radio" name="birth-time-known" checked={!timeKnown} onChange={() => { setTimeKnown(false); setTime(''); setError(null) }} />未知 / Unknown</label>
+          <label><input type="radio" name="birth-time-known" checked={timeKnown} onChange={() => { setTimeKnown(true); invalidate() }} />已知 / Known</label>
+          <label><input type="radio" name="birth-time-known" checked={!timeKnown} onChange={() => { setTimeKnown(false); setTime(''); invalidate() }} />未知 / Unknown</label>
         </fieldset>
 
         {timeKnown && <label className="bazi-field bazi-time-field mt-5">
           <span>本地出生时间 / Local civil time</span>
-          <input type="time" step="60" value={time} onChange={(event) => { setTime(event.target.value); setError(null) }} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? 'bazi-form-error' : 'bazi-time-help'} />
+          <input type="time" step="60" value={time} onChange={(event) => { setTime(event.target.value); invalidate() }} aria-invalid={error ? 'true' : undefined} aria-describedby={error ? 'bazi-form-error' : 'bazi-time-help'} />
           <small id="bazi-time-help">请输入小时和分钟。23:00–23:59 采用晚子时日柱仍属当日的约定。</small>
         </label>}
 
