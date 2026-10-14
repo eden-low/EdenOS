@@ -5,8 +5,13 @@ import { AccountDialog } from './AccountDialog'
 import { UserSettingsContext } from '../../state/userSettingsContextDefinition'
 import { emptyUserSettings } from '../../domain/userSettings'
 import type { GuestDataSummary } from '../../types/account'
+import { checkCosmosAuthorization } from '../../services/cosmosAuthDiagnosticService'
 
 vi.mock('../../state/useFirebaseAuth', () => ({ useFirebaseAuth: vi.fn() }))
+vi.mock('../../services/cosmosAuthDiagnosticService', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../../services/cosmosAuthDiagnosticService')>()
+  return { ...original, checkCosmosAuthorization: vi.fn() }
+})
 vi.mock('./ThemeSettings', () => ({ ThemeSettings: () => null }))
 vi.mock('./PrivacyLockSettings', () => ({ PrivacyLockSettings: () => null }))
 
@@ -45,6 +50,7 @@ beforeEach(() => {
   continueWithExistingGoogle.mockReset()
   continueWithExistingGoogle.mockResolvedValue({ status: 'connected' })
   discardExistingGoogleChoice.mockReset()
+  vi.mocked(checkCosmosAuthorization).mockReset()
 })
 
 describe('Account dialog presentation', () => {
@@ -145,5 +151,28 @@ describe('Account dialog presentation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy Firebase UID' }))
     await waitFor(() => expect(writeText).toHaveBeenCalledExactlyOnceWith('linked-firebase-uid'))
     expect(screen.getByRole('button', { name: 'Firebase UID copied' })).toBeTruthy()
+  })
+
+  it('runs the temporary authorization diagnostic only after an explicit click and renders safe fields', async () => {
+    vi.mocked(checkCosmosAuthorization).mockResolvedValue({
+      tokenVerified: true,
+      uidMatchesRuntimeAllowlist: true,
+      signInProviderCategory: 'anonymous',
+      googleIdentityLinked: true,
+      adminGoogleProviderLinked: true,
+      runtimeAllowlistConfigured: true,
+      stagingContextVerified: true,
+    })
+    renderAccount(false, 'alex@example.com', 'sensitive-uid')
+    expect(checkCosmosAuthorization).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Check Cosmos Authorization' }))
+    const results = await screen.findByRole('status', { name: 'Cosmos authorization diagnostic results' })
+    expect(checkCosmosAuthorization).toHaveBeenCalledOnce()
+    expect(results.textContent).toContain('signInProviderCategoryanonymous')
+    expect(results.textContent).toContain('uidMatchesRuntimeAllowlisttrue')
+    expect(results.textContent).toContain('adminGoogleProviderLinkedtrue')
+    expect(results.textContent).not.toContain('sensitive-uid')
+    expect(results.textContent).not.toContain('alex@example.com')
   })
 })
