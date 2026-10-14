@@ -1,7 +1,9 @@
 # Dependencies and build output
 node_modules/
 dist/
+.netlify/
 frontend/artifacts/browser-validation/
+frontend/netlify/functions/cosmos-auth-diagnostic.mjs
 
 # Local environment files
 .env
