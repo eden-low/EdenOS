@@ -16,7 +16,7 @@ const result: CosmosAuthDiagnosticResult = {
   uidMatchesRuntimeAllowlist: true,
   signInProviderCategory: 'anonymous',
   googleIdentityLinked: true,
-  adminGoogleProviderLinked: true,
+  adminGoogleProviderLinked: 'unavailable',
   runtimeAllowlistConfigured: true,
   stagingContextVerified: true,
 }
@@ -37,6 +37,15 @@ describe('Cosmos authorization diagnostic browser boundary', () => {
         Authorization: 'Bearer diagnostic-token', 'Content-Type': 'application/json',
       },
     }))
+  })
+
+  it('accepts the explicit unavailable state for the optional Admin lookup only', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(result), { status: 200 }))
+    await expect(checkCosmosAuthorization()).resolves.toMatchObject({ adminGoogleProviderLinked: 'unavailable' })
+    expect(fetchMock).toHaveBeenCalledOnce()
+
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ ...result, adminGoogleProviderLinked: 'unknown' }), { status: 200 }))
+    await expect(checkCosmosAuthorization()).rejects.toEqual(new CosmosAuthDiagnosticError('invalid-response'))
   })
 
   it('does not send without Firebase authentication', async () => {

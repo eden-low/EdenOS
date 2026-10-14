@@ -6,13 +6,14 @@ const responseHeaders = {
 }
 
 export type SignInProviderCategory = 'google' | 'anonymous' | 'other' | 'missing'
+export type AdminGoogleProviderLinked = boolean | 'unavailable'
 
 export interface CosmosAuthDiagnosticResult {
   tokenVerified: true
   uidMatchesRuntimeAllowlist: boolean
   signInProviderCategory: SignInProviderCategory
   googleIdentityLinked: boolean
-  adminGoogleProviderLinked: boolean
+  adminGoogleProviderLinked: AdminGoogleProviderLinked
   runtimeAllowlistConfigured: boolean
   stagingContextVerified: true
 }

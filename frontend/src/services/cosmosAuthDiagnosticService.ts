@@ -1,13 +1,14 @@
 import { firebaseInitialization } from '../lib/firebase'
 
 export type CosmosSignInProviderCategory = 'google' | 'anonymous' | 'other' | 'missing'
+export type AdminGoogleProviderLinked = boolean | 'unavailable'
 
 export interface CosmosAuthDiagnosticResult {
   tokenVerified: true
   uidMatchesRuntimeAllowlist: boolean
   signInProviderCategory: CosmosSignInProviderCategory
   googleIdentityLinked: boolean
-  adminGoogleProviderLinked: boolean
+  adminGoogleProviderLinked: AdminGoogleProviderLinked
   runtimeAllowlistConfigured: boolean
   stagingContextVerified: true
 }
@@ -30,7 +31,8 @@ export function validateCosmosAuthDiagnosticResult(value: unknown): CosmosAuthDi
   const result = value as Record<string, unknown>
   if (Object.keys(result).length !== 7 || result.tokenVerified !== true || result.stagingContextVerified !== true ||
       typeof result.uidMatchesRuntimeAllowlist !== 'boolean' || typeof result.googleIdentityLinked !== 'boolean' ||
-      typeof result.adminGoogleProviderLinked !== 'boolean' || typeof result.runtimeAllowlistConfigured !== 'boolean' ||
+      (typeof result.adminGoogleProviderLinked !== 'boolean' && result.adminGoogleProviderLinked !== 'unavailable') ||
+      typeof result.runtimeAllowlistConfigured !== 'boolean' ||
       typeof result.signInProviderCategory !== 'string' ||
       !providerCategories.has(result.signInProviderCategory as CosmosSignInProviderCategory)) return null
   return result as unknown as CosmosAuthDiagnosticResult

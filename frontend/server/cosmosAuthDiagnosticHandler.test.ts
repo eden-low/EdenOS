@@ -11,7 +11,7 @@ const result: CosmosAuthDiagnosticResult = {
   uidMatchesRuntimeAllowlist: true,
   signInProviderCategory: 'anonymous',
   googleIdentityLinked: true,
-  adminGoogleProviderLinked: true,
+  adminGoogleProviderLinked: 'unavailable',
   runtimeAllowlistConfigured: true,
   stagingContextVerified: true,
 }
@@ -81,7 +81,7 @@ describe('Cosmos authorization diagnostic endpoint', () => {
     expect(deps.inspect).not.toHaveBeenCalled()
   })
 
-  it('returns no diagnostic fields when Admin lookup is unavailable and logs nothing', async () => {
+  it('returns no diagnostic fields when token verification is unavailable and logs nothing', async () => {
     const spies = [vi.spyOn(console, 'log').mockImplementation(() => undefined), vi.spyOn(console, 'info').mockImplementation(() => undefined),
       vi.spyOn(console, 'warn').mockImplementation(() => undefined), vi.spyOn(console, 'error').mockImplementation(() => undefined)]
     const deps = dependencies()

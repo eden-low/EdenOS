@@ -159,7 +159,7 @@ describe('Account dialog presentation', () => {
       uidMatchesRuntimeAllowlist: true,
       signInProviderCategory: 'anonymous',
       googleIdentityLinked: true,
-      adminGoogleProviderLinked: true,
+      adminGoogleProviderLinked: 'unavailable',
       runtimeAllowlistConfigured: true,
       stagingContextVerified: true,
     })
@@ -171,7 +171,7 @@ describe('Account dialog presentation', () => {
     expect(checkCosmosAuthorization).toHaveBeenCalledOnce()
     expect(results.textContent).toContain('signInProviderCategoryanonymous')
     expect(results.textContent).toContain('uidMatchesRuntimeAllowlisttrue')
-    expect(results.textContent).toContain('adminGoogleProviderLinkedtrue')
+    expect(results.textContent).toContain('adminGoogleProviderLinkedunavailable')
     expect(results.textContent).not.toContain('sensitive-uid')
     expect(results.textContent).not.toContain('alex@example.com')
   })

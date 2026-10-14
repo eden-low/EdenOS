@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import {
-  adminHasGoogleProvider,
   buildCosmosAuthDiagnosticResult,
+  createCosmosAuthDiagnosticRuntime,
   signInProviderCategory,
   tokenHasGoogleIdentity,
   verifyStagingDeploy,
@@ -17,44 +17,71 @@ describe('Cosmos authorization diagnostic facts', () => {
     expect(signInProviderCategory(undefined)).toBe('missing')
   })
 
-  it('distinguishes token identities from Admin-linked provider data', () => {
+  it('detects a Google identity from verified token claims', () => {
     expect(tokenHasGoogleIdentity({ firebase: { identities: { 'google.com': ['provider-subject'] }, sign_in_provider: 'anonymous' } } as never)).toBe(true)
     expect(tokenHasGoogleIdentity({ firebase: { identities: {}, sign_in_provider: 'anonymous' } } as never)).toBe(false)
-    expect(adminHasGoogleProvider({ providerData: [{ providerId: 'google.com' }] } as never)).toBe(true)
-    expect(adminHasGoogleProvider({ providerData: [] } as never)).toBe(false)
   })
 
   it('reports allowlisted Google and linked anonymous-origin accounts without authorizing either', () => {
     const allowlist = new Set(['approved-uid'])
     const google = buildCosmosAuthDiagnosticResult({
       uid: 'approved-uid', firebase: { sign_in_provider: 'google.com', identities: { 'google.com': ['subject'] } },
-    } as never, { providerData: [{ providerId: 'google.com' }] } as never, allowlist)
+    } as never, allowlist)
     expect(google).toMatchObject({ uidMatchesRuntimeAllowlist: true, signInProviderCategory: 'google',
-      googleIdentityLinked: true, adminGoogleProviderLinked: true })
+      googleIdentityLinked: true, adminGoogleProviderLinked: 'unavailable' })
 
     const linkedAnonymousOrigin = buildCosmosAuthDiagnosticResult({
       uid: 'approved-uid', firebase: { sign_in_provider: 'anonymous', identities: { 'google.com': ['subject'] } },
-    } as never, { providerData: [{ providerId: 'google.com' }] } as never, allowlist)
+    } as never, allowlist)
     expect(linkedAnonymousOrigin).toMatchObject({ uidMatchesRuntimeAllowlist: true, signInProviderCategory: 'anonymous',
-      googleIdentityLinked: true, adminGoogleProviderLinked: true })
+      googleIdentityLinked: true, adminGoogleProviderLinked: 'unavailable' })
   })
 
   it('reports anonymous, non-allowlisted, incorrect, and missing runtime authorization state', () => {
     const anonymous = buildCosmosAuthDiagnosticResult({
       uid: 'anonymous-uid', firebase: { sign_in_provider: 'anonymous', identities: {} },
-    } as never, { providerData: [] } as never, new Set(['anonymous-uid']))
+    } as never, new Set(['anonymous-uid']))
     expect(anonymous).toMatchObject({ uidMatchesRuntimeAllowlist: true, signInProviderCategory: 'anonymous',
-      googleIdentityLinked: false, adminGoogleProviderLinked: false })
+      googleIdentityLinked: false, adminGoogleProviderLinked: 'unavailable' })
 
     const nonAllowlisted = buildCosmosAuthDiagnosticResult({
       uid: 'different-uid', firebase: { sign_in_provider: 'google.com', identities: { 'google.com': ['subject'] } },
-    } as never, { providerData: [{ providerId: 'google.com' }] } as never, new Set(['approved-uid']))
+    } as never, new Set(['approved-uid']))
     expect(nonAllowlisted.uidMatchesRuntimeAllowlist).toBe(false)
     expect(buildCosmosAuthDiagnosticResult({ uid: 'approved-uid', firebase: { sign_in_provider: 'google.com' } } as never,
-      { providerData: [{ providerId: 'google.com' }] } as never, new Set(['wrong-runtime-uid'])).uidMatchesRuntimeAllowlist).toBe(false)
+      new Set(['wrong-runtime-uid'])).uidMatchesRuntimeAllowlist).toBe(false)
     expect(cosmosAuthorizedUids({}).size).toBe(0)
     expect(buildCosmosAuthDiagnosticResult({ uid: 'approved-uid', firebase: { sign_in_provider: 'google.com' } } as never,
-      { providerData: [{ providerId: 'google.com' }] } as never, new Set()).runtimeAllowlistConfigured).toBe(false)
+      new Set()).runtimeAllowlistConfigured).toBe(false)
+  })
+
+  it('returns verified token and allowlist facts without requiring an Admin user-record lookup', async () => {
+    const verifyIdToken = vi.fn(async () => ({
+      uid: 'approved-uid',
+      firebase: { sign_in_provider: 'anonymous', identities: { 'google.com': ['subject'] } },
+    }))
+    const getUser = vi.fn(async () => { throw new Error('optional lookup unavailable') })
+    const runtime = createCosmosAuthDiagnosticRuntime({
+      EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON: JSON.stringify({
+        project_id: 'synthetic-project', client_email: 'synthetic@example.invalid', private_key: 'synthetic-key',
+      }),
+      COSMOS_AUTHORIZED_FIREBASE_UIDS: 'approved-uid',
+    }, () => ({ verifyIdToken, getUser }) as never)
+
+    await expect(runtime.inspect('synthetic-token')).resolves.toEqual({
+      status: 'verified',
+      result: {
+        tokenVerified: true,
+        uidMatchesRuntimeAllowlist: true,
+        signInProviderCategory: 'anonymous',
+        googleIdentityLinked: true,
+        adminGoogleProviderLinked: 'unavailable',
+        runtimeAllowlistConfigured: true,
+        stagingContextVerified: true,
+      },
+    })
+    expect(verifyIdToken).toHaveBeenCalledExactlyOnceWith('synthetic-token')
+    expect(getUser).not.toHaveBeenCalled()
   })
 
   it('verifies the trusted deploy ID is the staging branch deploy', async () => {

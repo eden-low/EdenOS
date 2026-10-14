@@ -1,4 +1,4 @@
-import type { DecodedIdToken, UserRecord } from 'firebase-admin/auth'
+import type { DecodedIdToken } from 'firebase-admin/auth'
 import {
   cosmosAuthorizedUids,
   getCosmosAdminAuth,
@@ -26,13 +26,8 @@ export function tokenHasGoogleIdentity(decoded: Pick<DecodedIdToken, 'firebase'>
   return Array.isArray(googleIdentity) && googleIdentity.length > 0
 }
 
-export function adminHasGoogleProvider(user: Pick<UserRecord, 'providerData'>): boolean {
-  return user.providerData.some(({ providerId }) => providerId === 'google.com')
-}
-
 export function buildCosmosAuthDiagnosticResult(
   decoded: Pick<DecodedIdToken, 'uid' | 'firebase'>,
-  user: Pick<UserRecord, 'providerData'>,
   allowlist: ReadonlySet<string>,
 ): CosmosAuthDiagnosticResult {
   return {
@@ -40,7 +35,7 @@ export function buildCosmosAuthDiagnosticResult(
     uidMatchesRuntimeAllowlist: allowlist.has(decoded.uid),
     signInProviderCategory: signInProviderCategory(decoded.firebase?.sign_in_provider),
     googleIdentityLinked: tokenHasGoogleIdentity(decoded),
-    adminGoogleProviderLinked: adminHasGoogleProvider(user),
+    adminGoogleProviderLinked: 'unavailable',
     runtimeAllowlistConfigured: allowlist.size > 0,
     stagingContextVerified: true,
   }
@@ -70,29 +65,26 @@ export async function verifyStagingDeploy(identity: NetlifyDeployIdentity, fetch
   }
 }
 
-export function createCosmosAuthDiagnosticRuntime(env: NodeJS.ProcessEnv = process.env): CosmosAuthDiagnosticDependencies {
+export function createCosmosAuthDiagnosticRuntime(
+  env: NodeJS.ProcessEnv = process.env,
+  adminAuthFactory: typeof getCosmosAdminAuth = getCosmosAdminAuth,
+): CosmosAuthDiagnosticDependencies {
   const serviceAccount = readCosmosServiceAccount(env)
   const allowlist = cosmosAuthorizedUids(env)
   return {
     verifyStagingDeploy,
     async inspect(token) {
       if (!serviceAccount) return { status: 'unavailable' }
-      const adminAuth = getCosmosAdminAuth(serviceAccount)
+      const adminAuth = adminAuthFactory(serviceAccount)
       let decoded: DecodedIdToken
       try {
         decoded = await adminAuth.verifyIdToken(token)
       } catch {
         return { status: 'invalid-token' }
       }
-      let user: UserRecord
-      try {
-        user = await adminAuth.getUser(decoded.uid)
-      } catch {
-        return { status: 'unavailable' }
-      }
       return {
         status: 'verified',
-        result: buildCosmosAuthDiagnosticResult(decoded, user, allowlist),
+        result: buildCosmosAuthDiagnosticResult(decoded, allowlist),
       }
     },
   }
