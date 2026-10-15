@@ -33,7 +33,7 @@ export function isAuthorizedCosmosIdentity(decoded: { uid: string; firebase?: { 
 }
 
 export function cosmosModel(env: NodeJS.ProcessEnv): string | null {
-  const value = env.COSMOS_GEMINI_MODEL?.trim() || 'gemini-2.5-flash'
+  const value = env.COSMOS_GEMINI_MODEL?.trim() || 'gemini-3.1-flash-lite'
   return /^gemini-[a-z0-9.-]{1,60}$/.test(value) ? value : null
 }
 

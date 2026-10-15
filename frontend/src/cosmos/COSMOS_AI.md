@@ -13,7 +13,7 @@ There are no Firebase, Firestore, Cloud Storage, localStorage, sessionStorage, I
 ## Prompt and model
 
 - Prompt version: `cosmos-v1`, exported as `COSMOS_PROMPT_VERSION` in `server/cosmosPrompt.ts`.
-- Default model: `gemini-2.5-flash`, chosen for responsive, cost-efficient structured text output.
+- Default model: `gemini-3.1-flash-lite`, verified on Staging with dream, single-system, and cross-system structured interpretations and chosen for responsive, cost-efficient text output.
 - Optional server override: `COSMOS_GEMINI_MODEL`, validated against a restricted Gemini model-name pattern. Do not use an unpinned `latest` alias.
 - Provider: the existing server-only `@google/genai` dependency and `GEMINI_API_KEY` pattern.
 - Maximum output: 3,000 tokens; HTTP timeout: 20 seconds; SDK retries: one total attempt (no automatic retry).
@@ -29,9 +29,11 @@ Required server-only variables:
 1. `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON` — existing Firebase Admin service account JSON for ID-token verification.
 2. `GEMINI_API_KEY` — existing Gemini API credential.
 3. `COSMOS_AUTHORIZED_FIREBASE_UIDS` — comma-separated Firebase UIDs allowed to use this billed personal endpoint.
-4. Optional `COSMOS_GEMINI_MODEL` — defaults to `gemini-2.5-flash`.
+4. `COSMOS_GEMINI_MODEL` — set explicitly to `gemini-3.1-flash-lite` in Production. The validated server override remains supported, and the code default is the same model.
 
 The endpoint fails closed if the owner allowlist is absent. A valid Firebase token is not sufficient: its verified UID must also appear in the server-only allowlist. UIDs, credentials, and provider configuration are never hardcoded or sent to the client. Anonymous or other authenticated users receive `403 forbidden`; invalid or absent tokens receive `401 auth`.
+
+`COSMOS_AUTHORIZED_FIREBASE_UIDS` and `COSMOS_GEMINI_MODEL` are read only by Ask Cosmos. `GEMINI_API_KEY` is shared with the existing Gemini receipt/screenshot workflows, so rotating or replacing it can affect those workflows. `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON` is shared by Firebase-Admin-backed Functions, so changing it can affect ID-token verification outside Cosmos. The receipt-specific model variables remain independent of `COSMOS_GEMINI_MODEL`. Production configuration changes to either shared credential require receipt OCR and authentication regression checks; a Cosmos model override alone does not change receipt OCR model selection.
 
 The endpoint accepts JSON only, rejects non-POST methods, caps the encoded body at 48 KiB, uses `Cache-Control: no-store`, validates every request field and every model response field, and never logs questions, dream text, chart context, or Gemini output. Browser responses contain stable error codes rather than provider stack traces.
 
@@ -80,7 +82,7 @@ The function bounds string lengths and arrays, rejects unknown source identifier
 
 ## Failure behavior and user control
 
-The browser prevents concurrent duplicate generation, cancels obsolete UI requests on unmount or mode change, and ignores stale responses. Cancellation does not guarantee cancellation of provider billing, which is why the generate button is disabled while a request is active. There are no automatic retries. Errors distinguish authentication, owner authorization, configuration, quota/rate limits, timeout, network failure, malformed output, and temporary provider failure. A failed request never removes any local reading.
+The browser prevents concurrent duplicate generation, cancels obsolete UI requests on unmount or mode change, and ignores stale responses. Cancellation does not guarantee cancellation of provider billing, which is why the generate button is disabled while a request is active. There are no automatic retries. Errors distinguish EdenOS authentication and owner authorization from Gemini request/prerequisite, credential, billing, permission, model/resource, quota/rate-limit, timeout, malformed-output, network, and temporary-provider failures. Provider messages and bodies are never returned to the browser. A failed request never removes any local reading.
 
 The service worker precaches only static HTML/JS/CSS assets. It has no runtime caching rule for the POST endpoint, and the request and response both use `no-store`.
 
@@ -104,3 +106,15 @@ Use Netlify Dev only when manually exercising the function. Configure synthetic 
 - Input compatibility checks exact local civil inputs; they do not prove that charts refer to the same person.
 - Provider-side processing and retention follow the applicable Google Gemini API terms and configuration; EdenOS cannot promise zero provider retention.
 - AI interpretation can be wrong even when source data is correct and remains a reflective aid, not evidence or professional advice.
+
+## Production release configuration
+
+Before a Production deployment, the owner must verify all four variables in the Netlify Production deploy context without printing their values:
+
+1. Confirm the intended Google-connected Firebase account and copy its UID locally from the Account dialog. Compare it privately with the Production `COSMOS_AUTHORIZED_FIREBASE_UIDS` entry.
+2. Set `COSMOS_GEMINI_MODEL` to `gemini-3.1-flash-lite` explicitly for Production.
+3. Confirm non-empty Production access to the existing `GEMINI_API_KEY` and `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON` values. Do not rotate or replace them as part of the Cosmos release.
+4. Confirm the Staging branch override remains unchanged and that an unrelated branch deploy does not inherit the owner allowlist.
+5. Inspect only Boolean presence, deploy context, scopes, and the allowlisted model identifier. Never print the UID, API key, service-account JSON, or other variable values.
+
+See `docs/cosmos-production-release.md` for the approval-gated deployment and rollback runbook.

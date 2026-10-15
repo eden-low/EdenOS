@@ -16,8 +16,8 @@ describe('Cosmos reading runtime policy', () => {
   })
 
   it('uses the cost-efficient pinned default and rejects invalid model configuration', () => {
-    expect(cosmosModel({})).toBe('gemini-2.5-flash')
-    expect(cosmosModel({ COSMOS_GEMINI_MODEL: 'gemini-2.5-flash' })).toBe('gemini-2.5-flash')
+    expect(cosmosModel({})).toBe('gemini-3.1-flash-lite')
+    expect(cosmosModel({ COSMOS_GEMINI_MODEL: 'gemini-3.1-flash-lite' })).toBe('gemini-3.1-flash-lite')
     expect(cosmosModel({ COSMOS_GEMINI_MODEL: '../secret' })).toBeNull()
   })
 })
