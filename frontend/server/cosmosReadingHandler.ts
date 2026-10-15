@@ -19,12 +19,28 @@ function json(status: number, value: CosmosAiResponse | { code: string }): Respo
   return new Response(JSON.stringify(value), { status, headers: responseHeaders })
 }
 
-function providerErrorCode(error: unknown): 'quota' | 'timeout' | 'provider' {
-  const details = error && typeof error === 'object' ? error as { status?: unknown; code?: unknown; message?: unknown } : {}
-  if (Number(details.status) === 429 || details.code === 'RESOURCE_EXHAUSTED') return 'quota'
-  if ([408, 504].includes(Number(details.status)) || details.code === 'DEADLINE_EXCEEDED' ||
-      typeof details.message === 'string' && /timed? out|timeout/i.test(details.message)) return 'timeout'
+type GeminiProviderErrorCode =
+  | 'gemini-request-prerequisite' | 'gemini-authentication' | 'gemini-billing'
+  | 'gemini-permission' | 'gemini-model-unavailable' | 'quota' | 'timeout' | 'provider'
+
+function providerErrorCode(error: unknown): GeminiProviderErrorCode {
+  const status = error && typeof error === 'object' && 'status' in error &&
+    typeof error.status === 'number' ? error.status : undefined
+  if (status === 400) return 'gemini-request-prerequisite'
+  if (status === 401) return 'gemini-authentication'
+  if (status === 402) return 'gemini-billing'
+  if (status === 403) return 'gemini-permission'
+  if (status === 404) return 'gemini-model-unavailable'
+  if (status === 429) return 'quota'
+  if (status === 408 || status === 504) return 'timeout'
   return 'provider'
+}
+
+function providerResponseStatus(code: GeminiProviderErrorCode): number {
+  if (code === 'quota') return 429
+  if (code === 'timeout') return 504
+  if (code.startsWith('gemini-')) return 502
+  return 503
 }
 
 function responseMatchesRequest(request: CosmosAiRequest, response: CosmosAiResponse): boolean {
@@ -64,7 +80,7 @@ export function createCosmosReadingHandler(dependencies: CosmosReadingDependenci
       return result && responseMatchesRequest(input, result) ? json(200, result) : json(502, { code: 'malformed-response' })
     } catch (error) {
       const code = providerErrorCode(error)
-      return json(code === 'timeout' ? 504 : code === 'quota' ? 429 : 503, { code })
+      return json(providerResponseStatus(code), { code })
     }
   }
 }

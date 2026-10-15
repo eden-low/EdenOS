@@ -24,6 +24,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   auth: '请先登录 EdenOS，再发起解读。', forbidden: '这个账号未获准使用个人 Gemini 端点。',
   invalid: '发送内容未通过安全检查，请检查选择与文字长度。', 'too-large': '发送内容过长，请缩短问题或梦境描述。',
   'not-configured': 'Ask Cosmos 尚未在服务器完成安全配置。', quota: 'Gemini 配额或速率限制已达到，请稍后由你手动重试。',
+  'gemini-request-prerequisite': 'Gemini 无法接受本次请求，或服务前置条件未满足。请暂停重试并检查服务器配置。',
+  'gemini-authentication': 'Gemini API 凭据验证失败。请检查服务器端密钥配置后再手动重试。',
+  'gemini-billing': 'Gemini 计费或预付额度不可用。请检查 Google AI Studio 的计费状态后再手动重试。',
+  'gemini-permission': 'Gemini API 拒绝此服务器凭据访问。请检查密钥权限或项目访问状态。',
+  'gemini-model-unavailable': '当前 Gemini 模型或资源不可用。请检查服务器端模型访问状态。',
   timeout: 'Gemini 本次响应超时，没有自动重试。', 'malformed-response': 'Gemini 返回的格式无法安全显示，请重新发起一次请求。',
   network: '网络连接失败，请检查连接后手动重试。', provider: 'Gemini 暂时无法完成解读，请稍后手动重试。',
 }

@@ -8,6 +8,7 @@ vi.mock('../services/cosmosAiService', () => ({
   CosmosAiError: class extends Error { code: string; constructor(code: string) { super(code); this.code = code } },
 }))
 import { AskCosmosExperience } from './AskCosmosExperience'
+import { CosmosAiError } from '../services/cosmosAiService'
 
 const tarot: TarotSource = {
   system: 'tarot', completeness: 'exact', conventions: ['Synthetic convention'], uncertainty: [],
@@ -63,6 +64,23 @@ describe('Ask Cosmos experience', () => {
     await waitFor(() => expect(requestInterpretation).toHaveBeenCalledOnce())
     expect(requestInterpretation.mock.calls[0][0]).toMatchObject({ mode: 'dream', sources: [], dreamText: '梦见不断寻找一扇门。' })
     expect(await screen.findByText('门可能象征过渡。')).toBeTruthy()
+  })
+
+  it.each([
+    ['gemini-request-prerequisite', 'Gemini 无法接受本次请求，或服务前置条件未满足。请暂停重试并检查服务器配置。'],
+    ['gemini-authentication', 'Gemini API 凭据验证失败。请检查服务器端密钥配置后再手动重试。'],
+    ['gemini-billing', 'Gemini 计费或预付额度不可用。请检查 Google AI Studio 的计费状态后再手动重试。'],
+    ['gemini-permission', 'Gemini API 拒绝此服务器凭据访问。请检查密钥权限或项目访问状态。'],
+    ['gemini-model-unavailable', '当前 Gemini 模型或资源不可用。请检查服务器端模型访问状态。'],
+  ] as const)('shows the safe upstream category %s without provider details', async (code, message) => {
+    requestInterpretation.mockRejectedValueOnce(new CosmosAiError(code))
+    render(<AskCosmosExperience snapshots={{}} onOpenSystem={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /梦境解读/ }))
+    fireEvent.change(screen.getByRole('textbox', { name: /梦境内容/ }), { target: { value: '虚构梦境内容。' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /我确认本次发送/ }))
+    fireEvent.click(screen.getByRole('button', { name: '开始 Gemini 深度解读' }))
+    expect(await screen.findByText(message)).toBeTruthy()
+    expect(document.body.textContent).not.toContain('private provider')
   })
 
   it('requires explicit confirmation for incompatible cross-system birth inputs', () => {

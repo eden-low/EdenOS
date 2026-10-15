@@ -60,15 +60,46 @@ describe('Cosmos reading endpoint', () => {
     expect(deps.interpret).not.toHaveBeenCalled()
   })
 
-  it('fails closed when configuration is missing and does not leak provider details', async () => {
+  it('fails closed when configuration is missing', async () => {
     const deps = dependencies()
     deps.isConfigured = () => false
     expect(await (await createCosmosReadingHandler(deps)(makeRequest())).json()).toEqual({ code: 'not-configured' })
-    deps.isConfigured = () => true
-    deps.interpret = vi.fn(async () => { throw Object.assign(new Error('secret provider detail'), { status: 429 }) })
+  })
+
+  it.each([
+    [400, 502, 'gemini-request-prerequisite'],
+    [401, 502, 'gemini-authentication'],
+    [402, 502, 'gemini-billing'],
+    [403, 502, 'gemini-permission'],
+    [404, 502, 'gemini-model-unavailable'],
+    [429, 429, 'quota'],
+    [408, 504, 'timeout'],
+    [504, 504, 'timeout'],
+    [500, 503, 'provider'],
+    [502, 503, 'provider'],
+    [503, 503, 'provider'],
+  ] as const)('maps Gemini status %s to safe HTTP %s code %s', async (upstreamStatus, responseStatus, code) => {
+    const deps = dependencies()
+    deps.interpret = vi.fn(async () => {
+      throw Object.assign(new Error('private SDK response must not escape'), { status: upstreamStatus })
+    })
     const response = await createCosmosReadingHandler(deps)(makeRequest())
-    expect(response.status).toBe(429)
-    expect(await response.json()).toEqual({ code: 'quota' })
+    expect(response.status).toBe(responseStatus)
+    expect(await response.json()).toEqual({ code })
+  })
+
+  it.each([
+    new TypeError('private network detail'),
+    { status: '401', message: 'private malformed error' },
+    { status: 418, body: 'private response body' },
+    { code: 'RESOURCE_EXHAUSTED', message: 'private untrusted shape' },
+    null,
+  ])('maps an unexpected provider error shape to a generic safe failure', async (providerError) => {
+    const deps = dependencies()
+    deps.interpret = vi.fn(async () => { throw providerError })
+    const response = await createCosmosReadingHandler(deps)(makeRequest())
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ code: 'provider' })
   })
 
   it('does not log questions, chart context, UIDs, or provider output on failure', async () => {
@@ -83,12 +114,8 @@ describe('Cosmos reading endpoint', () => {
     }
   })
 
-  it('classifies timeouts, provider failures, and malformed or ungrounded output', async () => {
+  it('rejects malformed or ungrounded provider output', async () => {
     const deps = dependencies()
-    deps.interpret = vi.fn(async () => { throw Object.assign(new Error('timed out'), { code: 'DEADLINE_EXCEEDED' }) })
-    expect((await createCosmosReadingHandler(deps)(makeRequest())).status).toBe(504)
-    deps.interpret = vi.fn(async () => { throw new Error('network internals') })
-    expect((await createCosmosReadingHandler(deps)(makeRequest())).status).toBe(503)
     deps.interpret = vi.fn(async () => ({ ...modelResponse, observations: [{ source: 'bazi', title: 'wrong', reflection: 'wrong' }] }))
     expect((await createCosmosReadingHandler(deps)(makeRequest())).status).toBe(502)
   })

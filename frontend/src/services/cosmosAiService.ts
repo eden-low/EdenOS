@@ -4,6 +4,8 @@ import { validateCosmosAiResponse } from '../cosmos/cosmosAiValidation'
 
 export type CosmosAiErrorCode =
   | 'auth' | 'forbidden' | 'invalid' | 'too-large' | 'not-configured'
+  | 'gemini-request-prerequisite' | 'gemini-authentication' | 'gemini-billing'
+  | 'gemini-permission' | 'gemini-model-unavailable'
   | 'quota' | 'timeout' | 'malformed-response' | 'provider' | 'network'
 
 export class CosmosAiError extends Error {
@@ -16,7 +18,9 @@ export class CosmosAiError extends Error {
 }
 
 const serverCodes = new Set<CosmosAiErrorCode>([
-  'auth', 'forbidden', 'invalid', 'too-large', 'not-configured', 'quota', 'timeout', 'malformed-response', 'provider',
+  'auth', 'forbidden', 'invalid', 'too-large', 'not-configured',
+  'gemini-request-prerequisite', 'gemini-authentication', 'gemini-billing', 'gemini-permission', 'gemini-model-unavailable',
+  'quota', 'timeout', 'malformed-response', 'provider',
 ])
 
 export async function requestCosmosInterpretation(request: CosmosAiRequest, signal?: AbortSignal): Promise<CosmosAiResponse> {

@@ -35,4 +35,17 @@ describe('Cosmos AI browser boundary', () => {
     await expect(requestCosmosInterpretation(request)).rejects.toEqual(new CosmosAiError('malformed-response'))
     await expect(requestCosmosInterpretation(request)).rejects.toEqual(new CosmosAiError('network'))
   })
+
+  it.each([
+    ['gemini-request-prerequisite', 502],
+    ['gemini-authentication', 502],
+    ['gemini-billing', 502],
+    ['gemini-permission', 502],
+    ['gemini-model-unavailable', 502],
+    ['auth', 401],
+    ['forbidden', 403],
+  ] as const)('keeps the safe server code %s distinct at the browser boundary', async (code, status) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ code, detail: 'private' }), { status }))
+    await expect(requestCosmosInterpretation(request)).rejects.toEqual(new CosmosAiError(code))
+  })
 })
