@@ -58,6 +58,16 @@ describe('local Astrology experience', () => {
     expect(screen.getByLabelText(/Manual timezone override/).getAttribute('value')).toBe('Asia/Kuala_Lumpur')
   })
 
+  it('commits the natal city through the iPhone touch event path', () => {
+    render(<AstrologyExperience />)
+    const input = screen.getByRole<HTMLInputElement>('combobox', { name: /Birth City/ })
+    fireEvent.change(input, { target: { value: 'Kuala Lumpur' } })
+    fireEvent.pointerDown(screen.getByRole('option', { name: /吉隆坡.*Kuala Lumpur.*Malaysia/ }), { pointerType: 'touch' })
+    fireEvent.blur(input, { relatedTarget: null })
+    expect(input.value).toContain('Kuala Lumpur')
+    expect(screen.getByRole<HTMLInputElement>('combobox', { name: /Birthplace timezone/ }).value).toContain('Malaysia Time')
+  })
+
   it('keeps primary birthplace controls in full-width mobile rows and hides manual fields by default', () => {
     render(<AstrologyExperience />)
     const city = screen.getByRole('combobox', { name: /Birth City/ })

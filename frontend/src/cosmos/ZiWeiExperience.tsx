@@ -25,8 +25,6 @@ export function ZiWeiExperience({ onSnapshotChange }: { onSnapshotChange?: (snap
   const now = useMemo(() => new Date(), [])
   const [fields, setFields] = useState(initialFields)
   const [selectedCity, setSelectedCity] = useState<BirthCity | null>(null)
-  const [cityPickerVersion, setCityPickerVersion] = useState(0)
-  const [zonePickerVersion, setZonePickerVersion] = useState(0)
   const [manualOpen, setManualOpen] = useState(false)
   const [chart, setChart] = useState<ZiWeiChartData | null>(null)
   const [selectedPalace, setSelectedPalace] = useState<ZiWeiPalace | null>(null)
@@ -51,7 +49,6 @@ export function ZiWeiExperience({ onSnapshotChange }: { onSnapshotChange?: (snap
   function chooseCity(city: BirthCity) {
     setSelectedCity(city)
     setFields((current) => ({ ...current, timeZone: city.timeZone }))
-    setZonePickerVersion((version) => version + 1)
     setManualOpen(false)
     clearResult()
   }
@@ -59,14 +56,12 @@ export function ZiWeiExperience({ onSnapshotChange }: { onSnapshotChange?: (snap
   function beginCitySearch() {
     setSelectedCity(null)
     setFields((current) => ({ ...current, timeZone: '' }))
-    setZonePickerVersion((version) => version + 1)
     clearResult()
   }
 
   function updateTimeZone(timeZone: string) {
     if (selectedCity?.timeZone !== timeZone) {
       setSelectedCity(null)
-      setCityPickerVersion((version) => version + 1)
     }
     update('timeZone', timeZone)
   }
@@ -133,9 +128,9 @@ export function ZiWeiExperience({ onSnapshotChange }: { onSnapshotChange?: (snap
         <fieldset className="astrology-time-choice ziwei-time-choice"><legend>出生时间 / Birth time</legend><label><input type="radio" name="ziwei-time-known" checked={fields.timeKnown} onChange={() => update('timeKnown', true)} />已知 / Known</label><label><input type="radio" name="ziwei-time-known" checked={!fields.timeKnown} onChange={() => { update('timeKnown', false); update('time', '') }} />未知 / Unknown</label></fieldset>
         {fields.timeKnown ? <label className="astrology-field"><span>出生地当地钟表时间 / Local civil time</span><input type="time" step="60" value={fields.time} onChange={(event) => update('time', event.target.value)} /><small>{fields.time && /^\d{2}:\d{2}$/.test(fields.time) ? (() => { try { return `对应 ${ziWeiHourLabel(ziWeiTimeIndex(fields.time))}` } catch { return '请输入有效时间。' } })() : '00:00–00:59 为早子时；23:00–23:59 为晚子时。'}</small></label> : <div className="astrology-unknown-note ziwei-unknown-note">出生时辰决定命宫与身宫。时间未知时不会生成完整命盘，也不会代填中午。</div>}
 
-        <div className="ziwei-form-wide"><CityPicker key={cityPickerVersion} selectedCity={selectedCity} onSelect={chooseCity} onSearchChange={beginCitySearch} onManual={() => setManualOpen(true)} /></div>
+        <div className="ziwei-form-wide"><CityPicker selectedCity={selectedCity} onSelect={chooseCity} onSearchChange={beginCitySearch} onManual={() => setManualOpen(true)} /></div>
         {selectedCity && <div className="astrology-city-card ziwei-form-wide"><div><strong>{selectedCity.chineseName} · {selectedCity.name}</strong><span>{selectedCity.country} · {selectedCity.timeZone}</span></div><small>仅使用民用时区<br />不使用经纬度修正</small></div>}
-        <div className="ziwei-form-wide"><TimeZonePicker key={zonePickerVersion} value={fields.timeZone} onChange={updateTimeZone} label="出生地民用时区 / Civil timezone" /></div>
+        <div className="ziwei-form-wide"><TimeZonePicker value={fields.timeZone} onChange={updateTimeZone} label="出生地民用时区 / Civil timezone" /></div>
         <div className="ziwei-form-wide"><TimeZoneSummary timeZone={fields.timeZone} date={fields.date} time={fields.timeKnown ? fields.time : undefined} /></div>
         {manualOpen && !selectedCity && <p className="ziwei-manual-note ziwei-form-wide">若城市不在离线列表，请在上方直接搜索或输入正确的 IANA 时区。此排法只验证当地民用时间，不猜测坐标，也不做真太阳时修正。</p>}
 

@@ -42,6 +42,16 @@ describe('local Zi Wei experience', () => {
     expect(screen.getByText(/仅使用民用时区/)).toBeTruthy()
   })
 
+  it('commits the city and civil timezone through the iPhone touch event path', () => {
+    render(<ZiWeiExperience />)
+    const input = screen.getByRole<HTMLInputElement>('combobox', { name: /Birth City/ })
+    fireEvent.change(input, { target: { value: 'Kuala Lumpur' } })
+    fireEvent.pointerDown(screen.getByRole('option', { name: /吉隆坡.*Kuala Lumpur.*Malaysia/ }), { pointerType: 'touch' })
+    fireEvent.blur(input, { relatedTarget: null })
+    expect(input.value).toContain('Kuala Lumpur')
+    expect(screen.getByRole<HTMLInputElement>('combobox', { name: /Civil timezone/ }).value).toContain('Malaysia Time')
+  })
+
   it('requires an explicit traditional option and never defaults it', () => {
     render(<ZiWeiExperience />)
     expect(screen.getByRole<HTMLInputElement>('radio', { name: '男盘' }).checked).toBe(false)

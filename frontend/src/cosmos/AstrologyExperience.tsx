@@ -38,8 +38,6 @@ export function AstrologyExperience({ onSnapshotChange }: { onSnapshotChange?: (
   const [sunError, setSunError] = useState<string | null>(null)
   const [fields, setFields] = useState(initialFields)
   const [selectedCity, setSelectedCity] = useState<BirthCity | null>(null)
-  const [cityPickerVersion, setCityPickerVersion] = useState(0)
-  const [zonePickerVersion, setZonePickerVersion] = useState(0)
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [chart, setChart] = useState<NatalChart | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +75,6 @@ export function AstrologyExperience({ onSnapshotChange }: { onSnapshotChange?: (
 
   function updateManualLocation(key: 'latitude' | 'longitude', value: string) {
     setSelectedCity(null)
-    setCityPickerVersion((version) => version + 1)
     update(key, value)
   }
 
@@ -187,9 +184,9 @@ export function AstrologyExperience({ onSnapshotChange }: { onSnapshotChange?: (
         <label className="astrology-field"><span>公历出生日期 / Birth date</span><input type="date" min="1970-01-01" value={fields.date} onChange={(event) => update('date', event.target.value)} /></label>
         <fieldset className="astrology-time-choice astrology-form-wide"><legend>出生时间 / Birth time</legend><label><input type="radio" name="astrology-time-known" checked={fields.timeKnown} onChange={() => update('timeKnown', true)} />已知 / Known</label><label><input type="radio" name="astrology-time-known" checked={!fields.timeKnown} onChange={() => { update('timeKnown', false); update('time', '') }} />未知 / Unknown</label></fieldset>
         {fields.timeKnown && <label className="astrology-field"><span>本地时间 / Local civil time</span><input type="time" step="60" value={fields.time} onChange={(event) => update('time', event.target.value)} /></label>}
-        <div className="astrology-form-wide"><CityPicker key={cityPickerVersion} selectedCity={selectedCity} onSelect={chooseCity} onSearchChange={beginCitySearch} onManual={() => setAdvancedOpen(true)} /></div>
+        <div className="astrology-form-wide"><CityPicker selectedCity={selectedCity} onSelect={chooseCity} onSearchChange={beginCitySearch} onManual={() => setAdvancedOpen(true)} /></div>
         {selectedCity && <div className="astrology-city-card astrology-form-wide"><div><strong>{selectedCity.chineseName} · {selectedCity.name}</strong><span>{selectedCity.country}</span></div><small>{selectedCity.latitude.toFixed(5)}°, {selectedCity.longitude.toFixed(5)}°</small></div>}
-        <div className="astrology-form-wide"><TimeZonePicker key={`${selectedCity?.id ?? 'manual-zone'}-${zonePickerVersion}`} value={fields.timeZone} onChange={(timeZone) => update('timeZone', timeZone)} label="出生地时区 / Birthplace timezone" /></div>
+        <div className="astrology-form-wide"><TimeZonePicker value={fields.timeZone} onChange={(timeZone) => update('timeZone', timeZone)} label="出生地时区 / Birthplace timezone" /></div>
         <div className="astrology-form-wide"><TimeZoneSummary timeZone={fields.timeZone} date={fields.date} time={fields.timeKnown && fields.time ? fields.time : undefined} /></div>
         <div className="astrology-advanced astrology-form-wide">
           <button type="button" aria-expanded={advancedOpen} aria-controls="astrology-advanced-fields" onClick={() => setAdvancedOpen((open) => !open)}><span>高级设置 / Advanced</span><small>手动坐标与 IANA 时区</small><i aria-hidden="true">⌄</i></button>
@@ -198,7 +195,7 @@ export function AstrologyExperience({ onSnapshotChange }: { onSnapshotChange?: (
               <label className="astrology-field"><span>纬度 / Latitude</span><input type="number" inputMode="decimal" min="-89.999" max="89.999" step="any" placeholder="3.1412" value={fields.latitude} onChange={(event) => updateManualLocation('latitude', event.target.value)} /></label>
               <label className="astrology-field"><span>经度 / Longitude</span><input type="number" inputMode="decimal" min="-180" max="180" step="any" placeholder="101.68653" value={fields.longitude} onChange={(event) => updateManualLocation('longitude', event.target.value)} /></label>
             </div>
-            <label className="astrology-field"><span>IANA 时区手动覆盖 / Manual timezone override</span><input type="text" autoCapitalize="none" autoCorrect="off" spellCheck="false" placeholder="Europe/Prague" value={fields.timeZone} onChange={(event) => { setZonePickerVersion((version) => version + 1); update('timeZone', event.target.value.trim()) }} /><small>时区是民用时间规则身份，不是固定 UTC 偏移。仅输入完整有效的 IANA 名称。</small></label>
+            <label className="astrology-field"><span>IANA 时区手动覆盖 / Manual timezone override</span><input type="text" autoCapitalize="none" autoCorrect="off" spellCheck="false" placeholder="Europe/Prague" value={fields.timeZone} onChange={(event) => update('timeZone', event.target.value.trim())} /><small>时区是民用时间规则身份，不是固定 UTC 偏移。仅输入完整有效的 IANA 名称。</small></label>
           </div>}
         </div>
         <p className="astrology-location-note astrology-form-wide">城市资料会填入地理坐标与 IANA 时区。UTC 偏移随后按出生日期和时间从时区规则计算。若城市不在列表中，请手动输入；系统不会猜测。离线城市资料来自 GeoNames（CC BY 4.0）。</p>
