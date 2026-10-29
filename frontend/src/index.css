@@ -240,38 +240,44 @@ button:not(:disabled) {
 
 .today-lotus-aurora {
   position: absolute;
-  top: 49%;
+  top: 48%;
   left: 50%;
-  width: min(72rem, 132vw);
-  aspect-ratio: 1.22;
+  width: min(76rem, 138vw);
+  aspect-ratio: 1.18;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 50%, rgba(237, 230, 255, 0.2), transparent 24%),
-    radial-gradient(circle at 40% 48%, rgba(121, 95, 191, 0.18), transparent 54%),
-    radial-gradient(circle at 66% 55%, rgba(202, 164, 109, 0.1), transparent 48%);
-  opacity: 0.92;
+    radial-gradient(ellipse at 50% 53%, rgba(250, 246, 255, 0.2), transparent 19%),
+    radial-gradient(ellipse at 43% 48%, rgba(126, 96, 200, 0.2), transparent 49%),
+    radial-gradient(ellipse at 66% 56%, rgba(224, 177, 112, 0.1), transparent 43%),
+    radial-gradient(ellipse at 50% 50%, rgba(54, 35, 84, 0.3), transparent 68%);
+  opacity: 0.96;
 }
 
 .today-lotus-art {
   position: absolute;
-  top: 49%;
+  top: 48.5%;
   left: 50%;
-  width: min(70rem, 108vw);
-  width: min(70rem, 108vw, 124dvh);
+  width: min(72rem, 112vw);
+  width: min(72rem, 112vw, 126dvh);
   height: auto;
   transform: translate(-50%, -50%);
-  opacity: 0.88;
+  opacity: 0.92;
   overflow: visible;
   backface-visibility: hidden;
+  shape-rendering: geometricPrecision;
 }
 
+.lotus-atmosphere-layer,
 .lotus-atmosphere,
 .lotus-aura-ring,
 .lotus-petal-tier,
 .lotus-bloom,
 .lotus-core-light,
-.lotus-heart {
+.lotus-heart,
+.lotus-stars,
+.lotus-trails,
+.lotus-edge-glints {
   transform-box: fill-box;
   transform-origin: center;
 }
@@ -284,122 +290,194 @@ button:not(:disabled) {
 .lotus-aura-ring {
   fill: none;
   stroke: url(#eden-lotus-edge);
-  stroke-width: 0.8;
-  opacity: 0.24;
+  stroke-width: 0.65;
+  opacity: 0.2;
   vector-effect: non-scaling-stroke;
+}
+
+.lotus-aura-ring-mid {
+  stroke-dasharray: 1 11;
+  opacity: 0.28;
 }
 
 .lotus-aura-ring-inner {
-  stroke-dasharray: 2 9;
-  opacity: 0.34;
+  stroke-dasharray: 2 8;
+  opacity: 0.38;
 }
 
 .lotus-petal {
+  transform-box: fill-box;
+  transform-origin: center bottom;
   vector-effect: non-scaling-stroke;
   stroke: url(#eden-lotus-edge);
-  stroke-width: 0.95;
+  stroke-width: 0.82;
   stroke-linejoin: round;
 }
 
-.lotus-tier-shadow { opacity: 0.62; }
-.lotus-tier-crown { opacity: 0.92; }
-.lotus-tier-chalice { opacity: 0.96; }
-.lotus-tier-open { opacity: 0.8; }
-.lotus-tier-bowl { opacity: 0.94; }
-.lotus-tier-foreground { opacity: 0.86; }
+.lotus-tier-veil { opacity: 0.38; }
+.lotus-tier-shadow { opacity: 0.64; }
+.lotus-tier-crown { opacity: 0.94; }
+.lotus-tier-chalice { opacity: 0.98; }
+.lotus-tier-open { opacity: 0.84; }
+.lotus-tier-bowl { opacity: 0.96; }
+.lotus-tier-foreground { opacity: 0.88; }
 
 .lotus-veins path {
   fill: none;
   stroke: url(#eden-lotus-vein);
   stroke-linecap: round;
-  stroke-width: 0.85;
-  opacity: 0.58;
+  stroke-width: 0.72;
+  opacity: 0.56;
+  vector-effect: non-scaling-stroke;
+}
+
+.lotus-edge-glints path {
+  fill: none;
+  stroke: url(#eden-lotus-edge);
+  stroke-dasharray: 26 110;
+  stroke-linecap: round;
+  stroke-width: 1.35;
+  opacity: 0.5;
   vector-effect: non-scaling-stroke;
 }
 
 .lotus-core-light {
-  opacity: 0.72;
+  opacity: 0.76;
 }
 
 .lotus-heart {
-  opacity: 0.9;
+  opacity: 0.94;
 }
 
-.lotus-heart circle {
-  fill: rgba(255, 244, 215, 0.88);
+.lotus-stamens path {
+  fill: none;
+  stroke: rgba(255, 241, 204, 0.58);
+  stroke-linecap: round;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 
-.lotus-particle {
-  fill: rgba(255, 250, 235, 0.82);
+.lotus-stamens circle {
+  fill: rgba(255, 244, 215, 0.92);
+}
+
+.lotus-stars circle {
   transform-box: fill-box;
   transform-origin: center;
 }
 
-.lotus-particle-2,
-.lotus-particle-4,
-.lotus-particle-7,
-.lotus-particle-9,
-.lotus-particle-12 {
-  fill: rgba(200, 186, 255, 0.78);
+.lotus-stars-far circle {
+  fill: rgba(210, 197, 255, 0.62);
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-bloom {
-  animation: lotus-premium-breathe 12s ease-in-out infinite;
+.lotus-stars-far circle:nth-child(3n),
+.lotus-stars-near circle:nth-child(4n) {
+  fill: rgba(255, 225, 174, 0.76);
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-tier-shadow {
-  animation: lotus-rear-open 18s ease-in-out -7s infinite;
+.lotus-stars-near circle {
+  fill: rgba(255, 252, 242, 0.86);
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-tier-crown {
-  animation: lotus-crown-rise 15s ease-in-out -3s infinite;
+.lotus-trail {
+  fill: none;
+  stroke: url(#eden-lotus-trail);
+  stroke-dasharray: 38 170;
+  stroke-linecap: round;
+  stroke-width: 0.8;
+  opacity: 0.34;
+  vector-effect: non-scaling-stroke;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-tier-chalice {
-  animation: lotus-chalice-breathe 13s ease-in-out -8s infinite;
+.today-lotus-aurora {
+  animation: lotus-aurora-drift 24s ease-in-out -9s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-tier-open {
-  animation: lotus-wide-open 17s ease-in-out -5s infinite;
+.lotus-bloom {
+  animation: lotus-celestial-breathe 16s ease-in-out -6s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-tier-bowl {
-  animation: lotus-bowl-lift 14s ease-in-out -10s infinite;
+.lotus-tier-veil {
+  animation: lotus-veil-open 25s cubic-bezier(0.45, 0, 0.3, 1) -11s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-tier-foreground {
-  animation: lotus-foreground-rest 19s ease-in-out -4s infinite;
+.lotus-tier-shadow {
+  animation: lotus-rear-open 22s cubic-bezier(0.45, 0, 0.28, 1) -15s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-veins {
-  animation: lotus-vein-shimmer 11s ease-in-out -6s infinite;
+.lotus-tier-crown {
+  animation: lotus-crown-rise 19s cubic-bezier(0.4, 0, 0.24, 1) -5s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-core-light,
-.today-lotus-backdrop[data-animated="true"] .lotus-heart {
-  animation: lotus-core-pulse 9s ease-in-out -2s infinite;
+.lotus-tier-chalice {
+  animation: lotus-chalice-breathe 17s ease-in-out -12s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-atmosphere,
-.today-lotus-backdrop[data-animated="true"] .lotus-aura-ring {
-  animation: lotus-aura-breathe 14s ease-in-out -4s infinite;
+.lotus-tier-open {
+  animation: lotus-wide-open 23s cubic-bezier(0.42, 0, 0.28, 1) -8s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-particle {
-  animation: lotus-particle-float 15s ease-in-out infinite;
+.lotus-tier-bowl {
+  animation: lotus-bowl-lift 18s ease-in-out -14s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-2,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-6,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-9,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-13 { animation-delay: -3s; animation-duration: 18s; }
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-3,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-7,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-10,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-14 { animation-delay: -7s; animation-duration: 21s; }
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-4,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-8,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-11 { animation-delay: -11s; animation-duration: 17s; }
+.lotus-tier-foreground {
+  animation: lotus-foreground-rest 24s ease-in-out -9s infinite;
+}
+
+.lotus-petal-left-a { animation: lotus-petal-sway-left 21s ease-in-out -4s infinite; }
+.lotus-petal-left-b { animation: lotus-petal-sway-left 25s ease-in-out -13s infinite reverse; }
+.lotus-petal-right-a { animation: lotus-petal-sway-right 23s ease-in-out -9s infinite; }
+.lotus-petal-right-b { animation: lotus-petal-sway-right 27s ease-in-out -18s infinite reverse; }
+.lotus-petal-center { animation: lotus-petal-center-rise 20s ease-in-out -7s infinite; }
+
+.lotus-tier-chalice .lotus-petal { animation-duration: 17s; }
+.lotus-tier-open .lotus-petal { animation-duration: 24s; }
+.lotus-tier-foreground .lotus-petal { animation-duration: 28s; }
+
+.lotus-veins {
+  animation: lotus-vein-shimmer 13s ease-in-out -7s infinite;
+}
+
+.lotus-edge-glints {
+  animation: lotus-edge-shimmer 17s ease-in-out -8s infinite;
+}
+
+.lotus-core-light,
+.lotus-heart {
+  animation: lotus-core-pulse 11s ease-in-out -3s infinite;
+}
+
+.lotus-atmosphere-layer {
+  animation: lotus-aura-breathe 19s ease-in-out -6s infinite;
+}
+
+.lotus-stars-far circle {
+  animation: lotus-star-twinkle 14s ease-in-out infinite;
+}
+
+.lotus-stars-near circle {
+  animation: lotus-mote-drift 18s ease-in-out infinite;
+}
+
+.lotus-stars circle:nth-child(3n + 1) { animation-delay: -4s; animation-duration: 17s; }
+.lotus-stars circle:nth-child(3n + 2) { animation-delay: -9s; animation-duration: 21s; }
+.lotus-stars circle:nth-child(4n) { animation-delay: -13s; animation-duration: 24s; }
+
+.lotus-trail {
+  animation: lotus-trail-shimmer 21s linear infinite;
+}
+
+.lotus-trail-2 { animation-delay: -8s; animation-duration: 26s; }
+.lotus-trail-3 { animation-delay: -15s; animation-duration: 29s; }
+
+.today-lotus-backdrop [class*="lotus-"] {
+  animation-play-state: paused;
+}
+
+.today-lotus-backdrop[data-animated="true"] [class*="lotus-"] {
+  animation-play-state: running;
+}
 
 .today-dashboard .dashboard-hero h1 {
   text-shadow: 0 2px 28px rgba(4, 5, 14, 0.32);
@@ -567,61 +645,110 @@ button:not(:disabled) {
     top: 48%;
     width: 172vw;
   }
+
+  .lotus-stars-far circle:nth-child(3n),
+  .lotus-stars-near circle:nth-child(n + 9),
+  .lotus-trail-3 {
+    display: none;
+  }
 }
 
-@keyframes lotus-premium-breathe {
-  0%, 100% { opacity: 0.9; transform: translateY(3px) scale(0.992); }
-  50% { opacity: 1; transform: translateY(-5px) scale(1.012); }
+@keyframes lotus-aurora-drift {
+  0%, 100% { opacity: 0.88; transform: translate(-50%, -50%) scale(0.97) rotate(-0.4deg); }
+  46% { opacity: 1; transform: translate(-50.5%, -50.8%) scale(1.025) rotate(0.35deg); }
+}
+
+@keyframes lotus-celestial-breathe {
+  0%, 100% { opacity: 0.93; transform: translateY(4px) scale(0.992); }
+  52% { opacity: 1; transform: translateY(-5px) scale(1.01); }
+}
+
+@keyframes lotus-veil-open {
+  0%, 100% { opacity: 0.3; transform: translateY(4px) scaleX(0.955) scaleY(0.992); }
+  48% { opacity: 0.46; transform: translateY(-2px) scaleX(1.025) scaleY(1.01); }
 }
 
 @keyframes lotus-rear-open {
-  0%, 100% { opacity: 0.54; transform: translateY(3px) scaleX(0.97) scaleY(0.995); }
-  50% { opacity: 0.7; transform: translateY(-2px) scaleX(1.018) scaleY(1.008); }
+  0%, 100% { opacity: 0.56; transform: translateY(3px) scaleX(0.97) scaleY(0.995); }
+  54% { opacity: 0.7; transform: translateY(-2px) scaleX(1.02) scaleY(1.008); }
 }
 
 @keyframes lotus-crown-rise {
-  0%, 100% { transform: translateY(3px) scaleX(0.99) scaleY(0.992); }
-  50% { transform: translateY(-5px) scaleX(1.008) scaleY(1.018); }
+  0%, 100% { transform: translateY(3px) scaleX(0.99) scaleY(0.99); }
+  47% { transform: translateY(-6px) scaleX(1.009) scaleY(1.02); }
 }
 
 @keyframes lotus-chalice-breathe {
-  0%, 100% { transform: translateY(2px) scaleX(0.985) scaleY(1); }
-  50% { transform: translateY(-3px) scaleX(1.016) scaleY(1.008); }
+  0%, 100% { transform: translateY(2px) scaleX(0.984) scaleY(1); }
+  51% { transform: translateY(-4px) scaleX(1.018) scaleY(1.01); }
 }
 
 @keyframes lotus-wide-open {
-  0%, 100% { transform: translateY(2px) scaleX(0.975) scaleY(1); }
-  50% { transform: translateY(-1px) scaleX(1.02) scaleY(1.004); }
+  0%, 100% { transform: translateY(2px) scaleX(0.97) scaleY(0.998); }
+  49% { transform: translateY(-1px) scaleX(1.025) scaleY(1.006); }
 }
 
 @keyframes lotus-bowl-lift {
   0%, 100% { transform: translateY(3px) scaleX(0.99); }
-  50% { transform: translateY(-4px) scaleX(1.012); }
+  53% { transform: translateY(-4px) scaleX(1.014); }
 }
 
 @keyframes lotus-foreground-rest {
-  0%, 100% { opacity: 0.8; transform: translateY(2px) scaleX(0.988); }
-  50% { opacity: 0.9; transform: translateY(-1px) scaleX(1.012); }
+  0%, 100% { opacity: 0.82; transform: translateY(2px) scaleX(0.986); }
+  46% { opacity: 0.92; transform: translateY(-1px) scaleX(1.014); }
+}
+
+@keyframes lotus-petal-sway-left {
+  0%, 100% { transform: rotate(0.45deg) translateY(1px) scaleX(0.994); }
+  48% { transform: rotate(-1.1deg) translateY(-2px) scaleX(1.008); }
+}
+
+@keyframes lotus-petal-sway-right {
+  0%, 100% { transform: rotate(-0.35deg) translateY(1px) scaleX(0.995); }
+  54% { transform: rotate(1.05deg) translateY(-2px) scaleX(1.009); }
+}
+
+@keyframes lotus-petal-center-rise {
+  0%, 100% { transform: translateY(2px) scaleY(0.995); }
+  50% { transform: translateY(-4px) scaleY(1.012); }
 }
 
 @keyframes lotus-vein-shimmer {
   0%, 100% { opacity: 0.38; }
-  50% { opacity: 0.72; }
+  44% { opacity: 0.7; }
+  58% { opacity: 0.55; }
+}
+
+@keyframes lotus-edge-shimmer {
+  0%, 100% { opacity: 0.28; stroke-dashoffset: 124; }
+  48% { opacity: 0.68; stroke-dashoffset: 34; }
 }
 
 @keyframes lotus-core-pulse {
-  0%, 100% { opacity: 0.72; transform: scale(0.95); }
-  50% { opacity: 0.96; transform: scale(1.045); }
+  0%, 100% { opacity: 0.74; transform: scale(0.955); }
+  50% { opacity: 0.98; transform: scale(1.045); }
 }
 
 @keyframes lotus-aura-breathe {
-  0%, 100% { opacity: 0.42; transform: scale(0.97); }
-  50% { opacity: 0.68; transform: scale(1.03); }
+  0%, 100% { opacity: 0.48; transform: scale(0.97); }
+  52% { opacity: 0.76; transform: scale(1.028); }
 }
 
-@keyframes lotus-particle-float {
-  0%, 100% { opacity: 0.12; transform: translateY(7px) scale(0.82); }
-  50% { opacity: 0.72; transform: translateY(-14px) scale(1.1); }
+@keyframes lotus-star-twinkle {
+  0%, 100% { opacity: 0.14; transform: scale(0.72); }
+  38% { opacity: 0.48; transform: scale(1.04); }
+  62% { opacity: 0.3; transform: scale(0.9); }
+}
+
+@keyframes lotus-mote-drift {
+  0%, 100% { opacity: 0.16; transform: translate3d(0, 7px, 0) scale(0.78); }
+  47% { opacity: 0.78; transform: translate3d(3px, -13px, 0) scale(1.08); }
+}
+
+@keyframes lotus-trail-shimmer {
+  0%, 100% { opacity: 0.08; stroke-dashoffset: 210; }
+  42% { opacity: 0.42; }
+  58% { opacity: 0.28; stroke-dashoffset: 36; }
 }
 
 .finance-summary-card {
@@ -1028,6 +1155,9 @@ button:not(:disabled) {
   .today-dashboard .dashboard-widget-inset { background: var(--surface-secondary); }
   .today-lotus-art,
   .today-lotus-aurora { opacity: 0.24; }
+  .lotus-stars,
+  .lotus-trails,
+  .lotus-edge-glints { display: none; }
   .capture-overlay { background: rgba(3, 5, 10, 0.9); backdrop-filter: none; }
   .capture-dialog { background: var(--surface-elevated); }
   .account-overlay { background: rgba(3, 5, 10, 0.88); backdrop-filter: none; }
@@ -1053,7 +1183,9 @@ button:not(:disabled) {
     backdrop-filter: none;
   }
   .today-lotus-art { opacity: 0.2; }
-  .lotus-particles { display: none; }
+  .lotus-stars,
+  .lotus-trails,
+  .lotus-edge-glints { display: none; }
   .capture-dialog {
     --border-subtle: rgba(255, 255, 255, 0.32);
     --border-strong: rgba(255, 255, 255, 0.55);
