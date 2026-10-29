@@ -57,8 +57,8 @@
   --hero-orb-shadow: 0 0 22px rgba(169, 158, 255, 0.75);
   --hero-gradient: linear-gradient(118deg, #171b35 0%, #12192b 54%, #111722 100%);
   --page-gradient: radial-gradient(circle at 74% -12%, rgba(92, 75, 184, 0.16), transparent 34rem);
-  --dashboard-glass: rgba(14, 17, 29, 0.48);
-  --dashboard-glass-mobile: rgba(14, 17, 29, 0.66);
+  --dashboard-glass: rgba(14, 17, 29, 0.44);
+  --dashboard-glass-mobile: rgba(14, 17, 29, 0.62);
   --dashboard-glass-border: rgba(255, 255, 255, 0.16);
   --dashboard-glass-rim: rgba(255, 255, 255, 0.34);
   --dashboard-glass-rim-warm: rgba(223, 192, 139, 0.2);
@@ -115,8 +115,8 @@
   --hero-orb-shadow: 0 0 22px rgba(98, 86, 216, 0.38);
   --hero-gradient: linear-gradient(118deg, #fdfbf7 0%, #f1edf8 54%, #eceff6 100%);
   --page-gradient: radial-gradient(circle at 74% -12%, rgba(98, 86, 216, 0.1), transparent 34rem);
-  --dashboard-glass: rgba(255, 253, 249, 0.64);
-  --dashboard-glass-mobile: rgba(255, 253, 249, 0.8);
+  --dashboard-glass: rgba(255, 253, 249, 0.6);
+  --dashboard-glass-mobile: rgba(255, 253, 249, 0.78);
   --dashboard-glass-border: rgba(69, 60, 93, 0.16);
   --dashboard-glass-rim: rgba(255, 255, 255, 0.88);
   --dashboard-glass-rim-warm: rgba(155, 113, 51, 0.18);
@@ -199,92 +199,134 @@ button:not(:disabled) {
 }
 
 .today-dashboard::before {
-  position: absolute;
+  position: fixed;
   z-index: 0;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: min(66rem, 108dvh);
-  border-radius: clamp(1.5rem, 5vw, 3rem);
+  inset: 0;
+  width: auto;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100svh;
   background:
-    radial-gradient(circle at 50% 24%, rgba(139, 111, 205, 0.2), transparent 34%),
-    radial-gradient(circle at 82% 18%, rgba(201, 165, 111, 0.08), transparent 22%),
-    linear-gradient(180deg, rgba(17, 14, 30, 0.58), rgba(9, 12, 19, 0.12) 82%, transparent);
+    radial-gradient(circle at 50% 48%, rgba(139, 111, 205, 0.2), transparent 42%),
+    radial-gradient(circle at 78% 34%, rgba(201, 165, 111, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(17, 14, 30, 0.62), rgba(9, 12, 19, 0.18));
   content: "";
+  overflow: hidden;
+  overflow: clip;
   pointer-events: none;
 }
 
 :root[data-theme="light"] .today-dashboard::before {
   background:
-    radial-gradient(circle at 50% 24%, rgba(113, 88, 191, 0.18), transparent 34%),
-    radial-gradient(circle at 82% 18%, rgba(185, 143, 82, 0.1), transparent 22%),
-    linear-gradient(180deg, rgba(233, 226, 247, 0.72), rgba(244, 241, 235, 0.08) 82%, transparent);
+    radial-gradient(circle at 50% 48%, rgba(113, 88, 191, 0.18), transparent 42%),
+    radial-gradient(circle at 78% 34%, rgba(185, 143, 82, 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(233, 226, 247, 0.76), rgba(244, 241, 235, 0.34));
 }
 
 .today-lotus-backdrop {
-  position: absolute;
+  position: fixed;
   z-index: 0;
-  top: 0;
-  left: 50%;
-  width: min(100vw, 76rem);
-  height: min(64rem, 105dvh);
+  inset: 0;
+  width: auto;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100svh;
   overflow: hidden;
-  transform: translateX(-50%);
+  overflow: clip;
   pointer-events: none;
+  touch-action: none;
   user-select: none;
 }
 
 .today-lotus-aurora {
   position: absolute;
-  top: 4rem;
+  top: 49%;
   left: 50%;
-  width: min(58rem, 112vw);
-  aspect-ratio: 1.3;
-  transform: translateX(-50%);
+  width: min(72rem, 132vw);
+  aspect-ratio: 1.22;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 50%, rgba(215, 205, 255, 0.16), transparent 28%),
-    radial-gradient(circle at 40% 48%, rgba(121, 95, 191, 0.16), transparent 52%),
-    radial-gradient(circle at 64% 54%, rgba(202, 164, 109, 0.08), transparent 46%);
-  opacity: 0.85;
+    radial-gradient(circle at 50% 50%, rgba(237, 230, 255, 0.2), transparent 24%),
+    radial-gradient(circle at 40% 48%, rgba(121, 95, 191, 0.18), transparent 54%),
+    radial-gradient(circle at 66% 55%, rgba(202, 164, 109, 0.1), transparent 48%);
+  opacity: 0.92;
 }
 
 .today-lotus-art {
   position: absolute;
-  top: 4.5rem;
+  top: 49%;
   left: 50%;
-  width: min(65rem, 116vw);
+  width: min(70rem, 108vw);
+  width: min(70rem, 108vw, 124dvh);
   height: auto;
-  transform: translateX(-50%);
-  opacity: 0.78;
+  transform: translate(-50%, -50%);
+  opacity: 0.88;
   overflow: visible;
+  backface-visibility: hidden;
 }
 
-.lotus-halo {
-  opacity: 0.55;
+.lotus-atmosphere,
+.lotus-aura-ring,
+.lotus-petal-tier,
+.lotus-bloom,
+.lotus-core-light,
+.lotus-heart {
   transform-box: fill-box;
   transform-origin: center;
 }
 
-.lotus-petal-layer,
+.lotus-petal-tier,
 .lotus-bloom {
-  transform-box: fill-box;
   transform-origin: center bottom;
 }
 
-.lotus-petal-layer path {
+.lotus-aura-ring {
+  fill: none;
+  stroke: url(#eden-lotus-edge);
+  stroke-width: 0.8;
+  opacity: 0.24;
   vector-effect: non-scaling-stroke;
-  stroke: rgba(255, 255, 255, 0.28);
-  stroke-width: 1.1;
+}
+
+.lotus-aura-ring-inner {
+  stroke-dasharray: 2 9;
+  opacity: 0.34;
+}
+
+.lotus-petal {
+  vector-effect: non-scaling-stroke;
+  stroke: url(#eden-lotus-edge);
+  stroke-width: 0.95;
   stroke-linejoin: round;
 }
 
-.lotus-petal-layer-front path {
-  stroke: rgba(255, 246, 225, 0.34);
+.lotus-tier-shadow { opacity: 0.62; }
+.lotus-tier-crown { opacity: 0.92; }
+.lotus-tier-chalice { opacity: 0.96; }
+.lotus-tier-open { opacity: 0.8; }
+.lotus-tier-bowl { opacity: 0.94; }
+.lotus-tier-foreground { opacity: 0.86; }
+
+.lotus-veins path {
+  fill: none;
+  stroke: url(#eden-lotus-vein);
+  stroke-linecap: round;
+  stroke-width: 0.85;
+  opacity: 0.58;
+  vector-effect: non-scaling-stroke;
+}
+
+.lotus-core-light {
+  opacity: 0.72;
 }
 
 .lotus-heart {
-  opacity: 0.72;
+  opacity: 0.9;
+}
+
+.lotus-heart circle {
+  fill: rgba(255, 244, 215, 0.88);
 }
 
 .lotus-particle {
@@ -296,42 +338,68 @@ button:not(:disabled) {
 .lotus-particle-2,
 .lotus-particle-4,
 .lotus-particle-7,
-.lotus-particle-9 {
+.lotus-particle-9,
+.lotus-particle-12 {
   fill: rgba(200, 186, 255, 0.78);
 }
 
 .today-lotus-backdrop[data-animated="true"] .lotus-bloom {
-  animation: lotus-breathe 8s ease-in-out infinite;
+  animation: lotus-premium-breathe 12s ease-in-out infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-petal-layer-back {
-  animation: lotus-petal-open 11s ease-in-out -2s infinite;
+.today-lotus-backdrop[data-animated="true"] .lotus-tier-shadow {
+  animation: lotus-rear-open 18s ease-in-out -7s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-petal-layer-middle {
-  animation: lotus-petal-open 9s ease-in-out -5s infinite reverse;
+.today-lotus-backdrop[data-animated="true"] .lotus-tier-crown {
+  animation: lotus-crown-rise 15s ease-in-out -3s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-petal-layer-front {
-  animation: lotus-petal-rest 12s ease-in-out -3s infinite;
+.today-lotus-backdrop[data-animated="true"] .lotus-tier-chalice {
+  animation: lotus-chalice-breathe 13s ease-in-out -8s infinite;
 }
 
-.today-lotus-backdrop[data-animated="true"] .lotus-halo {
-  animation: lotus-glow 8s ease-in-out -1s infinite;
+.today-lotus-backdrop[data-animated="true"] .lotus-tier-open {
+  animation: lotus-wide-open 17s ease-in-out -5s infinite;
+}
+
+.today-lotus-backdrop[data-animated="true"] .lotus-tier-bowl {
+  animation: lotus-bowl-lift 14s ease-in-out -10s infinite;
+}
+
+.today-lotus-backdrop[data-animated="true"] .lotus-tier-foreground {
+  animation: lotus-foreground-rest 19s ease-in-out -4s infinite;
+}
+
+.today-lotus-backdrop[data-animated="true"] .lotus-veins {
+  animation: lotus-vein-shimmer 11s ease-in-out -6s infinite;
+}
+
+.today-lotus-backdrop[data-animated="true"] .lotus-core-light,
+.today-lotus-backdrop[data-animated="true"] .lotus-heart {
+  animation: lotus-core-pulse 9s ease-in-out -2s infinite;
+}
+
+.today-lotus-backdrop[data-animated="true"] .lotus-atmosphere,
+.today-lotus-backdrop[data-animated="true"] .lotus-aura-ring {
+  animation: lotus-aura-breathe 14s ease-in-out -4s infinite;
 }
 
 .today-lotus-backdrop[data-animated="true"] .lotus-particle {
-  animation: lotus-particle-float 10s ease-in-out infinite;
+  animation: lotus-particle-float 15s ease-in-out infinite;
 }
 
 .today-lotus-backdrop[data-animated="true"] .lotus-particle-2,
 .today-lotus-backdrop[data-animated="true"] .lotus-particle-6,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-9 { animation-delay: -3s; animation-duration: 13s; }
+.today-lotus-backdrop[data-animated="true"] .lotus-particle-9,
+.today-lotus-backdrop[data-animated="true"] .lotus-particle-13 { animation-delay: -3s; animation-duration: 18s; }
 .today-lotus-backdrop[data-animated="true"] .lotus-particle-3,
 .today-lotus-backdrop[data-animated="true"] .lotus-particle-7,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-10 { animation-delay: -7s; animation-duration: 15s; }
+.today-lotus-backdrop[data-animated="true"] .lotus-particle-10,
+.today-lotus-backdrop[data-animated="true"] .lotus-particle-14 { animation-delay: -7s; animation-duration: 21s; }
 .today-lotus-backdrop[data-animated="true"] .lotus-particle-4,
-.today-lotus-backdrop[data-animated="true"] .lotus-particle-8 { animation-delay: -5s; animation-duration: 11s; }
+.today-lotus-backdrop[data-animated="true"] .lotus-particle-8,
+.today-lotus-backdrop[data-animated="true"] .lotus-particle-11 { animation-delay: -11s; animation-duration: 17s; }
 
 .today-dashboard .dashboard-hero h1 {
   text-shadow: 0 2px 28px rgba(4, 5, 14, 0.32);
@@ -462,6 +530,11 @@ button:not(:disabled) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.25rem;
   }
+
+  .today-lotus-art,
+  .today-lotus-aurora {
+    left: calc(50% + 3.5rem);
+  }
 }
 
 @media (max-width: 639px) {
@@ -483,40 +556,72 @@ button:not(:disabled) {
   }
 
   .today-lotus-art {
-    top: 8rem;
-    width: 148vw;
-    opacity: 0.68;
+    top: calc(48% + 0.25rem);
+    width: 156vw;
+    width: min(156vw, 124dvh);
+    max-width: none;
+    opacity: 0.82;
   }
 
   .today-lotus-aurora {
-    top: 7rem;
-    width: 138vw;
+    top: 48%;
+    width: 172vw;
   }
 }
 
-@keyframes lotus-breathe {
-  0%, 100% { opacity: 0.88; transform: translateY(2px) scale(0.99); }
-  50% { opacity: 1; transform: translateY(-5px) scale(1.018); }
+@keyframes lotus-premium-breathe {
+  0%, 100% { opacity: 0.9; transform: translateY(3px) scale(0.992); }
+  50% { opacity: 1; transform: translateY(-5px) scale(1.012); }
 }
 
-@keyframes lotus-petal-open {
-  0%, 100% { transform: scaleX(0.985) scaleY(1); }
-  50% { transform: scaleX(1.018) scaleY(1.012); }
+@keyframes lotus-rear-open {
+  0%, 100% { opacity: 0.54; transform: translateY(3px) scaleX(0.97) scaleY(0.995); }
+  50% { opacity: 0.7; transform: translateY(-2px) scaleX(1.018) scaleY(1.008); }
 }
 
-@keyframes lotus-petal-rest {
-  0%, 100% { transform: translateY(1px) scaleX(1); }
-  50% { transform: translateY(-3px) scaleX(1.012); }
+@keyframes lotus-crown-rise {
+  0%, 100% { transform: translateY(3px) scaleX(0.99) scaleY(0.992); }
+  50% { transform: translateY(-5px) scaleX(1.008) scaleY(1.018); }
 }
 
-@keyframes lotus-glow {
-  0%, 100% { opacity: 0.42; transform: scale(0.96); }
-  50% { opacity: 0.66; transform: scale(1.04); }
+@keyframes lotus-chalice-breathe {
+  0%, 100% { transform: translateY(2px) scaleX(0.985) scaleY(1); }
+  50% { transform: translateY(-3px) scaleX(1.016) scaleY(1.008); }
+}
+
+@keyframes lotus-wide-open {
+  0%, 100% { transform: translateY(2px) scaleX(0.975) scaleY(1); }
+  50% { transform: translateY(-1px) scaleX(1.02) scaleY(1.004); }
+}
+
+@keyframes lotus-bowl-lift {
+  0%, 100% { transform: translateY(3px) scaleX(0.99); }
+  50% { transform: translateY(-4px) scaleX(1.012); }
+}
+
+@keyframes lotus-foreground-rest {
+  0%, 100% { opacity: 0.8; transform: translateY(2px) scaleX(0.988); }
+  50% { opacity: 0.9; transform: translateY(-1px) scaleX(1.012); }
+}
+
+@keyframes lotus-vein-shimmer {
+  0%, 100% { opacity: 0.38; }
+  50% { opacity: 0.72; }
+}
+
+@keyframes lotus-core-pulse {
+  0%, 100% { opacity: 0.72; transform: scale(0.95); }
+  50% { opacity: 0.96; transform: scale(1.045); }
+}
+
+@keyframes lotus-aura-breathe {
+  0%, 100% { opacity: 0.42; transform: scale(0.97); }
+  50% { opacity: 0.68; transform: scale(1.03); }
 }
 
 @keyframes lotus-particle-float {
-  0%, 100% { opacity: 0.16; transform: translateY(4px) scale(0.85); }
-  50% { opacity: 0.82; transform: translateY(-11px) scale(1.12); }
+  0%, 100% { opacity: 0.12; transform: translateY(7px) scale(0.82); }
+  50% { opacity: 0.72; transform: translateY(-14px) scale(1.1); }
 }
 
 .finance-summary-card {

@@ -40,8 +40,13 @@ describe('LotusBackdrop', () => {
 
     expect(backdrop?.getAttribute('aria-hidden')).toBe('true')
     expect(backdrop?.getAttribute('data-animated')).toBe('true')
+    expect(backdrop?.getAttribute('data-viewport-anchored')).toBe('true')
     expect(svg?.getAttribute('focusable')).toBe('false')
-    expect(container.querySelectorAll('.lotus-particle')).toHaveLength(10)
+    expect(container.querySelectorAll('.lotus-petal-tier')).toHaveLength(6)
+    expect(container.querySelectorAll('.lotus-veins path')).toHaveLength(14)
+    expect(container.querySelectorAll('.lotus-particle')).toHaveLength(14)
+    expect(container.querySelectorAll('filter')).toHaveLength(1)
+    expect(container.querySelectorAll('*').length).toBeLessThan(140)
     expect(container.querySelector('a, button, input, [tabindex]')).toBeNull()
 
     act(() => {
@@ -64,5 +69,17 @@ describe('LotusBackdrop', () => {
     expect(container.querySelector('.today-lotus-backdrop')?.getAttribute('data-animated')).toBe('false')
     unmount()
     expect(preference.query.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function))
+  })
+
+  it('anchors the ambient layer to the dynamic viewport without creating a horizontal scroll surface', () => {
+    motionPreference(false)
+    const { container } = render(<LotusBackdrop />)
+    const backdrop = container.querySelector<HTMLElement>('.today-lotus-backdrop')
+
+    expect(backdrop?.style.position).toBe('fixed')
+    expect(backdrop?.style.inset).toBe('0px')
+    expect(backdrop?.style.width).toBe('auto')
+    expect(backdrop?.style.pointerEvents).toBe('none')
+    expect(backdrop?.getAttribute('data-viewport-anchored')).toBe('true')
   })
 })
