@@ -4,8 +4,8 @@ import { cosmosReflectionForLocalDate } from '../../cosmos/dailyReflections'
 export function CosmosTodayCard({ referenceDate, onOpen }: { referenceDate: Date; onOpen: () => void }) {
   const reflection = cosmosReflectionForLocalDate(referenceDate)
 
-  return <section aria-labelledby="cosmos-today-heading" className="dashboard-card relative overflow-hidden p-5 ring-1 ring-inset ring-[var(--accent-amber-wash)] sm:p-6">
-    <div aria-hidden="true" className="pointer-events-none absolute -right-6 -top-8 size-28 rounded-full bg-[var(--accent-amber-wash)] blur-2xl" />
+  return <section aria-labelledby="cosmos-today-heading" className="dashboard-card dashboard-widget dashboard-widget-cosmos relative overflow-hidden p-5 ring-1 ring-inset ring-[var(--accent-amber-wash)] sm:p-6">
+    <div aria-hidden="true" className="pointer-events-none absolute -right-6 -top-8 size-28 rounded-full bg-[radial-gradient(circle,var(--accent-amber-wash),transparent_70%)]" />
     <div className="relative flex items-start gap-4">
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--accent-amber-wash)] text-[var(--accent-amber)]"><Sparkles size={19} /></span>
       <div className="min-w-0 flex-1">

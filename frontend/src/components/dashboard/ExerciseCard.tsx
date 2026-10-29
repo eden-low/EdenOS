@@ -19,7 +19,7 @@ export function ExerciseCard({ exercise, status, error, onRetry, onOpen }: Exerc
   const ExerciseIcon = getExerciseActivityIcon(latestActivity?.name ?? '')
 
   return (
-    <section aria-label="Weekly exercise" className="dashboard-card p-5 sm:p-6">
+    <section aria-label="Weekly exercise" className="dashboard-card dashboard-widget dashboard-widget-fitness p-5 sm:p-6">
       <div>
         <p className="section-label">This Week</p>
         {status === 'loaded' ? (
@@ -31,7 +31,7 @@ export function ExerciseCard({ exercise, status, error, onRetry, onOpen }: Exerc
         )}
       </div>
 
-      <div className="mt-7 flex items-center gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-4 sm:p-5">
+      <div className="dashboard-widget-inset mt-7 flex items-center gap-4 rounded-2xl p-4 sm:p-5">
         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--accent-teal)]">
           {createElement(ExerciseIcon, { 'aria-hidden': true, size: 20, strokeWidth: 1.8 })}
         </span>
@@ -76,5 +76,5 @@ export function ExerciseCard({ exercise, status, error, onRetry, onOpen }: Exerc
 }
 
 function OverviewMetric({ value, label }: { value: string; label: string }) {
-  return <div className="rounded-2xl bg-[var(--surface-secondary)] p-3"><strong className="block truncate text-lg tracking-[-0.03em]">{value}</strong><span className="mt-1 block text-[11px] text-[var(--text-muted)]">{label}</span></div>
+  return <div className="dashboard-widget-inset rounded-2xl p-3"><strong className="block truncate text-lg tracking-[-0.03em]">{value}</strong><span className="mt-1 block text-[11px] text-[var(--text-muted)]">{label}</span></div>
 }

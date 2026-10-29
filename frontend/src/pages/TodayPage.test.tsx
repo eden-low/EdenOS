@@ -7,6 +7,7 @@ import { useUserSettings } from '../state/useUserSettings'
 import { TodayPage } from './TodayPage'
 import { useFinancePlanning } from '../state/useFinancePlanning'
 import { useGoalAllocations } from '../state/useGoalAllocations'
+import { PrivacyLockContext, unlockedPrivacyLock } from '../privacy/privacyLockContext'
 
 const animeRepository = vi.hoisted(() => ({ fetchPublishedSince: vi.fn(), countPublishedSince: vi.fn() }))
 vi.mock('../repositories/firestoreAnimeRepository', () => ({ createFirestoreAnimeRepository: () => animeRepository }))
@@ -68,6 +69,26 @@ describe('Today V2', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open Cosmos' }))
     fireEvent.click(screen.getByRole('button', { name: 'Review this week' }))
     expect(navigate.mock.calls.map(([page]) => page)).toEqual(['expenses', 'exercise', 'anime', 'cosmos', 'review'])
+  })
+
+  it('uses the fixed responsive widget shell and domain glass treatments', async () => {
+    let container!: HTMLElement
+    await act(async () => { ({ container } = render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />)) })
+    expect(container.querySelector('.today-dashboard')).toBeTruthy()
+    expect(container.querySelector('.dashboard-widget-grid')).toBeTruthy()
+    expect(container.querySelectorAll('.dashboard-summary-widget')).toHaveLength(4)
+    expect(container.querySelector('.dashboard-widget-finance')).toBeTruthy()
+    expect(container.querySelector('.dashboard-widget-fitness')).toBeTruthy()
+    expect(container.querySelector('.dashboard-widget-cosmos')).toBeTruthy()
+    expect(container.querySelector('.dashboard-quick-capture')).toBeTruthy()
+  })
+
+  it('never exposes dashboard finance amounts while Expense Privacy Lock is active', async () => {
+    await act(async () => { render(<PrivacyLockContext.Provider value={{ ...unlockedPrivacyLock, enabled: true, locked: true, requestUnlock: vi.fn() }}><TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} /></PrivacyLockContext.Provider>) })
+    for (const amount of ['RM 50', 'RM 33', 'RM 12', 'RM 10', 'RM 5', 'RM 28']) {
+      expect(screen.queryByText(amount)).toBeNull()
+    }
+    expect(screen.getAllByText('RM ••••').length).toBeGreaterThan(5)
   })
 
   it('keeps domain errors scoped and the rest of Home usable', async () => {

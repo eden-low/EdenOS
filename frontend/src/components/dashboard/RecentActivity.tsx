@@ -17,7 +17,7 @@ export function RecentActivity({
   onOpen?: () => void
 }) {
   return (
-    <section aria-label="Recent activity" className="dashboard-card p-5 sm:p-6">
+    <section aria-label="Recent activity" className="dashboard-card dashboard-widget p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <p className="section-label">Recent Activity</p>
         <span className="text-xs text-[var(--text-muted)]">{sourceLabel}</span>

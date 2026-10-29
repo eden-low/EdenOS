@@ -23,7 +23,7 @@ export function TodaySummary({ availableSen, allocationsSen, workouts, durationS
 }
 
 function Summary({ icon, label, value, context }: { icon: ReactNode; label: string; value: ReactNode; context: ReactNode }) {
-  return <article className="min-w-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3.5 shadow-[var(--shadow-soft)] sm:p-4">
+  return <article className="dashboard-summary-widget min-w-0 p-3.5 sm:p-4">
     <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]"><span className="text-[var(--accent-soft)]">{icon}</span><span>{label}</span></div>
     <div className="mt-3 truncate text-base font-semibold tracking-[-0.025em] sm:text-lg">{value}</div>
     <p className="mt-1 truncate text-[11px] text-[var(--text-muted)] sm:text-xs">{context}</p>

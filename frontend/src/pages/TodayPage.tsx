@@ -102,7 +102,7 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
     calendar: <CalendarCard referenceDate={referenceDate} />,
   }
   return (
-    <div className="core-page mx-auto w-full max-w-[76rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+    <div className="core-page today-dashboard mx-auto w-full max-w-[76rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
       <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} onOpenCommand={onOpenCommand} />
       <TodaySummary
         availableSen={availableSen}
@@ -122,7 +122,7 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
           <div><p className="section-label">Your day</p><h2 id="today-sections" className="mt-1 text-xl font-semibold tracking-[-0.03em]">The details, in priority order</h2></div>
           <p className="hidden text-xs text-[var(--text-muted)] sm:block">Open a section for the full picture</p>
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">{dashboardPreferences.preferences.order.filter((section) => !dashboardPreferences.preferences.hidden.includes(section)).map((section) => <div key={section} data-dashboard-section={section}>{sections[section]}</div>)}</div>
+        <div className="dashboard-widget-grid">{dashboardPreferences.preferences.order.filter((section) => !dashboardPreferences.preferences.hidden.includes(section)).map((section) => <div key={section} data-dashboard-section={section}>{sections[section]}</div>)}</div>
       </section>
     </div>
   )
