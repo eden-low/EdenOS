@@ -11,6 +11,7 @@ import { CosmosTodayCard } from '../components/dashboard/CosmosTodayCard'
 import { TodaySummary } from '../components/dashboard/TodaySummary'
 import { WeeklyReviewCard } from '../components/dashboard/WeeklyReviewCard'
 import { DashboardEditor } from '../components/dashboard/DashboardEditor'
+import { LotusBackdrop } from '../components/dashboard/LotusBackdrop'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { createFirestoreAnimeRepository } from '../repositories/firestoreAnimeRepository'
 import { selectDashboardSummary } from '../selectors/dashboardSelectors'
@@ -102,28 +103,31 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
     calendar: <CalendarCard referenceDate={referenceDate} />,
   }
   return (
-    <div className="core-page today-dashboard mx-auto w-full max-w-[76rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-      <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} onOpenCommand={onOpenCommand} />
-      <TodaySummary
-        availableSen={availableSen}
-        allocationsSen={allocationsSen}
-        workouts={dashboard.exercise.completedSessions}
-        durationSeconds={dashboard.exercise.durationSeconds}
-        animeUpdates={anime.updatesToday}
-        daysUntilReview={daysUntilReview}
-        financeReady={financeReady && goalAllocationsStatus === 'loaded'}
-        exerciseReady={exerciseReady}
-        animeReady={anime.status === 'ready'}
-      />
-      <DailyContext referenceDate={referenceDate} />
-      <DashboardEditor dashboard={dashboardPreferences} />
-      <section aria-labelledby="today-sections" className="mt-5 sm:mt-6">
-        <div className="mb-3 flex items-end justify-between gap-4">
-          <div><p className="section-label">Your day</p><h2 id="today-sections" className="mt-1 text-xl font-semibold tracking-[-0.03em]">The details, in priority order</h2></div>
-          <p className="hidden text-xs text-[var(--text-muted)] sm:block">Open a section for the full picture</p>
-        </div>
-        <div className="dashboard-widget-grid">{dashboardPreferences.preferences.order.filter((section) => !dashboardPreferences.preferences.hidden.includes(section)).map((section) => <div key={section} data-dashboard-section={section}>{sections[section]}</div>)}</div>
-      </section>
+    <div className="core-page today-dashboard relative mx-auto w-full max-w-[76rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+      <LotusBackdrop />
+      <div className="today-dashboard-content relative z-1">
+        <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} onOpenCommand={onOpenCommand} />
+        <TodaySummary
+          availableSen={availableSen}
+          allocationsSen={allocationsSen}
+          workouts={dashboard.exercise.completedSessions}
+          durationSeconds={dashboard.exercise.durationSeconds}
+          animeUpdates={anime.updatesToday}
+          daysUntilReview={daysUntilReview}
+          financeReady={financeReady && goalAllocationsStatus === 'loaded'}
+          exerciseReady={exerciseReady}
+          animeReady={anime.status === 'ready'}
+        />
+        <DailyContext referenceDate={referenceDate} />
+        <DashboardEditor dashboard={dashboardPreferences} />
+        <section aria-labelledby="today-sections" className="mt-5 sm:mt-6">
+          <div className="mb-3 flex items-end justify-between gap-4">
+            <div><p className="section-label">Your day</p><h2 id="today-sections" className="mt-1 text-xl font-semibold tracking-[-0.03em]">The details, in priority order</h2></div>
+            <p className="hidden text-xs text-[var(--text-muted)] sm:block">Open a section for the full picture</p>
+          </div>
+          <div className="dashboard-widget-grid">{dashboardPreferences.preferences.order.filter((section) => !dashboardPreferences.preferences.hidden.includes(section)).map((section) => <div key={section} data-dashboard-section={section}>{sections[section]}</div>)}</div>
+        </section>
+      </div>
     </div>
   )
 }

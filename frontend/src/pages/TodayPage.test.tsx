@@ -73,14 +73,19 @@ describe('Today V2', () => {
 
   it('uses the fixed responsive widget shell and domain glass treatments', async () => {
     let container!: HTMLElement
-    await act(async () => { ({ container } = render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />)) })
+    let unmount!: () => void
+    await act(async () => { ({ container, unmount } = render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />)) })
     expect(container.querySelector('.today-dashboard')).toBeTruthy()
+    expect(container.querySelector('.today-dashboard-content')).toBeTruthy()
+    expect(container.querySelector('.today-lotus-backdrop')).toBeTruthy()
     expect(container.querySelector('.dashboard-widget-grid')).toBeTruthy()
     expect(container.querySelectorAll('.dashboard-summary-widget')).toHaveLength(4)
     expect(container.querySelector('.dashboard-widget-finance')).toBeTruthy()
     expect(container.querySelector('.dashboard-widget-fitness')).toBeTruthy()
     expect(container.querySelector('.dashboard-widget-cosmos')).toBeTruthy()
     expect(container.querySelector('.dashboard-quick-capture')).toBeTruthy()
+    unmount()
+    expect(document.querySelector('.today-lotus-backdrop')).toBeNull()
   })
 
   it('never exposes dashboard finance amounts while Expense Privacy Lock is active', async () => {
