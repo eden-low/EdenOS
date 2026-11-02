@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Clipboard, RotateCcw, Sparkles } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { CosmosAiError, requestCosmosInterpretation } from '../services/cosmosAiService'
+import { cosmosStagingDiagnostics } from './cosmosDiagnosticsConfig'
 import {
   COSMOS_SYSTEM_IDS,
   COSMOS_SYSTEM_LABELS,
@@ -22,6 +23,7 @@ const MODE_LABELS: Array<{ id: CosmosAiMode; label: string; english: string }> =
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth: '请先登录 EdenOS，再发起解读。', forbidden: '这个账号未获准使用个人 Gemini 端点。',
+  'token-refresh': '登录凭证刷新失败，请检查网络或重新登录后手动重试。',
   invalid: '发送内容未通过安全检查，请检查选择与文字长度。', 'too-large': '发送内容过长，请缩短问题或梦境描述。',
   'not-configured': 'Ask Cosmos 尚未在服务器完成安全配置。', quota: 'Gemini 配额或速率限制已达到，请稍后由你手动重试。',
   'gemini-request-prerequisite': 'Gemini 无法接受本次请求，或服务前置条件未满足。请暂停重试并检查服务器配置。',
@@ -114,7 +116,11 @@ export function AskCosmosExperience({ snapshots, onOpenSystem }: { snapshots: Co
       if (currentRequest === requestNumber.current) setResponse(result)
     } catch (cause) {
       if (abortController.signal.aborted) return
-      if (currentRequest === requestNumber.current) setError(ERROR_MESSAGES[cause instanceof CosmosAiError ? cause.code : 'provider'])
+      if (currentRequest === requestNumber.current) {
+        const code = cause instanceof CosmosAiError ? cause.code : 'provider'
+        const id = cause instanceof CosmosAiError ? cause.diagnosticId : undefined
+        setError(`${ERROR_MESSAGES[code]}${cosmosStagingDiagnostics && id ? ` 错误代码：${code} · 诊断 ID：${id}` : ''}`)
+      }
     } finally {
       if (currentRequest === requestNumber.current) {
         inFlight.current = false

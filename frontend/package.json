@@ -8,7 +8,7 @@
     "anime:inspect-providers": "tsx scripts/inspectAnimeProviders.ts",
     "anime:repair-policy-drift": "tsx scripts/repairAnimePolicyDrift.ts",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsx scripts/prepareCosmosDiagnostics.ts && tsc -b && vite build",
     "generate:pwa-assets": "pwa-assets-generator",
     "lint": "oxlint",
     "sync:animes": "tsx scripts/syncAnimes.ts",
