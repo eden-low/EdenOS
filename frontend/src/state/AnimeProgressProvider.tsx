@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { Firestore } from 'firebase/firestore'
 import { animeProgressWriteIntervalMs, normalizeAnimeProgress } from '../domain/anime'
 import { createFirestoreAnimeProgressRepository } from '../repositories/firestoreAnimeProgressRepository'
 import { readLocalAnimeProgress, writeLocalAnimeProgress } from '../services/animeProgressLocalStorage'
@@ -8,19 +9,26 @@ import { useFirebaseAuth } from './useFirebaseAuth'
 import { AnimeProgressContext } from './animeProgressContextDefinition'
 
 export function AnimeProgressProvider({ children }: { children: ReactNode }) {
-  const { firestore, uid, isAnonymous } = useFirebaseAuth()
+  const { firestore, uid } = useFirebaseAuth()
+  return <AnimeProgressScope key={uid} firestore={firestore} uid={uid}>{children}</AnimeProgressScope>
+}
+
+function AnimeProgressScope({ children, firestore, uid }: {
+  children: ReactNode
+  firestore: Firestore
+  uid: string
+}) {
   const repository = useMemo(() => createFirestoreAnimeProgressRepository(firestore, uid), [firestore, uid])
-  const [items, setItems] = useState<AnimeProgress[]>(() => readLocalAnimeProgress(localStorage))
+  const [items, setItems] = useState<AnimeProgress[]>(() => readLocalAnimeProgress(localStorage, uid))
   const [cloudError, setCloudError] = useState<string | null>(null)
-  const itemsRef = useRef(items)
   const pendingRef = useRef(new Map<string, AnimeProgress>())
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const reconciledRef = useRef(false)
+  const activeRef = useRef(true)
 
-  useEffect(() => { itemsRef.current = items }, [items])
   useEffect(() => {
+    activeRef.current = true
     reconciledRef.current = false
-    if (isAnonymous) return
     let active = true
     const unsubscribe = repository.subscribe({
       next(cloudItems) {
@@ -28,7 +36,7 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
         setCloudError(null)
         if (!reconciledRef.current) {
           reconciledRef.current = true
-          const localItems = readLocalAnimeProgress(localStorage)
+          const localItems = readLocalAnimeProgress(localStorage, uid)
           const merged = reconcileAnimeProgress(localItems, cloudItems)
           const cloudById = new Map(cloudItems.map((item) => [item.externalId, item]))
           for (const winner of merged) {
@@ -36,11 +44,11 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
             const cloud = cloudById.get(winner.externalId)
             if (local === winner && (!cloud || local.updatedAt > cloud.updatedAt)) {
               void repository.save(local).catch(() => {
-                if (active) setCloudError('Cloud watch progress is temporarily unavailable.')
+                if (active && activeRef.current) setCloudError('Cloud watch progress is temporarily unavailable.')
               })
             }
           }
-          writeLocalAnimeProgress(localStorage, merged)
+          writeLocalAnimeProgress(localStorage, uid, merged)
           setItems(merged)
           return
         }
@@ -49,7 +57,7 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
           const merged = current.map((item) => newerAnimeProgress(item, cloudMap.get(item.externalId)) ?? item)
           for (const cloud of cloudItems) if (!merged.some((item) => item.externalId === cloud.externalId)) merged.push(cloud)
           const sorted = merged.sort((a, b) => b.updatedAt - a.updatedAt)
-          writeLocalAnimeProgress(localStorage, sorted)
+          writeLocalAnimeProgress(localStorage, uid, sorted)
           return sorted
         })
       },
@@ -57,12 +65,12 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
     })
     return () => {
       active = false
+      activeRef.current = false
       unsubscribe()
     }
-  }, [isAnonymous, repository])
+  }, [repository, uid])
 
   const flushProgress = useCallback(async (externalId?: string) => {
-    if (isAnonymous) return
     const pending = externalId
       ? (pendingRef.current.get(externalId) ? [pendingRef.current.get(externalId)!] : [])
       : [...pendingRef.current.values()]
@@ -71,19 +79,25 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
       const timer = timersRef.current.get(progress.externalId)
       if (timer) clearTimeout(timer)
       timersRef.current.delete(progress.externalId)
-      try { await repository.save(progress); setCloudError(null) }
-      catch { pendingRef.current.set(progress.externalId, progress); setCloudError('Cloud watch progress is temporarily unavailable.') }
+      try {
+        await repository.save(progress)
+        if (activeRef.current) setCloudError(null)
+      } catch {
+        if (activeRef.current) {
+          pendingRef.current.set(progress.externalId, progress)
+          setCloudError('Cloud watch progress is temporarily unavailable.')
+        }
+      }
     }
-  }, [isAnonymous, repository])
+  }, [repository])
 
   const saveProgress = useCallback((incoming: AnimeProgress, options?: { immediate?: boolean }) => {
     const progress = normalizeAnimeProgress({ ...incoming, updatedAt: Date.now() })
     setItems((current) => {
       const next = [progress, ...current.filter((item) => item.externalId !== progress.externalId)]
-      writeLocalAnimeProgress(localStorage, next)
+      writeLocalAnimeProgress(localStorage, uid, next)
       return next
     })
-    if (isAnonymous) return
     pendingRef.current.set(progress.externalId, progress)
     const existingTimer = timersRef.current.get(progress.externalId)
     if (existingTimer) clearTimeout(existingTimer)
@@ -92,7 +106,7 @@ export function AnimeProgressProvider({ children }: { children: ReactNode }) {
     } else {
       timersRef.current.set(progress.externalId, setTimeout(() => void flushProgress(progress.externalId), animeProgressWriteIntervalMs))
     }
-  }, [flushProgress, isAnonymous])
+  }, [flushProgress, uid])
 
   useEffect(() => {
     const timers = timersRef.current

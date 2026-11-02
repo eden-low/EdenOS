@@ -143,8 +143,8 @@ The versioned detail object contract is:
 
 Only HTTPS/HTTP `hls` and `mp4` sources pass client validation. Detail objects
 load only after a title opens and are cached in memory for the browser session.
-Watch progress is local-only for anonymous guests. Google-connected users also
-sync owner-scoped progress at `users/{uid}/animeWatchProgress/{externalId}`.
+Watch progress uses the authenticated Firebase UID for both anonymous guests and
+Google-connected users, with owner-scoped sync at `users/{uid}/animeWatchProgress/{externalId}`.
 
 Catalogue population is handled by the server-only, multi-provider Anime sync
 pipeline. It writes raw replayable responses before normalization, merges exact
@@ -167,6 +167,10 @@ For the intended Netlify deploy context, an operator must set these **Functions*
 3. Optionally set `RECEIPT_AI_PROVIDER=gemini`, `RECEIPT_GEMINI_PRIMARY_MODEL=gemini-3.6-flash`, and `RECEIPT_GEMINI_FALLBACK_MODEL=gemini-2.5-flash`. These are the pinned code defaults; no latest-model alias is used. Model changes require a separate regression evaluation.
 
 Keep both credentials out of `VITE_*`, Git, and browser storage. Once Firebase Admin verification is configured, the endpoint safely reports `not-configured` if the Gemini key is absent. The primary model falls back to the secondary model at most once for quota, temporary provider failure, or model unavailability. An uncertain extraction goes directly to editable review without another model call. Fallback is logged without receipt contents or credentials and does not guarantee separate quota. Uploaded files are limited to JPEG, PNG, and WebP. Large phone photos are compressed in browser memory to fit the Netlify Function's binary payload limit; an image that remains too large is rejected. EdenOS does not persist the image in Storage, Firestore, localStorage, IndexedDB, or the function filesystem. Preview object URLs are revoked when replaced, removed, or closed. Gemini's provider-side data handling and retention depend on the applicable Gemini API tier and Google policy; EdenOS cannot control that retention.
+
+### Weather configuration
+
+Weather first calls the authenticated `POST /.netlify/functions/weather` proxy. The Function verifies a Firebase ID token for either a Google or anonymous user, applies a per-UID burst limit, and calls OpenWeather Current Weather with metric units. Add `OPENWEATHER_API_KEY` and the existing `EDENOS_GOOGLE_SERVICE_ACCOUNT_JSON` under **Site configuration > Environment variables**, scoped to **Functions** for each intended Netlify deploy context. Never use a `VITE_` prefix for the OpenWeather key. Missing configuration, upstream authentication or quota errors, provider failures, and timeouts fall back in the browser to the existing keyless Open-Meteo forecast request. Weather remains cached for 20 minutes in the current Firebase UID's session-storage partition.
 
 ### Ask Cosmos configuration
 

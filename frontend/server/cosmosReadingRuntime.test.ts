@@ -5,14 +5,12 @@ import { cosmosModel, isAuthorizedCosmosIdentity } from './cosmosReadingRuntime'
 describe('Cosmos reading runtime policy', () => {
   const allowlist = new Set(['approved-google-uid'])
 
-  it('requires an exact allowlisted UID and rejects other valid users', () => {
-    expect(isAuthorizedCosmosIdentity({ uid: 'approved-google-uid', firebase: { sign_in_provider: 'google.com' } }, allowlist)).toBe(true)
-    expect(isAuthorizedCosmosIdentity({ uid: 'different-valid-uid', firebase: { sign_in_provider: 'google.com' } }, allowlist)).toBe(false)
-  })
-
-  it('rejects anonymous sessions even if an anonymous UID were accidentally allowlisted', () => {
-    const accidental = new Set(['anonymous-uid'])
-    expect(isAuthorizedCosmosIdentity({ uid: 'anonymous-uid', firebase: { sign_in_provider: 'anonymous' } }, accidental)).toBe(false)
+  it.each([
+    ['Owner Google UID', 'approved-google-uid', 'google.com', true],
+    ['Other Google UID', 'different-valid-uid', 'google.com', false],
+    ['Guest UID', 'approved-google-uid', 'anonymous', false],
+  ] as const)('applies the Ask Cosmos policy for %s', (_label, uid, signInProvider, expected) => {
+    expect(isAuthorizedCosmosIdentity({ uid, firebase: { sign_in_provider: signInProvider } }, allowlist)).toBe(expected)
   })
 
   it('uses the cost-efficient pinned default and rejects invalid model configuration', () => {
