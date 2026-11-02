@@ -119,7 +119,8 @@ describe('Account dialog presentation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('Anime progress on 4 titles')
-    expect(alert.textContent).toContain('will remain and reconcile')
+    expect(alert.textContent).toContain('will remain under the Guest UID')
+    expect(alert.textContent).toContain('may be inaccessible after switching')
     expect(screen.getByRole('button', { name: 'Continue with existing Google account' })).toBeTruthy()
   })
 
