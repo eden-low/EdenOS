@@ -5,6 +5,7 @@ import type { CosmosAiRequest } from '../src/cosmos/cosmosAiTypes'
 const { generateContent } = vi.hoisted(() => ({ generateContent: vi.fn() }))
 vi.mock('@google/genai', () => ({ GoogleGenAI: class { models = { generateContent } } }))
 import { createGeminiCosmosProvider } from './geminiCosmosProvider'
+import { CosmosResponseParsingError } from './cosmosDiagnostics'
 
 const request: CosmosAiRequest = {
   version: 1, promptVersion: 'cosmos-v1', mode: 'dream', question: '请反思梦境。', dreamText: '梦见一扇门。', sources: [],
@@ -26,5 +27,11 @@ describe('Gemini Cosmos provider', () => {
     const provider = createGeminiCosmosProvider('server-key')
     expect(await provider.interpret(request, 'gemini-test')).toBeNull()
     expect(await provider.interpret(request, 'gemini-test')).toBeNull()
+  })
+
+  it('separates a response accessor exception from a Gemini request failure', async () => {
+    generateContent.mockResolvedValueOnce({ get text() { throw new Error('PRIVATE_REPLY') } })
+    await expect(createGeminiCosmosProvider('server-key').interpret(request, 'gemini-test'))
+      .rejects.toEqual(new CosmosResponseParsingError())
   })
 })

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai'
 import type { CosmosAiRequest } from '../src/cosmos/cosmosAiTypes'
 import { assembleCosmosPrompt, cosmosResponseJsonSchema, cosmosSystemInstruction } from './cosmosPrompt'
+import { CosmosResponseParsingError } from './cosmosDiagnostics'
 
 export interface CosmosInterpretationProvider {
   interpret(request: CosmosAiRequest, model: string): Promise<unknown>
@@ -22,8 +23,10 @@ export function createGeminiCosmosProvider(apiKey: string): CosmosInterpretation
           httpOptions: { timeout: 20_000, retryOptions: { attempts: 1 } },
         },
       })
-      if (!response.text || response.text.length > 32_000) return null
-      try { return JSON.parse(response.text) as unknown } catch { return null }
+      let text: string | undefined
+      try { text = response.text } catch { throw new CosmosResponseParsingError() }
+      if (!text || text.length > 32_000) return null
+      try { return JSON.parse(text) as unknown } catch { return null }
     },
   }
 }
