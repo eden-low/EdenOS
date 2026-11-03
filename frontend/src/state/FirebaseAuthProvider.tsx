@@ -3,10 +3,8 @@ import { AuthChoiceScreen } from '../components/account/AuthChoiceScreen'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { firebaseInitialization } from '../lib/firebase'
 import { classifyGoogleAuthError } from '../lib/googleAuthError'
-import { createFirestoreAnimeProgressRepository } from '../repositories/firestoreAnimeProgressRepository'
 import { getGuestDataSummary } from '../repositories/guestAccountRepository'
-import { readLocalAnimeProgress, writeLocalAnimeProgress } from '../services/animeProgressLocalStorage'
-import { reconcileAnimeProgress } from '../services/animeProgressReconciliation'
+import { readLocalAnimeProgress } from '../services/animeProgressLocalStorage'
 import { createFirebaseAuthService, type AuthIdentity } from '../services/firebaseAuthService'
 import type { GuestDataSummary } from '../types/account'
 import { FirebaseAuthContext, type FirebaseSession } from './firebaseAuthContextDefinition'
@@ -126,16 +124,8 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
   const firestore = firebaseInitialization.services.firestore
 
   async function summarizeGuest(): Promise<GuestDataSummary> {
-    const localAnimeProgressCount = readLocalAnimeProgress(localStorage).length
+    const localAnimeProgressCount = readLocalAnimeProgress(localStorage, identity.uid).length
     return getGuestDataSummary(firestore, identity.uid, localAnimeProgressCount)
-  }
-
-  async function preserveGuestCloudAnimeProgress(summary: GuestDataSummary): Promise<void> {
-    if (summary.animeCloudProgressCount === 0) return
-    const repository = createFirestoreAnimeProgressRepository(firestore, identity.uid)
-    const cloudItems = await repository.readAllFromServer()
-    const localItems = readLocalAnimeProgress(localStorage)
-    writeLocalAnimeProgress(localStorage, reconcileAnimeProgress(localItems, cloudItems))
   }
 
   const session: FirebaseSession = {
@@ -193,7 +183,6 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
         accountDiagnostic('guest-blocked', { uid: maskedUid(identity.uid), recheck: true })
         return { status: 'blocked', summary }
       }
-      await preserveGuestCloudAnimeProgress(summary)
       try {
         const existing = await authService.continueWithExistingGoogle(identity.uid)
         if (!existing) return { status: 'cancelled' }

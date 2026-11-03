@@ -156,7 +156,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
               )}
               {summary && summary.animeProgressCount > 0 && (
                 <p className="mt-2">
-                  Anime progress on {summary.animeProgressCount} {summary.animeProgressCount === 1 ? 'title' : 'titles'} is reconcilable and does not block switching on its own.
+                  Anime progress on {summary.animeProgressCount} {summary.animeProgressCount === 1 ? 'title' : 'titles'} belongs to this Guest UID and does not block switching on its own.
                 </p>
               )}
               {conflict === 'unavailable' ? (
@@ -166,7 +166,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
               ) : safeSwitch ? (
                 <strong className="mt-2 block font-semibold text-[var(--text-primary)]">
                   This Guest has no financial, exercise, or settings records that need protection. You can continue with the existing Google account.
-                  {summary.animeProgressCount > 0 && ' Local Anime progress will remain and reconcile with the existing account.'}
+                  {summary.animeProgressCount > 0 && ' Guest Anime progress will remain under the Guest UID and will not be imported. It may be inaccessible after switching unless that Guest identity can be restored.'}
                 </strong>
               ) : (
                 <strong className="mt-2 block font-semibold text-[var(--text-primary)]">

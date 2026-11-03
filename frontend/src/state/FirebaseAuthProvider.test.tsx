@@ -21,10 +21,6 @@ vi.mock('../lib/firebase', () => ({
 }))
 vi.mock('../services/firebaseAuthService', () => ({ createFirebaseAuthService: vi.fn() }))
 vi.mock('../repositories/guestAccountRepository', () => ({ getGuestDataSummary: vi.fn() }))
-const animeProgressRepository = vi.hoisted(() => ({ readAllFromServer: vi.fn() }))
-vi.mock('../repositories/firestoreAnimeProgressRepository', () => ({
-  createFirestoreAnimeProgressRepository: () => animeProgressRepository,
-}))
 
 const guest: AuthIdentity = { uid: 'guest-uid', isAnonymous: true, email: null }
 const linked: AuthIdentity = { uid: 'guest-uid', isAnonymous: false, email: 'user@example.com' }
@@ -69,8 +65,6 @@ beforeEach(() => {
   localStorage.clear()
   vi.mocked(getGuestDataSummary).mockReset()
   vi.mocked(getGuestDataSummary).mockResolvedValue(expenseGuestSummary)
-  animeProgressRepository.readAllFromServer.mockReset()
-  animeProgressRepository.readAllFromServer.mockResolvedValue([])
   service = {
     observe: vi.fn(async (next) => { observer = next; return () => undefined }),
     continueAnonymously: vi.fn(async () => guest),
@@ -182,21 +176,19 @@ describe('Firebase Auth startup and account UI', () => {
     expect(await screen.findByRole('button', { name: 'Continue with existing Google account' })).toBeTruthy()
   })
 
-  it('allows Anime-only Guest progress and preserves legacy cloud progress before switching', async () => {
+  it('allows Anime-only Guest progress but never imports it into an existing Google UID', async () => {
     const local = {
       externalId: 'sample-anime', animeId: 'sample-anime', currentEpisode: 2,
       positionSeconds: 10, durationSeconds: 100, watchedEpisodes: [1],
       trackingStatus: 'watching', updatedAt: 100, title: 'Sample',
     }
-    const cloud = { ...local, currentEpisode: 4, updatedAt: 300 }
-    localStorage.setItem(animeProgressStorageKey, JSON.stringify({ version: 1, items: [local] }))
+    localStorage.setItem(animeProgressStorageKey('guest-uid'), JSON.stringify({ version: 2, items: [local] }))
     const animeSummary = {
       ...emptyGuestSummary, animeProgressCount: 1, animeCloudProgressCount: 1,
     }
     vi.mocked(service.linkGoogle).mockRejectedValue({ code: 'auth/credential-already-in-use' })
     vi.mocked(service.hasPendingGoogleConflict).mockReturnValue(true)
     vi.mocked(getGuestDataSummary).mockResolvedValue(animeSummary)
-    animeProgressRepository.readAllFromServer.mockResolvedValue([cloud])
     renderProvider(); restore(guest)
     fireEvent.click(screen.getByRole('button', { name: 'Account' }))
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
@@ -204,7 +196,8 @@ describe('Firebase Auth startup and account UI', () => {
     expect(alert.textContent).toContain('Anime progress on 1 title')
     fireEvent.click(screen.getByRole('button', { name: 'Continue with existing Google account' }))
     await waitFor(() => expect(screen.getByTestId('uid').textContent).toBe('existing-uid'))
-    expect(localStorage.getItem(animeProgressStorageKey)).toContain('"currentEpisode":4')
+    expect(localStorage.getItem(animeProgressStorageKey('guest-uid'))).toContain('"currentEpisode":2')
+    expect(localStorage.getItem(animeProgressStorageKey('existing-uid'))).toBeNull()
   })
 
   it('does not switch a Guest with persisted data', async () => {

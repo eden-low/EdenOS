@@ -1,7 +1,13 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CosmosAiRequest, CosmosAiResponse } from '../src/cosmos/cosmosAiTypes'
 import { createCosmosReadingHandler, type CosmosReadingDependencies } from './cosmosReadingHandler'
+import { CosmosResponseParsingError } from './cosmosDiagnostics'
+
+const diagnosticConfig = vi.hoisted(() => ({ enabled: false }))
+vi.mock('../src/cosmos/cosmosDiagnosticsConfig', () => ({ get cosmosStagingDiagnostics() { return diagnosticConfig.enabled } }))
+beforeEach(() => { diagnosticConfig.enabled = false })
+afterEach(() => vi.restoreAllMocks())
 
 const requestBody: CosmosAiRequest = {
   version: 1, promptVersion: 'cosmos-v1', mode: 'single', question: '请提供整体反思。', birthCompatibility: 'not-applicable',
@@ -118,5 +124,80 @@ describe('Cosmos reading endpoint', () => {
     const deps = dependencies()
     deps.interpret = vi.fn(async () => ({ ...modelResponse, observations: [{ source: 'bazi', title: 'wrong', reflection: 'wrong' }] }))
     expect((await createCosmosReadingHandler(deps)(makeRequest())).status).toBe(502)
+  })
+
+  it.each([
+    [429, 429, 'quota'], [500, 503, 'provider'], [503, 503, 'provider'], [504, 504, 'timeout'],
+  ] as const)('records only safe staging metadata for upstream %s', async (status, httpStatus, code) => {
+    diagnosticConfig.enabled = true
+    const log = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const deps = dependencies()
+    deps.interpret = vi.fn(async () => { throw Object.assign(new Error('PRIVATE_REPLY'), {
+      status, uid: 'PRIVATE_UID', email: 'PRIVATE_EMAIL', token: 'PRIVATE_TOKEN', apiKey: 'PRIVATE_KEY', birth: 'PRIVATE_BIRTH',
+    }) })
+    const response = await createCosmosReadingHandler(deps)(makeRequest({ ...requestBody, question: 'PRIVATE_QUESTION' }))
+    const body = await response.json()
+    expect(body).toEqual({ code, diagnosticId: expect.any(String) })
+    expect(response.headers.get('X-Cosmos-Diagnostic-Id')).toBe(body.diagnosticId)
+    expect(log).toHaveBeenCalledOnce()
+    const record = JSON.parse(log.mock.calls[0][0])
+    expect(record).toEqual({ event: 'cosmos-diagnostic', diagnosticId: body.diagnosticId, stage: 'gemini-request',
+      code, httpStatus, upstreamStatus: status, durationMs: expect.any(Number), timedOut: code === 'timeout' })
+    expect(record.durationMs).toBeGreaterThanOrEqual(0)
+    expect(JSON.stringify(log.mock.calls)).not.toContain('PRIVATE_')
+    expect(JSON.stringify(body)).not.toContain('PRIVATE_')
+  })
+
+  it.each([
+    ['AbortError', 504, 'timeout', true], ['TimeoutError', 504, 'timeout', true],
+    ['APIConnectionTimeoutError', 504, 'timeout', true], ['Error', 503, 'provider', false],
+  ] as const)('classifies SDK %s without logging its raw exception', async (name, httpStatus, code, timedOut) => {
+    diagnosticConfig.enabled = true
+    const log = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const deps = dependencies()
+    deps.interpret = vi.fn(async () => { throw Object.assign(new Error('PRIVATE_EXCEPTION'), { name }) })
+    const response = await createCosmosReadingHandler(deps)(makeRequest())
+    expect(response.status).toBe(httpStatus)
+    expect(JSON.parse(log.mock.calls[0][0])).toMatchObject({ stage: 'gemini-request', code, upstreamStatus: null, timedOut })
+    expect(JSON.stringify(log.mock.calls)).not.toContain('PRIVATE_EXCEPTION')
+  })
+
+  it.each(['token-verification', 'owner-authorization', 'response-parsing'] as const)('identifies failure stage %s', async (stage) => {
+    diagnosticConfig.enabled = true
+    const log = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const deps = dependencies()
+    if (stage === 'token-verification') deps.authorize = vi.fn(async () => { throw new Error('PRIVATE_TOKEN') })
+    if (stage === 'owner-authorization') deps.authorize = vi.fn(async () => 'unauthorized' as const)
+    if (stage === 'response-parsing') deps.interpret = vi.fn(async () => { throw new CosmosResponseParsingError() })
+    const response = await createCosmosReadingHandler(deps)(makeRequest())
+    expect(response.status).toBe(stage === 'token-verification' ? 401 : stage === 'owner-authorization' ? 403 : 502)
+    expect(JSON.parse(log.mock.calls[0][0])).toMatchObject({ stage, upstreamStatus: null, timedOut: false })
+    if (stage !== 'response-parsing') expect(deps.interpret).not.toHaveBeenCalled()
+  })
+
+  it('logs schema-invalid output as response parsing and gives every invocation a fresh ID', async () => {
+    diagnosticConfig.enabled = true
+    const log = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const deps = dependencies()
+    deps.interpret = vi.fn(async () => ({ private: 'PRIVATE_REPLY' }))
+    const handler = createCosmosReadingHandler(deps)
+    const a = await (await handler(makeRequest())).json()
+    const b = await (await handler(makeRequest())).json()
+    expect(a.diagnosticId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(b.diagnosticId).not.toBe(a.diagnosticId)
+    expect(JSON.parse(log.mock.calls[0][0])).toMatchObject({ stage: 'response-parsing', code: 'malformed-response', httpStatus: 502 })
+    expect(JSON.stringify(log.mock.calls)).not.toContain('PRIVATE_REPLY')
+  })
+
+  it('ignores client attempts to enable diagnostics in a production build', async () => {
+    const log = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const deps = dependencies()
+    deps.interpret = vi.fn(async () => { throw new Error('PRIVATE') })
+    const request = makeRequest()
+    request.headers.set('X-Cosmos-Diagnostics', 'true')
+    const response = await createCosmosReadingHandler(deps)(request)
+    expect(await response.json()).toEqual({ code: 'provider' })
+    expect(response.headers.has('X-Cosmos-Diagnostic-Id')).toBe(false)
+    expect(log).not.toHaveBeenCalled()
   })
 })

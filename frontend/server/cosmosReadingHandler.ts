@@ -1,5 +1,6 @@
 import { validateCosmosAiRequest, validateCosmosAiResponse } from '../src/cosmos/cosmosAiValidation'
 import type { CosmosAiRequest, CosmosAiResponse } from '../src/cosmos/cosmosAiTypes'
+import { CosmosResponseParsingError, createCosmosDiagnosticRequest, geminiErrorMetadata, type CosmosFailureStage } from './cosmosDiagnostics'
 
 const MAX_BODY_BYTES = 48 * 1024
 const responseHeaders = {
@@ -15,17 +16,13 @@ export interface CosmosReadingDependencies {
   interpret: (request: CosmosAiRequest) => Promise<unknown>
 }
 
-function json(status: number, value: CosmosAiResponse | { code: string }): Response {
-  return new Response(JSON.stringify(value), { status, headers: responseHeaders })
-}
-
 type GeminiProviderErrorCode =
   | 'gemini-request-prerequisite' | 'gemini-authentication' | 'gemini-billing'
   | 'gemini-permission' | 'gemini-model-unavailable' | 'quota' | 'timeout' | 'provider'
 
 function providerErrorCode(error: unknown): GeminiProviderErrorCode {
-  const status = error && typeof error === 'object' && 'status' in error &&
-    typeof error.status === 'number' ? error.status : undefined
+  const { upstreamStatus: status, timedOut } = geminiErrorMetadata(error)
+  if (timedOut) return 'timeout'
   if (status === 400) return 'gemini-request-prerequisite'
   if (status === 401) return 'gemini-authentication'
   if (status === 402) return 'gemini-billing'
@@ -54,33 +51,51 @@ function responseMatchesRequest(request: CosmosAiRequest, response: CosmosAiResp
 
 export function createCosmosReadingHandler(dependencies: CosmosReadingDependencies) {
   return async (request: Request): Promise<Response> => {
-    if (request.method !== 'POST') return json(405, { code: 'method' })
-    const match = request.headers.get('Authorization')?.match(/^Bearer\s+(\S+)$/i)
-    if (!match) return json(401, { code: 'auth' })
-    try {
-      if (await dependencies.authorize(match[1]) !== 'authorized') return json(403, { code: 'forbidden' })
-    } catch {
-      return json(401, { code: 'auth' })
+    const diagnostic = createCosmosDiagnosticRequest()
+    function reply(status: number, value: CosmosAiResponse | { code: string }, stage: CosmosFailureStage,
+      upstreamStatus: number | null = null, timedOut = false): Response {
+      const code = 'code' in value ? value.code : 'ok'
+      diagnostic.finish(stage, code, status, upstreamStatus, timedOut)
+      const id = diagnostic.diagnosticId
+      return new Response(JSON.stringify(id && 'code' in value ? { ...value, diagnosticId: id } : value), {
+        status, headers: { ...responseHeaders, ...(id ? { 'X-Cosmos-Diagnostic-Id': id } : {}) },
+      })
     }
-    if (!dependencies.isConfigured()) return json(503, { code: 'not-configured' })
+    if (request.method !== 'POST') return reply(405, { code: 'method' }, 'request-validation')
+    const match = request.headers.get('Authorization')?.match(/^Bearer\s+(\S+)$/i)
+    if (!match) return reply(401, { code: 'auth' }, 'token-verification')
+    try {
+      if (await dependencies.authorize(match[1]) !== 'authorized') return reply(403, { code: 'forbidden' }, 'owner-authorization')
+    } catch {
+      return reply(401, { code: 'auth' }, 'token-verification')
+    }
+    if (!dependencies.isConfigured()) return reply(503, { code: 'not-configured' }, 'configuration')
     if (request.headers.get('Content-Type')?.toLowerCase().split(';', 1)[0].trim() !== 'application/json') {
-      return json(415, { code: 'unsupported' })
+      return reply(415, { code: 'unsupported' }, 'request-validation')
     }
     const contentLength = Number(request.headers.get('Content-Length'))
-    if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) return json(413, { code: 'too-large' })
+    if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) return reply(413, { code: 'too-large' }, 'request-validation')
     let text: string
-    try { text = await request.text() } catch { return json(400, { code: 'invalid' }) }
-    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return json(413, { code: 'too-large' })
+    try { text = await request.text() } catch { return reply(400, { code: 'invalid' }, 'request-validation') }
+    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return reply(413, { code: 'too-large' }, 'request-validation')
     let raw: unknown
-    try { raw = JSON.parse(text) as unknown } catch { return json(400, { code: 'invalid' }) }
+    try { raw = JSON.parse(text) as unknown } catch { return reply(400, { code: 'invalid' }, 'request-validation') }
     const input = validateCosmosAiRequest(raw)
-    if (!input) return json(400, { code: 'invalid' })
+    if (!input) return reply(400, { code: 'invalid' }, 'request-validation')
+    let stage: CosmosFailureStage = 'gemini-request'
     try {
-      const result = validateCosmosAiResponse(await dependencies.interpret(input))
-      return result && responseMatchesRequest(input, result) ? json(200, result) : json(502, { code: 'malformed-response' })
+      const output = await dependencies.interpret(input)
+      stage = 'response-parsing'
+      const result = validateCosmosAiResponse(output)
+      return result && responseMatchesRequest(input, result)
+        ? reply(200, result, 'complete') : reply(502, { code: 'malformed-response' }, stage)
     } catch (error) {
+      if (error instanceof CosmosResponseParsingError || stage === 'response-parsing') {
+        return reply(502, { code: 'malformed-response' }, 'response-parsing')
+      }
       const code = providerErrorCode(error)
-      return json(providerResponseStatus(code), { code })
+      const { upstreamStatus, timedOut } = geminiErrorMetadata(error)
+      return reply(providerResponseStatus(code), { code }, stage, upstreamStatus, timedOut)
     }
   }
 }

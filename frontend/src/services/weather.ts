@@ -1,16 +1,18 @@
 import { localDateKey } from '../lib/date'
 
 // Forecast API and WMO codes: https://open-meteo.com/en/docs
-export const weatherAttribution = {
-  label: 'Weather data: Open-Meteo',
-  url: 'https://open-meteo.com/',
+export const weatherAttributions = {
+  openweather: { label: 'Weather data: OpenWeather', url: 'https://openweathermap.org/' },
+  'open-meteo': { label: 'Weather data: Open-Meteo', url: 'https://open-meteo.com/' },
 } as const
 
 export const weatherCacheTtlMs = 20 * 60_000
 const staleLimitMs = 2 * 60 * 60_000
 const failureRetryMs = 5 * 60_000
 const timeoutMs = 8_000
-const weatherSessionKey = 'edenos.weather.v1'
+const primaryTimeoutMs = 5_000
+export const legacyWeatherSessionKey = 'edenos.weather.v1'
+const weatherSessionKeyPrefix = 'edenos.weather.v2:'
 
 export type WeatherKind =
   | 'clear' | 'partly-cloudy' | 'cloudy' | 'fog' | 'drizzle'
@@ -33,6 +35,7 @@ export interface WeatherSummary {
   lowC: number
   precipitationProbability?: number
   observedAt: string
+  provider: keyof typeof weatherAttributions
 }
 
 interface WeatherSession {
@@ -43,6 +46,12 @@ interface WeatherSession {
 }
 
 type WeatherFetcher = (input: string, init?: RequestInit) => Promise<Response>
+export type PrimaryWeatherLoader = (location: WeatherLocation, signal?: AbortSignal) => Promise<WeatherSummary>
+
+export function weatherSessionStorageKey(uid: string): string {
+  if (!uid.trim()) throw new Error('A Firebase UID is required for weather storage.')
+  return `${weatherSessionKeyPrefix}${encodeURIComponent(uid)}`
+}
 
 const codeGroups: ReadonlyArray<{ codes: readonly number[]; condition: WeatherCondition }> = [
   { codes: [0], condition: { label: 'Clear', kind: 'clear' } },
@@ -72,7 +81,7 @@ export function isWeatherLocation(value: unknown): value is WeatherLocation {
     location.longitude >= -180 && location.longitude <= 180
 }
 
-function weatherSummaryIsValid(value: unknown): value is WeatherSummary {
+export function isWeatherSummary(value: unknown): value is WeatherSummary {
   if (!value || typeof value !== 'object') return false
   const weather = value as Record<string, unknown>
   const condition = weather.condition
@@ -81,9 +90,12 @@ function weatherSummaryIsValid(value: unknown): value is WeatherSummary {
     typeof weather.lowC === 'number' && Number.isFinite(weather.lowC) &&
     weather.highC >= weather.lowC &&
     typeof weather.observedAt === 'string' && weather.observedAt.length > 0 &&
+    (weather.provider === 'openweather' || weather.provider === 'open-meteo') &&
     !!condition && typeof condition === 'object' &&
     typeof (condition as WeatherCondition).label === 'string' &&
     typeof (condition as WeatherCondition).kind === 'string' &&
+    ['clear', 'partly-cloudy', 'cloudy', 'fog', 'drizzle', 'rain', 'snow', 'showers', 'thunderstorm', 'unknown']
+      .includes((condition as WeatherCondition).kind) &&
     (weather.precipitationProbability === undefined ||
       (typeof weather.precipitationProbability === 'number' &&
         Number.isFinite(weather.precipitationProbability) &&
@@ -112,21 +124,22 @@ export function normalizeOpenMeteoResponse(value: unknown): WeatherSummary | nul
     highC: high,
     lowC: low,
     observedAt: current.time,
+    provider: 'open-meteo',
   }
   if (typeof probability === 'number' && Number.isFinite(probability) &&
       probability >= 0 && probability <= 100) weather.precipitationProbability = probability
   return weather
 }
 
-export function readWeatherSession(storage: Storage): WeatherSession | null {
+export function readWeatherSession(storage: Storage, uid: string): WeatherSession | null {
   try {
-    const raw = storage.getItem(weatherSessionKey)
+    const raw = storage.getItem(weatherSessionStorageKey(uid))
     if (!raw) return null
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return null
     const session = parsed as Record<string, unknown>
     if (!isWeatherLocation(session.location) ||
-        (session.weather !== null && !weatherSummaryIsValid(session.weather)) ||
+        (session.weather !== null && !isWeatherSummary(session.weather)) ||
         (session.fetchedAt !== null && (typeof session.fetchedAt !== 'number' || !Number.isFinite(session.fetchedAt))) ||
         (session.failedAt !== null && (typeof session.failedAt !== 'number' || !Number.isFinite(session.failedAt)))) return null
     return session as unknown as WeatherSession
@@ -135,20 +148,20 @@ export function readWeatherSession(storage: Storage): WeatherSession | null {
   }
 }
 
-function writeWeatherSession(storage: Storage, session: WeatherSession): void {
-  try { storage.setItem(weatherSessionKey, JSON.stringify(session)) } catch { /* session cache is optional */ }
+function writeWeatherSession(storage: Storage, uid: string, session: WeatherSession): void {
+  try { storage.setItem(weatherSessionStorageKey(uid), JSON.stringify(session)) } catch { /* session cache is optional */ }
 }
 
-export function rememberWeatherLocation(storage: Storage, location: WeatherLocation): WeatherLocation {
+export function rememberWeatherLocation(storage: Storage, uid: string, location: WeatherLocation): WeatherLocation {
   if (!isWeatherLocation(location)) throw new Error('Invalid weather location.')
   // A roughly one-kilometre location is enough for a compact forecast.
   const rounded = {
     latitude: Math.round(location.latitude * 100) / 100,
     longitude: Math.round(location.longitude * 100) / 100,
   }
-  const previous = readWeatherSession(storage)
+  const previous = readWeatherSession(storage, uid)
   if (previous?.location.latitude !== rounded.latitude || previous.location.longitude !== rounded.longitude) {
-    writeWeatherSession(storage, { location: rounded, weather: null, fetchedAt: null, failedAt: null })
+    writeWeatherSession(storage, uid, { location: rounded, weather: null, fetchedAt: null, failedAt: null })
   }
   return rounded
 }
@@ -172,29 +185,56 @@ function freshEnough(session: WeatherSession, now: number, maxAge: number): bool
     localDateKey(new Date(now)) === localDateKey(new Date(session.fetchedAt))
 }
 
-export function cachedWeather(storage: Storage, now = Date.now()): WeatherSummary | null {
-  const session = readWeatherSession(storage)
+export function cachedWeather(storage: Storage, uid: string, now = Date.now()): WeatherSummary | null {
+  const session = readWeatherSession(storage, uid)
   return session && freshEnough(session, now, staleLimitMs) ? session.weather : null
 }
 
-let inFlight: { key: string; promise: Promise<WeatherSummary | null> } | null = null
+const inFlight = new Map<string, {
+  uid: string
+  controller: AbortController
+  promise: Promise<WeatherSummary | null>
+}>()
+
+export function cancelWeatherRequests(uid: string): void {
+  for (const [key, request] of inFlight) {
+    if (request.uid === uid) {
+      request.controller.abort()
+      inFlight.delete(key)
+    }
+  }
+}
 
 export async function loadWeather(
   storage: Storage,
+  uid: string,
   location: WeatherLocation,
   fetcher: WeatherFetcher = fetch,
   now = Date.now(),
+  signal?: AbortSignal,
+  primaryLoader?: PrimaryWeatherLoader,
 ): Promise<WeatherSummary | null> {
   if (!isWeatherLocation(location)) return null
-  const session = readWeatherSession(storage)
+  if (signal?.aborted) return null
+  const session = readWeatherSession(storage, uid)
   const matching = session?.location.latitude === location.latitude &&
     session.location.longitude === location.longitude ? session : null
   if (matching && freshEnough(matching, now, weatherCacheTtlMs)) return matching.weather
   const fallback = matching && freshEnough(matching, now, staleLimitMs) ? matching.weather : null
   if (matching?.failedAt !== null && matching?.failedAt !== undefined &&
       now >= matching.failedAt && now - matching.failedAt < failureRetryMs) return fallback
-  const key = `${location.latitude},${location.longitude}`
-  if (inFlight?.key === key) return inFlight.promise
+  const key = `${uid}:${location.latitude},${location.longitude}`
+  const existing = inFlight.get(key)
+  if (existing) return existing.promise
+
+  const controller = new AbortController()
+  let timedOut = false
+  const handleAbort = () => controller.abort()
+  signal?.addEventListener('abort', handleAbort, { once: true })
+  const timeout = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
 
   const promise = (async () => {
     const url = new URL('https://api.open-meteo.com/v1/forecast')
@@ -206,22 +246,48 @@ export async function loadWeather(
     url.searchParams.set('temperature_unit', 'celsius')
     url.searchParams.set('forecast_days', '1')
     try {
+      if (primaryLoader) {
+        const primaryController = new AbortController()
+        const abortPrimary = () => primaryController.abort()
+        controller.signal.addEventListener('abort', abortPrimary, { once: true })
+        const primaryTimeout = setTimeout(() => primaryController.abort(), primaryTimeoutMs)
+        try {
+          const primary = await primaryLoader(location, primaryController.signal)
+          if (!isWeatherSummary(primary)) throw new Error('Primary weather response was invalid.')
+          if (controller.signal.aborted) return null
+          writeWeatherSession(storage, uid, { location, weather: primary, fetchedAt: now, failedAt: null })
+          return primary
+        } catch {
+          if (controller.signal.aborted) return null
+        } finally {
+          clearTimeout(primaryTimeout)
+          controller.signal.removeEventListener('abort', abortPrimary)
+        }
+      }
       const response = await fetcher(url.toString(), {
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: controller.signal,
         headers: { Accept: 'application/json' },
       })
       if (!response.ok) throw new Error('Weather provider unavailable.')
       const weather = normalizeOpenMeteoResponse(await response.json())
       if (!weather) throw new Error('Weather provider response was invalid.')
-      writeWeatherSession(storage, { location, weather, fetchedAt: now, failedAt: null })
+      if (controller.signal.aborted) return null
+      writeWeatherSession(storage, uid, { location, weather, fetchedAt: now, failedAt: null })
       return weather
     } catch {
-      writeWeatherSession(storage, {
+      if (controller.signal.aborted && !timedOut) return null
+      writeWeatherSession(storage, uid, {
         location, weather: fallback, fetchedAt: fallback ? matching?.fetchedAt ?? null : null, failedAt: now,
       })
       return fallback
     }
   })()
-  inFlight = { key, promise }
-  try { return await promise } finally { if (inFlight?.promise === promise) inFlight = null }
+  inFlight.set(key, { uid, controller, promise })
+  try {
+    return await promise
+  } finally {
+    clearTimeout(timeout)
+    signal?.removeEventListener('abort', handleAbort)
+    if (inFlight.get(key)?.promise === promise) inFlight.delete(key)
+  }
 }

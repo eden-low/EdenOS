@@ -2,10 +2,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CosmosAiResponse, CosmosSnapshotMap, TarotSource } from './cosmosAiTypes'
 
-const { requestInterpretation } = vi.hoisted(() => ({ requestInterpretation: vi.fn() }))
+const { requestInterpretation, diagnosticConfig } = vi.hoisted(() => ({ requestInterpretation: vi.fn(), diagnosticConfig: { enabled: false } }))
+vi.mock('./cosmosDiagnosticsConfig', () => ({ get cosmosStagingDiagnostics() { return diagnosticConfig.enabled } }))
 vi.mock('../services/cosmosAiService', () => ({
   requestCosmosInterpretation: requestInterpretation,
-  CosmosAiError: class extends Error { code: string; constructor(code: string) { super(code); this.code = code } },
+  CosmosAiError: class extends Error { code: string; diagnosticId?: string; constructor(code: string, id?: string) { super(code); this.code = code; this.diagnosticId = id } },
 }))
 import { AskCosmosExperience } from './AskCosmosExperience'
 import { CosmosAiError } from '../services/cosmosAiService'
@@ -19,7 +20,7 @@ const response: CosmosAiResponse = {
   alternatives: ['也可以换一个角度理解。'], reflectiveQuestions: ['你在意什么？', '什么可以验证？', '下一小步是什么？'], limitations: '这是传统象征反思，不是预测。',
 }
 
-beforeEach(() => requestInterpretation.mockReset().mockResolvedValue(response))
+beforeEach(() => { diagnosticConfig.enabled = false; requestInterpretation.mockReset().mockResolvedValue(response) })
 
 describe('Ask Cosmos experience', () => {
   it('shows all five availability states and routes users to missing readings', () => {
@@ -102,5 +103,19 @@ describe('Ask Cosmos experience', () => {
     expect((screen.getByRole('button', { name: '开始 Gemini 深度解读' }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getByRole('checkbox', { name: /出生资料并非已确认完全兼容/ }))
     expect((screen.getByRole('button', { name: '开始 Gemini 深度解读' }) as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it.each([true, false])('shows safe diagnostic metadata only in staging (enabled=%s)', async (enabled) => {
+    diagnosticConfig.enabled = enabled
+    const id = '3cdf3375-082b-4a45-9b1d-e77c4c3b7a64'
+    requestInterpretation.mockRejectedValueOnce(new CosmosAiError('provider', id))
+    render(<AskCosmosExperience snapshots={{}} onOpenSystem={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /梦境解读/ }))
+    fireEvent.change(screen.getByRole('textbox', { name: /梦境内容/ }), { target: { value: '虚构梦境内容。' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /我确认本次发送/ }))
+    fireEvent.click(screen.getByRole('button', { name: '开始 Gemini 深度解读' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent?.includes(id)).toBe(enabled)
+    expect(alert.textContent?.includes('错误代码：provider')).toBe(enabled)
   })
 })

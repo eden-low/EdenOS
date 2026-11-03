@@ -86,6 +86,8 @@ The browser prevents concurrent duplicate generation, cancels obsolete UI reques
 
 The service worker precaches only static HTML/JS/CSS assets. It has no runtime caching rule for the POST endpoint, and the request and response both use `no-store`.
 
+Staging diagnostics are compiled on only when Netlify's build metadata is `NETLIFY=true`, `CONTEXT=branch-deploy`, and `BRANCH=staging`. The build emits a non-secret boolean shared by the Function and Cosmos error UI; Production, previews, other branches, and local builds default off. No request header, body field, or browser preference can enable server logging. Each staging invocation emits one `cosmos-diagnostic` JSON record containing only a random diagnostic ID, stage, safe code, HTTP status, optional numeric Gemini status, elapsed milliseconds, and timeout flag. Errors return the same ID; successful responses carry it in `X-Cosmos-Diagnostic-Id`. Logs never include identities, credentials, questions, birth data, provider replies, or raw exceptions. Token-refresh/network failures before a server response show a `client-` ID instead; it has no corresponding Function record. Token refresh has a distinct `token-refresh` error and does not submit a Gemini request on failure.
+
 ## Local tests
 
 Normal automated tests mock Gemini and never incur API charges:
