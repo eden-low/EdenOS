@@ -10,7 +10,7 @@
   background: #f4f1eb;
   color: var(--genesis-ink);
   isolation: isolate;
-  animation: genesis-dismiss 4.3s linear forwards;
+  animation: genesis-dismiss 8s linear forwards;
 }
 .genesis-night {
   position: absolute;
@@ -60,8 +60,10 @@
 .genesis-orbits { width: 100%; height: 100%; opacity: 0; transition: opacity 550ms ease; }
 .genesis-boot-screen:not([data-stage="genesis"]) .genesis-orbits { opacity: 1; }
 .genesis-brand { position: absolute; width: 22%; height: auto; left: 39%; top: 39%; border-radius: 26%; transform: scale(1); transition: transform 800ms ease; }
-.genesis-halo { position: absolute; inset: 23%; background: radial-gradient(circle, #7b6ff833, transparent 68%); opacity: 0; transition: opacity 600ms; }
+.genesis-halo { position: absolute; inset: 23%; opacity: 0; transition: opacity 600ms; }
+.genesis-halo::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, #7b6ff833, transparent 68%); animation: genesis-glow-breathe 3.6s ease-in-out infinite; animation-play-state: paused; }
 .genesis-boot-screen:not([data-stage="genesis"]) .genesis-halo { opacity: 1; }
+.genesis-boot-screen:is([data-stage="core"], [data-stage="ready"]) .genesis-halo::before { animation-play-state: running; }
 .genesis-orbit { transform-origin: 260px 260px; animation: genesis-orbit-turn 7s ease-in-out both; animation-play-state: paused; }
 .genesis-orbit-a { --genesis-angle: 30deg; transform: rotate(30deg); }
 .genesis-orbit-b { --genesis-angle: -48deg; transform: rotate(-48deg); animation-duration: 9s; animation-direction: reverse; }
@@ -73,14 +75,15 @@
 .genesis-whisper { margin-top: 14px; font-size: 11px; letter-spacing: 0.035em; opacity: 0.6; }
 .genesis-boot-screen[data-stage="core"] .genesis-stage { color: #88d8dd; opacity: 0.9; }
 .genesis-boot-screen[data-stage="ready"] .genesis-stage { color: #a99eff; opacity: 1; }
-.genesis-boot-screen[data-stage="welcome"] .genesis-wordmark { max-width: 18ch; margin-inline: auto; font-size: clamp(25px, 4.4vw, 48px); letter-spacing: 0.12em; animation: genesis-welcome 500ms ease-out both; }
-.genesis-boot-screen[data-stage="welcome"] .genesis-orbits { opacity: 0.35; }
+.genesis-boot-screen:is([data-stage="welcome"], [data-stage="enter"]) .genesis-wordmark { max-width: 18ch; margin-inline: auto; font-size: clamp(25px, 4.4vw, 48px); letter-spacing: 0.12em; animation: genesis-welcome 500ms ease-out both; }
+.genesis-boot-screen:is([data-stage="welcome"], [data-stage="enter"]) .genesis-orbits { opacity: 0.35; }
 .genesis-footer { left: 0; right: 0; bottom: max(24px, env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 8px; font-weight: 500; letter-spacing: 0.2em; opacity: 0.5; }
 .genesis-ready-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
 @keyframes genesis-orbit-turn { from { transform: rotate(var(--genesis-angle)); } to { transform: rotate(calc(var(--genesis-angle) + 200deg)); } }
+@keyframes genesis-glow-breathe { 0%, 100% { opacity: 0.65; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.08); } }
 @keyframes genesis-welcome { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 /* CSS also releases the screen if JS completion fails. No body lock/inert state is applied. */
-@keyframes genesis-dismiss { 0%, 89% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: hidden; pointer-events: none; } }
+@keyframes genesis-dismiss { 0%, 85% { opacity: 1; visibility: visible; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); } 100% { opacity: 0; visibility: hidden; pointer-events: none; } }
 @keyframes genesis-static-dismiss { 0%, 99% { visibility: visible; } 100% { visibility: hidden; pointer-events: none; } }
 @media (max-height: 560px) { .genesis-art { width: min(48vh, 280px); } .genesis-copy { min-height: 108px; } .genesis-whisper { margin-top: 8px; } }
 @media (min-width: 768px) { .genesis-masthead { left: 48px; top: 36px; } .genesis-skip { top: 28px; right: 40px; } }

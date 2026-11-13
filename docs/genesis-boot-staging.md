@@ -12,7 +12,7 @@ This is a visual-only addition. It changes the application composition at `main.
 
 Automatic playback is restricted to an entry at `/` without a query or hash, and skips background tabs. User interaction before readiness suppresses automatic playback, so it cannot open over work already started. All deep links open normally. Popstate/hash navigation, leaving the foreground, Tab, application keyboard shortcuts, Escape, and Skip dismiss the decoration. Replay preserves the current route and is disabled during pending Account authentication actions, account conflicts, or account errors. The animation applies no body lock, inert state, route replacement, or theme change.
 
-The four stages are Genesis (0–800 ms), Core Awakening (800–2400 ms), System Ready (2400–3100 ms), and Welcome Back (3100–4300 ms), including the final fade into the already running app. The existing EdenOS icon is inlined as SVG. Orbital rings use local SVG/CSS. There are no random assets or runtime dependencies.
+The cinematic sequence runs for 8 seconds: Genesis (0–1.2 s), Core Awakening (1.2–3.2 s), System Ready (3.2–4.8 s), Welcome Back (4.8–6.8 s), and Enter Your Universe / final fade (6.8–8.0 s). A subtle CSS glow breathes during Core Awakening and System Ready, then pauses. The last 1.2 seconds gently dissolve the overlay into the already running app without modifying homepage animation or delaying initialization. The existing EdenOS icon, geometry, layout, palette, and architecture are preserved. Orbital rings use local SVG/CSS. There are no random assets or runtime dependencies.
 
 Account → Welcome experience contains **Show Boot Animation** and **Replay Boot Animation**. The preference uses the existing device-local settings pattern (`localStorage`, key `edenos.boot-animation.v1`), without changing cloud user settings. It controls future automatic playback; explicit replay remains available when the workspace is ready. Replay closes Account first and gives its existing focus restoration a short turn before focusing Skip.
 
@@ -22,19 +22,19 @@ Reduced motion skips automatic playback. Explicit replay shows a static welcome 
 
 ## Validation
 
-- 42 focused Vitest cases: first playback, four-stage timing, StrictMode, same-tab refresh/remount, Skip/focus, keyboard shortcuts, replay, toggle, storage failures, reduced motion, deep links, readiness and user interaction, actual authentication gates, pending Account actions, error recovery, PWA updates, privacy lock, drafts, unmount cleanup, and visual failure isolation. Synthetic fixtures only; no writes.
-- Full Vitest suite: 1,123 tests in 165 files passed (baseline: 1,081 in 162 files).
+- 44 focused Vitest cases: first playback, exact 8-second stage boundaries, final-fade Skip and full-duration replay, StrictMode, same-tab refresh/remount, Skip/focus, keyboard shortcuts, replay, toggle, storage failures, reduced motion, deep links, readiness and user interaction, actual authentication gates, pending Account actions, error recovery, PWA updates, privacy lock, drafts, unmount cleanup, and visual failure isolation. Synthetic fixtures only; no writes.
+- Full Vitest suite: 1,125 tests in 165 files passed (baseline: 1,081 in 162 files).
 - TypeScript, lint, and production build passed. The existing large-chunk advisory remains; no animation library was added.
 - All five existing Netlify Functions packaged successfully with esbuild; their source/configuration is unchanged.
-- Chromium browser harness: 56 assertions passed at 320×568, 390×844, 844×390, and 1440×900. Checked all stages, 44px Skip target, overflow, theme restoration, same-tab refresh suppression, replay/Skip, reduced motion, zero animation network requests, and browser errors. Real-time captures and a separate CSS failure-escape check passed.
+- Chromium browser harness: 82 assertions passed at 320×568, 390×844, 844×390, and 1440×900. Checked all stages, the matching 8-second CSS deadline, orbital-stage glow activation, 44px Skip target, overflow, theme restoration, same-tab refresh suppression, replay/Skip, reduced motion (including disabled glow), zero animation network requests, and browser errors. Another 37 real-time visual assertions passed for measured stage boundaries, actual glow breathing, the held Welcome Back stage, the final dissolve, and the independent CSS failure escape. Stage screenshots were reviewed at all four sizes.
 - The temporary synthetic harness and screenshots are local QA artifacts, not included in the release.
 
 ## iPhone / installed PWA review
 
-1. Open the Deploy Preview in a fresh Safari tab; authenticate normally. The animation must appear only after the workspace is ready, then reveal the existing homepage in about 4.3 seconds.
+1. Open the Deploy Preview in a fresh Safari tab; authenticate normally. The animation must appear only after the workspace is ready. Check Genesis to 1.2 s, Core Awakening to 3.2 s, System Ready to 4.8 s, Welcome Back to 6.8 s, then Enter Your Universe and a gentle reveal of the existing homepage at 8.0 s. The orbital-stage ambient glow should breathe subtly.
 2. During playback tap Skip, and check that homepage actions work immediately. Check portrait/landscape, safe-area spacing, and no horizontal scrolling.
 3. Refresh and navigate through existing pages: no repeated automatic playback. Open an Expenses/Cosmos deep link in a fresh tab: the route and query/hash must remain intact, with no automatic overlay.
-4. In Account, turn off Show Boot Animation; open a fresh tab to the same origin and confirm no automatic playback. Use Replay Boot Animation and verify that Account closes, Skip works, and the current route remains unchanged. Re-enable for future sessions.
+4. In Account, turn off Show Boot Animation; open a fresh tab to the same origin and confirm no automatic playback. Use Replay Boot Animation and verify that Account closes, Skip works, and the current route remains unchanged. Re-enable for future sessions. An existing tab keeps its seen marker across preview updates; use Replay to inspect the refined sequence without resetting session protections.
 5. Enable iOS Reduce Motion: no automatic animation; explicit replay is a short, static welcome.
 6. Repeat launch, Skip, replay, refresh, and orientation checks after installing this preview as a PWA if supported. Browser/PWA session restoration follows Safari's sessionStorage lifecycle and may retain the seen marker across reopening.
 7. Check existing upload/paste and FX screens visually without submitting financial records or invoking paid OCR. Existing PWA update prompts must take precedence over the welcome.

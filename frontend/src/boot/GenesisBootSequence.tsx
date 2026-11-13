@@ -1,8 +1,8 @@
 import { Component, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
-type Stage = 'genesis' | 'core' | 'ready' | 'welcome'
-const stageNames: Record<Stage, string> = { genesis: 'Genesis', core: 'Core Awakening', ready: 'System Ready', welcome: 'Welcome Back' }
+type Stage = 'genesis' | 'core' | 'ready' | 'welcome' | 'enter'
+const stageNames: Record<Stage, string> = { genesis: 'Genesis', core: 'Core Awakening', ready: 'System Ready', welcome: 'Welcome Back', enter: 'Enter Your Universe' }
 
 class VisualBoundary extends Component<{ children: ReactNode; onFailure: () => void }, { failed: boolean }> {
   state = { failed: false }
@@ -26,10 +26,11 @@ function Sequence({ reduced, onFinish }: { reduced: boolean; onFinish: () => voi
 
   useEffect(() => {
     const timers = reduced ? [setTimeout(onFinish, 600)] : [
-      setTimeout(() => setStage('core'), 800),
-      setTimeout(() => setStage('ready'), 2400),
-      setTimeout(() => setStage('welcome'), 3100),
-      setTimeout(onFinish, 4300),
+      setTimeout(() => setStage('core'), 1200),
+      setTimeout(() => setStage('ready'), 3200),
+      setTimeout(() => setStage('welcome'), 4800),
+      setTimeout(() => setStage('enter'), 6800),
+      setTimeout(onFinish, 8000),
     ]
     const keyboard = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); onFinish() }
@@ -79,7 +80,7 @@ function Sequence({ reduced, onFinish }: { reduced: boolean; onFinish: () => voi
       </div>
       <div className="genesis-copy" aria-live="polite" aria-atomic="true">
         <p className="genesis-stage">{stageNames[stage]}</p>
-        <p className="genesis-wordmark">{stage === 'welcome' ? 'WELCOME BACK TO EDEN' : 'EdenOS'}</p>
+        <p className="genesis-wordmark">{stage === 'enter' ? 'ENTER YOUR UNIVERSE' : stage === 'welcome' ? 'WELCOME BACK TO EDEN' : 'EdenOS'}</p>
         <p className="genesis-whisper">{stage === 'genesis' ? 'A quiet beginning.' : stage === 'core' ? 'A little space. A world of possibility.' : stage === 'ready' ? 'Your universe, in balance.' : 'Make room for what matters.'}</p>
       </div>
     </div>
