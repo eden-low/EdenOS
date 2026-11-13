@@ -31,3 +31,6 @@ Thumbs.db
 
 # TypeScript caches
 *.tsbuildinfo
+
+# Local design canvas context and previews
+/.superdesign/
