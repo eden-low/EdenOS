@@ -1,3 +1,4 @@
+import { hasForeignCurrencyHint } from './currencyConversion'
 import { parseRinggitToSen } from '../lib/format'
 import type { ExpenseData } from '../types/records'
 
@@ -15,6 +16,7 @@ export type ExpenseTextParseResult =
   | { ok: false; reason: ExpenseTextParseFailure }
 
 export function parseExpenseText(input: string, referenceDate: Date): ExpenseTextParseResult {
+  if (hasForeignCurrencyHint(input)) return { ok: false, reason: 'ambiguous' }
   const normalized = input.trim().replace(/\s+/g, ' ')
   if (!normalized) return { ok: false, reason: 'empty' }
 

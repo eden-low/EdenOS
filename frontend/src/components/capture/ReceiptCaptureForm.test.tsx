@@ -14,6 +14,7 @@ const createUrl = vi.fn(() => `blob:receipt-${createUrl.mock.calls.length}`)
 const revokeUrl = vi.fn()
 
 beforeEach(() => {
+  vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 100, height: 100, close: vi.fn() })))
   readReceiptImage.mockClear()
   createUrl.mockClear()
   revokeUrl.mockClear()

@@ -67,6 +67,8 @@ export async function readReceiptImage(image: Blob, signal?: AbortSignal): Promi
     ? combineLocalDateTime(extracted.receiptDate, toLocalTimeInput(new Date()))
     : null
   return {
+    currency: typeof extracted.currency === 'string' && /^[A-Z]{3}$/.test(extracted.currency) ? extracted.currency : undefined,
+    originalAmount: typeof extracted.originalAmount === 'string' && /^\d+(?:\.\d+)?$/.test(extracted.originalAmount) ? extracted.originalAmount : undefined,
     title: extracted.merchant ?? '',
     category: extracted.category ?? undefined,
     amountSen: extracted.amountSen ?? undefined,

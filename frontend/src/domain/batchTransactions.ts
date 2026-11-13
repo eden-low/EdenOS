@@ -1,3 +1,4 @@
+import { detectCurrency, hasForeignCurrencyHint, newConversion, resolvedAmountSen, type ConversionDraft } from './currencyConversion'
 import { isExpenseCategory } from './expense'
 import { isIncomeCategory } from './income'
 import { toLocalDateInput } from '../lib/date'
@@ -10,6 +11,7 @@ export type BatchTransactionDisposition = BatchTransactionDirection | 'ignore'
 export type BatchTransactionCategory = ExpenseCategory | IncomeCategory
 
 export interface BatchTransactionCandidate {
+  conversion?: ConversionDraft
   tempId: string
   sourceLine: number
   direction: BatchTransactionDisposition | null
@@ -114,7 +116,8 @@ function parseTextLine(line: string) {
   let remainder = rawDate ? line.replace(rawDate, ' ') : line
   const labelledDirection = explicitDirection(remainder)
   remainder = stripDirectionLabel(remainder)
-  const amountMatch = remainder.match(/(?:^|\s)([+-]?\s*(?:RM\s*)?\S+)\s*$/i)
+  const amountMatch = remainder.match(/(?:^|\s)([+-]?\s*(?:(?:USD|SGD|JPY|EUR|GBP|AUD|CNY|HKD|THB|IDR|KRW|TWD|INR|CAD|CHF|NZD|MYR|RM|US\$|S\$|[$\u20ac\u00a3\u00a5])\s*)?[+-]?\d+(?:\.\d+)?(?:\s*[A-Z]{3})?)\s*$/i)
+    ?? remainder.match(/(?:^|\s)(\S+)\s*$/)
   const rawAmount = amountMatch?.[1]?.replace(/\s+/g, ' ').trim() ?? ''
   if (amountMatch) remainder = remainder.slice(0, amountMatch.index).trim()
   return {
@@ -127,7 +130,10 @@ function parseTextLine(line: string) {
 
 function parseLine(line: string, sourceLine: number, today: string): BatchTransactionCandidate {
   const parsed = line.includes(',') || line.includes('\t') ? parseDelimitedLine(line) : parseTextLine(line)
-  const money = parseSignedRinggit(parsed.rawAmount)
+  const currency = detectCurrency(parsed.rawAmount)
+  const foreignOrUncertain = hasForeignCurrencyHint(line) || currency !== null && currency !== 'MYR'
+  const numericAmount = parsed.rawAmount.replace(/(?:US\$|S\$|[A-Z]{3}|RM|[$\u20ac\u00a3\u00a5])/gi, '').trim()
+  const money = parseSignedRinggit(numericAmount)
   const hasExplicitAmountSign = /^[+-]/.test(parsed.rawAmount.trim())
   const conflict = Boolean(parsed.labelledDirection && money && hasExplicitAmountSign && parsed.labelledDirection !== money.direction)
   const direction = conflict ? null : (parsed.labelledDirection ?? money?.direction ?? null)
@@ -137,8 +143,9 @@ function parseLine(line: string, sourceLine: number, today: string): BatchTransa
     tempId: `batch-${sourceLine}`,
     sourceLine,
     direction,
-    amountSen: money?.amountSen ?? null,
-    amountInput: money ? (money.amountSen / 100).toFixed(2) : parsed.rawAmount,
+    ...(foreignOrUncertain ? { conversion: newConversion(currency ?? '') } : {}),
+    amountSen: foreignOrUncertain ? null : money?.amountSen ?? null,
+    amountInput: foreignOrUncertain ? numericAmount.replace(/^[+-]\s*/, '') : money ? (money.amountSen / 100).toFixed(2) : parsed.rawAmount,
     date,
     description: parsed.description,
     category: suggestedCategory(direction ?? 'expense', parsed.description),
@@ -170,6 +177,7 @@ export function candidateIssues(candidate: BatchTransactionCandidate): string[] 
   const issues: string[] = []
   if (candidate.direction === 'ignore') return issues
   if (!candidate.direction) issues.push('Choose Income, Expense, or Ignore / Transfer.')
+  if (candidate.conversion && (resolvedAmountSen(candidate.amountInput, candidate.conversion, candidate.date) === null || resolvedAmountSen(candidate.amountInput, candidate.conversion, candidate.date) !== candidate.amountSen)) issues.push('Resolve the currency conversion or enter the actual MYR amount.')
   if (candidate.amountSen === null) issues.push('Enter a valid amount greater than RM 0 with no more than 2 decimal places.')
   if (!validDateKey(candidate.date)) issues.push('Choose a valid date.')
   if (!candidate.description.trim()) issues.push('Add a description or source.')
@@ -206,5 +214,5 @@ export function updateCandidateDirection(candidate: BatchTransactionCandidate, d
 
 export function updateCandidateAmount(candidate: BatchTransactionCandidate, amountInput: string): BatchTransactionCandidate {
   const money = amountInput.trim().startsWith('-') ? null : parseSignedRinggit(amountInput)
-  return { ...candidate, amountInput, amountSen: money?.amountSen ?? null }
+  return { ...candidate, amountInput, amountSen: candidate.conversion ? resolvedAmountSen(amountInput, candidate.conversion, candidate.date) : money?.amountSen ?? null }
 }
