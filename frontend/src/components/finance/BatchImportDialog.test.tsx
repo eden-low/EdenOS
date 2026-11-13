@@ -4,6 +4,9 @@ import { PrivacyLockContext, unlockedPrivacyLock } from '../../privacy/privacyLo
 import { BatchScreenshotError, readBatchTransactionScreenshot } from '../../services/batchScreenshotService'
 import { useRecords } from '../../state/useRecords'
 import { BatchImportDialog } from './BatchImportDialog'
+import { getReferenceRate } from '../../services/exchangeRates'
+
+vi.mock('../../services/exchangeRates', () => ({ getReferenceRate: vi.fn() }))
 
 vi.mock('../../state/useRecords', () => ({ useRecords: vi.fn() }))
 vi.mock('../../services/batchScreenshotService', async (importOriginal) => ({
@@ -28,11 +31,28 @@ beforeEach(() => {
   createIncome.mockReset().mockResolvedValue(undefined)
   vi.mocked(useRecords).mockReturnValue({ createExpense, createIncome } as unknown as ReturnType<typeof useRecords>)
   vi.mocked(readBatchTransactionScreenshot).mockReset()
+  vi.mocked(getReferenceRate).mockReset().mockImplementation(async (currency, date) => ({ base: currency, quote: 'MYR', rate: currency === 'USD' ? '4.5' : '3.3', date: date ?? '2026-09-17' }))
   URL.createObjectURL = vi.fn(() => 'blob:batch-screenshot')
   URL.revokeObjectURL = vi.fn()
 })
 
 describe('BatchImportDialog', () => {
+  it('reviews separate currencies, applies bank override, prevents duplicate writes and saves only final sen', async () => {
+    renderDialog()
+    pasteAndParse('2026-09-17 Coffee -USD 25\n2026-09-17 Books -SGD 10\n2026-09-17 Salary +5000')
+    expect(createExpense).not.toHaveBeenCalled()
+    await screen.findByText(/Suggested MYR: RM 112.50/)
+    await screen.findByText(/Suggested MYR: RM 33.00/)
+    fireEvent.change(screen.getAllByLabelText(/Actual bank MYR/)[1], { target: { value: '34.01' } })
+    const confirm = screen.getByRole('button', { name: 'Confirm Transactions' })
+    expect(confirm.hasAttribute('disabled')).toBe(false)
+    fireEvent.click(confirm); fireEvent.click(confirm)
+    await waitFor(() => expect(screen.getByText('Imported 3 transactions successfully.')).toBeTruthy())
+    expect(createExpense).toHaveBeenCalledTimes(2)
+    expect(createIncome).toHaveBeenCalledOnce()
+    expect(createExpense).toHaveBeenNthCalledWith(1, { amountSen: 11250, category: 'food', title: 'Coffee', source: 'manual', note: undefined, occurredAt: expect.any(String) })
+    expect(createExpense).toHaveBeenNthCalledWith(2, { amountSen: 3401, category: 'education', title: 'Books', source: 'manual', note: undefined, occurredAt: expect.any(String) })
+  })
   it('creates zero records before explicit confirmation and writes a mixed confirmed batch', async () => {
     renderDialog()
     pasteAndParse('2026-09-01 Salary +5000\n2026-09-02 Lunch -18.50')

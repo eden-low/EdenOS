@@ -58,6 +58,7 @@ describe('Expense form conversion', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
     expect(onSubmit).not.toHaveBeenCalled()
     expect(screen.getByText('Choose a category.')).toBeTruthy()
+    setInput('Currency', 'MYR')
     setInput('Category', 'other')
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ category: 'other', source: 'photo' }))
@@ -68,6 +69,7 @@ describe('Expense form conversion', () => {
     render(<ExpenseForm receiptCandidate={{ title: 'Petronas', category: 'transport', amountSen: 4500, occurredAt }}
       submitLabel="Review" onSubmit={onSubmit} onCancel={vi.fn()} />)
     expect((screen.getByLabelText('Category') as HTMLSelectElement).value).toBe('transport')
+    setInput('Currency', 'MYR')
     setInput('Category', 'other')
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ category: 'other' }))

@@ -1,0 +1,30 @@
+name: Capture and finance checks
+on:
+  pull_request:
+    branches: [staging]
+  push:
+    branches: [staging]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Existing monthly finance fixtures use Malaysia-local month boundaries.
+      TZ: Asia/Kuala_Lumpur
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npx --no-install tsc -b
+      - run: npm run lint
+      - run: npm run build
