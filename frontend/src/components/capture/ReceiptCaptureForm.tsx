@@ -1,3 +1,4 @@
+import { useImagePaste } from '../../hooks/useImagePaste'
 import { useEffect, useRef, useState } from 'react'
 import { prepareReceiptImage, ReceiptImageInputError } from '../../services/receiptImage'
 import { readReceiptImage, ReceiptOcrError } from '../../services/receiptOcrService'
@@ -50,7 +51,10 @@ export function ReceiptCaptureForm({
     previewRef.current = null
   }, [])
 
+  const { pasteImage, cancelPaste, pasting } = useImagePaste((blob) => void receiveReceiptImage(blob), setError, clearImage)
+
   function clearImage() {
+    cancelPaste()
     generationRef.current += 1
     abortRef.current?.abort()
     abortRef.current = null
@@ -79,22 +83,6 @@ export function ReceiptCaptureForm({
     }
   }
 
-  useEffect(() => {
-    function handlePaste(event: ClipboardEvent) {
-      const clipboard = event.clipboardData
-      const file = Array.from(clipboard?.items ?? [])
-        .find((item) => item.kind === 'file' && item.type.startsWith('image/'))?.getAsFile()
-        ?? Array.from(clipboard?.files ?? []).find((item) => item.type.startsWith('image/'))
-      if (!file) {
-        setError('Paste an image of one receipt, or choose a photo instead.')
-        return
-      }
-      event.preventDefault()
-      void receiveReceiptImage(file)
-    }
-    document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
-  })
 
   async function handleRead() {
     if (!image || reading) return
@@ -133,9 +121,10 @@ export function ReceiptCaptureForm({
       />
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild variant="secondary"><label htmlFor="receipt-file">{image ? 'Replace image' : 'Choose receipt image'}</label></Button>
+        <Button type="button" variant="secondary" onClick={pasteImage} disabled={reading || pasting}>{pasting ? 'Waiting for Paste…' : 'Paste Image / 粘贴图片'}</Button>
         {image && <Button type="button" variant="ghost" onClick={clearImage} disabled={reading}>Remove</Button>}
       </div>
-      <p className="mt-3 text-sm text-[var(--text-muted)]">Or paste a receipt image with Ctrl+V / Cmd+V.</p>
+      <p className="mt-3 text-sm text-[var(--text-muted)]">Copy an image, tap Paste Image, then choose the system Paste option if asked. Ctrl+V / Cmd+V and image upload also work.</p>
       {image && (
         <div className="mt-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3">
           <img src={image.previewUrl} alt="Receipt preview" className="mx-auto max-h-64 max-w-full object-contain" />
@@ -143,8 +132,8 @@ export function ReceiptCaptureForm({
       )}
       {error && <InlineError message={error} />}
       <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={reading}>Back</Button>
-        <Button type="button" variant="secondary" onClick={onManual} disabled={reading}>Enter manually</Button>
+        <Button type="button" variant="ghost" onClick={() => { clearImage(); onCancel() }} disabled={reading}>Back</Button>
+        <Button type="button" variant="secondary" onClick={() => { clearImage(); onManual() }} disabled={reading}>Enter manually</Button>
         <Button type="button" onClick={() => void handleRead()} disabled={!image || reading}>
           {reading ? 'Reading receipt...' : hasFailed ? 'Retry' : 'Continue'}
         </Button>

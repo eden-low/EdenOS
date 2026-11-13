@@ -1,3 +1,4 @@
+import { detectCurrency, minorUnitsToInput, newConversion } from './currencyConversion'
 import {
   MAX_BATCH_TRANSACTIONS,
   markBatchDuplicates,
@@ -168,12 +169,15 @@ export function screenshotExtractionToCandidates(
     const direction = row.dispositionSuggestion
     const categoryDirection = direction === 'income' ? 'income' : 'expense'
     const dateDefaulted = row.date === null
+    const currency = detectCurrency(`${row.currency ?? ''} ${row.sourceText ?? ''}`)
+    const conversion = newConversion(currency ?? '')
     return {
       tempId: `screenshot-${index + 1}`,
       sourceLine: index + 1,
       direction,
-      amountSen: row.amountSen,
-      amountInput: row.amountSen === null ? '' : (row.amountSen / 100).toFixed(2),
+      conversion,
+      amountSen: currency === 'MYR' ? row.amountSen : null,
+      amountInput: minorUnitsToInput(row.amountSen, currency),
       date: row.date ?? today,
       time: row.time,
       description: row.description,

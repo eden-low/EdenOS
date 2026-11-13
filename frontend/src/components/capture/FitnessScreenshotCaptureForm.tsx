@@ -1,3 +1,4 @@
+import { useImagePaste } from '../../hooks/useImagePaste'
 import { useEffect, useRef, useState } from 'react'
 import { prepareReceiptImage, ReceiptImageInputError } from '../../services/receiptImage'
 import { readFitnessScreenshot } from '../../services/fitnessScreenshotService'
@@ -37,7 +38,10 @@ export function FitnessScreenshotCaptureForm({ onContinue, onCancel, onManual, o
     if (previewRef.current) URL.revokeObjectURL(previewRef.current)
   }, [])
 
+  const { pasteImage, cancelPaste, pasting } = useImagePaste((blob) => void receiveImage(blob), setError, clearImage)
+
   function clearImage() {
+    cancelPaste()
     generationRef.current += 1
     abortRef.current?.abort()
     abortRef.current = null
@@ -61,17 +65,6 @@ export function FitnessScreenshotCaptureForm({ onContinue, onCancel, onManual, o
     }
   }
 
-  useEffect(() => {
-    function handlePaste(event: ClipboardEvent) {
-      const file = Array.from(event.clipboardData?.items ?? [])
-        .find((item) => item.kind === 'file' && item.type.startsWith('image/'))?.getAsFile()
-      if (!file) return
-      event.preventDefault()
-      void receiveImage(file)
-    }
-    document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
-  })
 
   async function handleRead() {
     if (!image || reading) return
@@ -101,16 +94,17 @@ export function FitnessScreenshotCaptureForm({ onContinue, onCancel, onManual, o
       onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void receiveImage(file) }} />
     <div className="flex flex-wrap items-center gap-3">
       <Button asChild variant="secondary"><label htmlFor="fitness-screenshot-file">{image ? 'Replace screenshot' : 'Choose fitness screenshot'}</label></Button>
+      <Button type="button" variant="secondary" onClick={pasteImage} disabled={reading || pasting}>{pasting ? 'Waiting for Paste…' : 'Paste Image / 粘贴图片'}</Button>
       {image && <Button type="button" variant="ghost" onClick={clearImage} disabled={reading}>Remove</Button>}
     </div>
-    <p className="mt-3 text-sm text-[var(--text-muted)]">Or paste a workout screenshot with Ctrl+V / Cmd+V.</p>
+    <p className="mt-3 text-sm text-[var(--text-muted)]">Copy an image, tap Paste Image, then choose the system Paste option if asked. Ctrl+V / Cmd+V and image upload also work.</p>
     {image && <div className="mt-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3">
       <img src={image.previewUrl} alt="Fitness screenshot preview" className="mx-auto max-h-64 max-w-full object-contain" />
     </div>}
     {error && <InlineError message={error} />}
     <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-      <Button type="button" variant="ghost" onClick={onCancel} disabled={reading}>Back</Button>
-      <Button type="button" variant="secondary" onClick={onManual} disabled={reading}>Enter manually</Button>
+      <Button type="button" variant="ghost" onClick={() => { clearImage(); onCancel() }} disabled={reading}>Back</Button>
+      <Button type="button" variant="secondary" onClick={() => { clearImage(); onManual() }} disabled={reading}>Enter manually</Button>
       <Button type="button" onClick={() => void handleRead()} disabled={!image || reading}>
         {reading ? 'Reading workout…' : failed ? 'Retry' : 'Continue'}
       </Button>

@@ -81,6 +81,11 @@ describe('receipt structured validation', () => {
 })
 
 describe('two-model receipt router', () => {
+  it('adds only transient currency hints from existing evidence without asking OCR to convert', async () => {
+    const source = provider({ ...receipt, amountSen: 2500, amountEvidence: 'TOTAL USD 25.00' })
+    expect(await extractReceipt(source, input, models)).toMatchObject({ currency: 'USD', originalAmount: '25.00', amountSen: 2500 })
+    expect(source.extract).toHaveBeenCalledOnce()
+  })
   it('uses the pinned defaults and honors explicit model overrides', () => {
     expect(models).toEqual({ primary: 'gemini-3.6-flash', fallback: 'gemini-2.5-flash' })
     expect(receiptModelConfig({ RECEIPT_GEMINI_PRIMARY_MODEL: 'primary-test',
@@ -144,7 +149,7 @@ describe('two-model receipt router', () => {
       { ...receipt, merchant: null, amountSen: null, receiptDate: null })
     expect(await extractReceipt(source, input, models)).toEqual({
       merchant: 'ABC Cafe', amountSen: null, receiptDate: '2026-09-17',
-      category: 'food', amountIssue: 'missing', fallbackUsed: false,
+      currency: 'MYR', category: 'food', amountIssue: 'missing', fallbackUsed: false,
     })
     expect(source.extract).toHaveBeenCalledOnce()
   })

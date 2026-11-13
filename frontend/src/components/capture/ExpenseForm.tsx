@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { expenseCategoryOptions, isExpenseCategory } from '../../domain/expense'
 import { combineLocalDateTime, toLocalDateInput, toLocalTimeInput } from '../../lib/date'
-import { parseRinggitToSen } from '../../lib/format'
+import { detectCurrency, hasForeignCurrencyHint, newConversion, resolvedAmountSen, type ConversionDraft } from '../../domain/currencyConversion'
+import { CurrencyConversion } from '../finance/CurrencyConversion'
 import type { ExpenseCategory, ExpenseData } from '../../types/records'
 import type { ReceiptCandidate } from '../../types/receipt'
 import { Button } from '../ui/button'
@@ -40,6 +41,10 @@ export function ExpenseForm({
     return {
       amount: initialData?.amountSen !== undefined
         ? (initialData.amountSen / 100).toFixed(2)
+        : receiptCandidate?.originalAmount !== undefined
+          ? receiptCandidate.originalAmount
+        : receiptCandidate?.currency && receiptCandidate.currency !== 'MYR'
+          ? ''
         : receiptCandidate?.amountSen !== undefined
           ? (receiptCandidate.amountSen / 100).toFixed(2)
           : '',
@@ -50,6 +55,8 @@ export function ExpenseForm({
       note: initialData?.note ?? '',
     }
   })
+  const [conversion, setConversion] = useState<ConversionDraft>(() => newConversion(initialData ? 'MYR' : receiptCandidate ? receiptCandidate.currency ?? '' : 'MYR'))
+  const submitInFlight = useRef(false)
   const [amount, setAmount] = useState(initialValues.amount)
   const [category, setCategory] = useState<ExpenseCategory | ''>(initialValues.category)
   const [title, setTitle] = useState(initialValues.title)
@@ -60,6 +67,7 @@ export function ExpenseForm({
 
   useEffect(() => {
     onDirtyChange?.(
+      conversion.currency !== (initialData ? 'MYR' : receiptCandidate ? receiptCandidate.currency ?? '' : 'MYR') || Boolean(conversion.bankMyr) ||
       amount !== initialValues.amount ||
       category !== initialValues.category ||
       title !== initialValues.title ||
@@ -69,6 +77,9 @@ export function ExpenseForm({
     )
   }, [
     amount,
+    conversion,
+    initialData,
+    receiptCandidate,
     category,
     date,
     initialValues,
@@ -81,11 +92,14 @@ export function ExpenseForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextErrors: FormErrors = {}
-    const amountSen = parseRinggitToSen(amount)
+    if (submitInFlight.current || isSubmitting) return
+    const amountSen = resolvedAmountSen(amount, conversion, date)
     const occurredAt = combineLocalDateTime(date, time)
 
     if (!amountSen) {
-      nextErrors.amount = 'Enter an amount greater than RM 0 with no more than 2 decimal places.'
+      nextErrors.amount = conversion.currency === 'MYR'
+        ? 'Enter an amount greater than RM 0 with no more than 2 decimal places.'
+        : 'Choose the original currency and a valid amount, then obtain a current reference rate or enter the actual MYR amount.'
     }
     if (!isExpenseCategory(category)) nextErrors.category = 'Choose a category.'
     if (!title.trim()) nextErrors.title = 'Add a useful merchant or title.'
@@ -94,14 +108,15 @@ export function ExpenseForm({
     setErrors(nextErrors)
     if (!amountSen || !occurredAt || !isExpenseCategory(category) || Object.keys(nextErrors).length > 0) return
 
-    onSubmit({
+    submitInFlight.current = true
+    void Promise.resolve(onSubmit({
       amountSen,
       category,
       title: title.trim(),
       note: note.trim() || undefined,
       occurredAt,
       source: initialData?.source ?? (receiptCandidate ? 'photo' : 'manual'),
-    })
+    })).finally(() => { submitInFlight.current = false })
   }
 
   return (
@@ -110,7 +125,7 @@ export function ExpenseForm({
         <label htmlFor="expense-amount" className="form-label">Amount</label>
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-[var(--accent-soft)]">
-            RM
+            {conversion.currency === 'OTHER' ? 'FX' : conversion.currency || '—'}
           </span>
           <input
             id="expense-amount"
@@ -120,15 +135,25 @@ export function ExpenseForm({
             autoComplete="off"
             autoFocus
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            onChange={(event) => {
+              const input = event.target.value
+              const currency = detectCurrency(input)
+              if (currency || hasForeignCurrencyHint(input)) {
+                setConversion(newConversion(currency ?? ''))
+                setAmount(input.replace(/(?:US\$|S\$|[A-Z]{3}|RM|[$€£¥])/gi, '').trim())
+              } else setAmount(input)
+            }}
             placeholder="0.00"
             aria-invalid={Boolean(errors.amount)}
             aria-describedby={errors.amount ? 'expense-amount-error' : undefined}
             className="form-control expense-amount-control min-h-16 text-3xl font-semibold tracking-[-0.04em]"
+            style={{ paddingLeft: '4.5rem' }}
           />
         </div>
         {errors.amount && <p id="expense-amount-error" className="form-error">{errors.amount}</p>}
       </div>
+
+      <CurrencyConversion id="expense" amount={amount} date={date} value={conversion} onChange={setConversion} disabled={isSubmitting} />
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div>

@@ -1,3 +1,4 @@
+import { detectCurrency, amountFromEvidence } from '../src/domain/currencyConversion'
 import { combineLocalDateTime } from '../src/lib/date'
 import { parseRinggitToSen } from '../src/lib/format'
 import type { ReceiptExtractionResponse } from '../src/types/receipt'
@@ -14,6 +15,8 @@ export interface ReceiptExtractionProvider {
 }
 
 export interface ValidatedReceiptExtraction {
+  currency?: string
+  originalAmount?: string
   merchant: string | null
   amountSen: number | null
   receiptDate: string | null
@@ -97,7 +100,10 @@ export function validateReceiptExtraction(value: unknown): ValidatedReceiptExtra
     } else amountIssue = null
   } else amountSen = null
 
-  return { merchant, amountSen, receiptDate, category, amountIssue,
+  const currency = typeof fields.amountEvidence === 'string' ? detectCurrency(fields.amountEvidence) : null
+  const originalAmount = currency && currency !== 'MYR' && !ambiguous && typeof fields.amountEvidence === 'string'
+    ? amountFromEvidence(fields.amountEvidence) : undefined
+  return { ...(currency ? { currency } : {}), ...(originalAmount ? { originalAmount } : {}), merchant, amountSen, receiptDate, category, amountIssue,
     usableAmount: amountSen !== null && schemaValid, schemaValid }
 }
 
@@ -126,7 +132,7 @@ export function isRecoverableProviderError(error: unknown): boolean {
 }
 
 function normalized(value: ValidatedReceiptExtraction, fallbackUsed: boolean): ReceiptExtractionResult {
-  return { merchant: value.merchant, amountSen: value.amountSen, receiptDate: value.receiptDate,
+  return { ...(value.currency ? { currency: value.currency } : {}), ...(value.originalAmount ? { originalAmount: value.originalAmount } : {}), merchant: value.merchant, amountSen: value.amountSen, receiptDate: value.receiptDate,
     category: value.category, amountIssue: value.amountIssue, fallbackUsed }
 }
 

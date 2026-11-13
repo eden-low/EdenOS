@@ -348,6 +348,7 @@ describe('Receipt Capture', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:receipt')
 
     fireEvent.change(screen.getByLabelText('Merchant / title'), { target: { value: 'Coffee shop' } })
+    fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'MYR' } })
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'other' } })
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
     expect(screen.getByTestId('draft-data').textContent).toBe('1590:photo:Coffee shop')

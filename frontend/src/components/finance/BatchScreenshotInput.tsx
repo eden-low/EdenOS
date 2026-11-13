@@ -1,3 +1,4 @@
+import { useImagePaste } from '../../hooks/useImagePaste'
 import { ImageUp, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { BatchScreenshotCandidateResult } from '../../domain/batchScreenshotTransactions'
@@ -42,7 +43,10 @@ export function BatchScreenshotInput({ onContinue, onCancel }: {
     if (previewRef.current) URL.revokeObjectURL(previewRef.current)
   }, [])
 
+  const { pasteImage, cancelPaste, pasting } = useImagePaste((blob) => void receiveImage(blob), setError, clearImage)
+
   function clearImage() {
+    cancelPaste()
     generationRef.current += 1
     abortRef.current?.abort()
     abortRef.current = null
@@ -99,14 +103,16 @@ export function BatchScreenshotInput({ onContinue, onCancel }: {
       onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void receiveImage(file) }} />
     <div className="mt-5 flex flex-wrap items-center gap-3">
       <Button asChild variant="secondary"><label htmlFor="batch-screenshot-file"><ImageUp size={17} />{image ? 'Replace screenshot' : 'Choose screenshot'}</label></Button>
+      <Button type="button" variant="secondary" onClick={pasteImage} disabled={reading || pasting}>{pasting ? 'Waiting for Paste…' : 'Paste Image / 粘贴图片'}</Button>
       {image && <Button type="button" variant="ghost" onClick={clearImage} disabled={reading}><Trash2 size={16} />Remove</Button>}
     </div>
+    <p className="mt-3 text-sm text-[var(--text-muted)]">Copy an image, tap Paste Image, then choose the system Paste option if asked. Ctrl+V / Cmd+V and image upload also work.</p>
     {image && <div className="mt-5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3">
       <img src={image.previewUrl} alt="Transaction history screenshot preview" className="mx-auto max-h-72 max-w-full object-contain" />
     </div>}
     {error && <InlineError message={error} />}
     <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-      <Button type="button" variant="ghost" onClick={onCancel} disabled={reading}>Cancel</Button>
+      <Button type="button" variant="ghost" onClick={() => { clearImage(); onCancel() }} disabled={reading}>Cancel</Button>
       <Button type="button" onClick={() => void extract()} disabled={!image || reading}>
         {reading ? 'Reading screenshot...' : failed ? 'Retry extraction' : 'Extract Transactions'}
       </Button>
