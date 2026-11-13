@@ -42,6 +42,9 @@ export function GenesisBootProvider({ children, ready, blocked = false }: {
   }, [canReplay, blocked, finish])
 
   useEffect(() => {
+    // Once the user is working (including in Account/auth dialogs), never open
+    // an automatic welcome over that interaction when data finishes loading.
+    const interacting = () => { decided.current = true }
     const dismiss = () => {
       decided.current = true
       if (replayTimer.current !== null) clearTimeout(replayTimer.current)
@@ -51,11 +54,15 @@ export function GenesisBootProvider({ children, ready, blocked = false }: {
     window.addEventListener('popstate', dismiss)
     window.addEventListener('hashchange', dismiss)
     document.addEventListener('visibilitychange', visibility)
+    document.addEventListener('pointerdown', interacting, true)
+    document.addEventListener('keydown', interacting, true)
     return () => {
       if (replayTimer.current !== null) clearTimeout(replayTimer.current)
       window.removeEventListener('popstate', dismiss)
       window.removeEventListener('hashchange', dismiss)
       document.removeEventListener('visibilitychange', visibility)
+      document.removeEventListener('pointerdown', interacting, true)
+      document.removeEventListener('keydown', interacting, true)
     }
   }, [finish])
 

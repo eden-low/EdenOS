@@ -101,6 +101,16 @@ describe('optional Genesis playback', () => {
     const view = render(<Harness blocked />); frame()
     view.rerender(<Harness />); frame(); expect(visible()).toBeNull()
   })
+  it.each(['pointer', 'keyboard'])('does not interrupt %s interaction when loading finishes', (kind) => {
+    const view = render(<Harness ready={false} />)
+    if (kind === 'pointer') fireEvent.pointerDown(screen.getByRole('button', { name: 'Existing workspace action' }))
+    else fireEvent.keyDown(document, { key: 'Enter' })
+    view.rerender(<Harness />); frame()
+    expect(visible()).toBeNull()
+    expect(sessionStorage.getItem(bootSessionKey)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Replay Boot Animation' })); advance(180)
+    expect(visible()).toBeTruthy()
+  })
   it('persists the toggle for future automatic playback while explicit replay still works', () => {
     localStorage.setItem(bootPreferenceKey, 'off')
     render(<Harness />); frame(); expect(visible()).toBeNull()

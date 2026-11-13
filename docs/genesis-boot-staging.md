@@ -10,7 +10,7 @@ This is a visual-only addition. It changes the application composition at `main.
 
 `GenesisBoot` sits inside the existing Firebase authentication and records gates. Children mount immediately: boot playback never gates subscriptions, rendering, or initialization. Automatic playback waits until all three record streams and user settings are loaded. Errors, a pending PWA update, the privacy lock, and unconfirmed drafts suppress playback. If these states interrupt playback, the animation disappears immediately and does not resume automatically.
 
-Automatic playback is restricted to an entry at `/` without a query or hash, and skips background tabs. All deep links open normally. Popstate/hash navigation, leaving the foreground, Tab, application keyboard shortcuts, Escape, and Skip dismiss the decoration. Replay preserves the current route. The animation applies no body lock, inert state, route replacement, or theme change.
+Automatic playback is restricted to an entry at `/` without a query or hash, and skips background tabs. User interaction before readiness suppresses automatic playback, so it cannot open over work already started. All deep links open normally. Popstate/hash navigation, leaving the foreground, Tab, application keyboard shortcuts, Escape, and Skip dismiss the decoration. Replay preserves the current route and is disabled during pending Account authentication actions, account conflicts, or account errors. The animation applies no body lock, inert state, route replacement, or theme change.
 
 The four stages are Genesis (0–800 ms), Core Awakening (800–2400 ms), System Ready (2400–3100 ms), and Welcome Back (3100–4300 ms), including the final fade into the already running app. The existing EdenOS icon is inlined as SVG. Orbital rings use local SVG/CSS. There are no random assets or runtime dependencies.
 
@@ -22,8 +22,8 @@ Reduced motion skips automatic playback. Explicit replay shows a static welcome 
 
 ## Validation
 
-- 39 focused Vitest cases: first playback, four-stage timing, StrictMode, same-tab refresh/remount, Skip/focus, keyboard shortcuts, replay, toggle, storage failures, reduced motion, deep links, readiness, actual authentication gates, error recovery, PWA updates, privacy lock, drafts, unmount cleanup, and visual failure isolation. Synthetic fixtures only; no writes.
-- Full Vitest suite: 1,120 tests in 165 files passed (baseline: 1,081 in 162 files).
+- 42 focused Vitest cases: first playback, four-stage timing, StrictMode, same-tab refresh/remount, Skip/focus, keyboard shortcuts, replay, toggle, storage failures, reduced motion, deep links, readiness and user interaction, actual authentication gates, pending Account actions, error recovery, PWA updates, privacy lock, drafts, unmount cleanup, and visual failure isolation. Synthetic fixtures only; no writes.
+- Full Vitest suite: 1,123 tests in 165 files passed (baseline: 1,081 in 162 files).
 - TypeScript, lint, and production build passed. The existing large-chunk advisory remains; no animation library was added.
 - All five existing Netlify Functions packaged successfully with esbuild; their source/configuration is unchanged.
 - Chromium browser harness: 56 assertions passed at 320×568, 390×844, 844×390, and 1440×900. Checked all stages, 44px Skip target, overflow, theme restoration, same-tab refresh suppression, replay/Skip, reduced motion, zero animation network requests, and browser errors. Real-time captures and a separate CSS failure-escape check passed.

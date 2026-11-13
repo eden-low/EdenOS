@@ -142,7 +142,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
         </div>
 
         <ThemeSettings />
-        <GenesisBootSettings onReplay={closeAccount} />
+        <GenesisBootSettings onReplay={closeAccount} replayDisabled={pending !== null || isConflict || error !== null} />
         <PrivacyLockSettings />
         <NetworkSpeedTest />
 

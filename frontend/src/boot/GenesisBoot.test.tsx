@@ -120,4 +120,13 @@ describe('Genesis integration inside existing authentication gates', () => {
     expect(window.location.pathname + window.location.search + window.location.hash).toBe('/expenses?review=synthetic#row')
     expect(screen.getByText('Initialized workspace')).toBeTruthy()
   })
+  it('disables replay while an existing Account authentication action is unresolved', () => {
+    render(tree()); restore(); advance(); fireEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    const service = vi.mocked(createFirebaseAuthService).mock.results.at(-1)!.value
+    service.signOutGoogle = vi.fn(() => new Promise<void>(() => undefined))
+    fireEvent.click(screen.getByRole('button', { name: 'Account settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect((screen.getByRole('button', { name: 'Replay Boot Animation' }) as HTMLButtonElement).disabled).toBe(true)
+    expect(boot()).toBeNull()
+  })
 })
