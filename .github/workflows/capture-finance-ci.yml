@@ -10,6 +10,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Existing monthly finance fixtures use Malaysia-local month boundaries.
+      TZ: Asia/Kuala_Lumpur
     defaults:
       run:
         working-directory: frontend
