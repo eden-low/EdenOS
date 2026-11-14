@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AccountDialog } from '../components/account/AccountDialog'
 import {
@@ -15,12 +15,22 @@ import { emptyUserSettings } from '../domain/userSettings'
 import { getGuestDataSummary } from '../repositories/guestAccountRepository'
 import { animeProgressStorageKey } from '../services/animeProgressLocalStorage'
 import type { GuestDataSummary } from '../types/account'
+import type { FirebaseSession } from './firebaseAuthContextDefinition'
+import { RecordsProvider } from './RecordsContext'
+import { useRecords } from './useRecords'
+import { createFirestoreExpenseRepository } from '../repositories/firestoreExpenseRepository'
+import { createFirestoreIncomeRepository } from '../repositories/firestoreIncomeRepository'
+import { createFirestoreExerciseRepository } from '../repositories/firestoreExerciseRepository'
 
 vi.mock('../lib/firebase', () => ({
   firebaseInitialization: { status: 'ready', services: { auth: {}, firestore: {} } },
 }))
 vi.mock('../services/firebaseAuthService', () => ({ createFirebaseAuthService: vi.fn() }))
 vi.mock('../repositories/guestAccountRepository', () => ({ getGuestDataSummary: vi.fn() }))
+vi.mock('../providers/useConnectivity', () => ({ useConnectivity: () => 'online' }))
+vi.mock('../repositories/firestoreExpenseRepository', () => ({ createFirestoreExpenseRepository: vi.fn() }))
+vi.mock('../repositories/firestoreIncomeRepository', () => ({ createFirestoreIncomeRepository: vi.fn() }))
+vi.mock('../repositories/firestoreExerciseRepository', () => ({ createFirestoreExerciseRepository: vi.fn() }))
 
 const guest: AuthIdentity = { uid: 'guest-uid', isAnonymous: true, email: null }
 const linked: AuthIdentity = { uid: 'guest-uid', isAnonymous: false, email: 'user@example.com' }
@@ -34,9 +44,12 @@ const expenseGuestSummary: GuestDataSummary = {
 }
 let observer: AuthObserver
 let service: FirebaseAuthService
+let currentSession: FirebaseSession
 
 function Workspace() {
-  const { uid, isAnonymous } = useFirebaseAuth()
+  const session = useFirebaseAuth()
+  useEffect(() => { currentSession = session }, [session])
+  const { uid, isAnonymous } = session
   const [sessionValue, setSessionValue] = useState('fresh')
   return (
     <>
@@ -74,11 +87,119 @@ beforeEach(() => {
     discardConflictingGoogleCredential: vi.fn(),
     continueWithExistingGoogle: vi.fn(async () => ({ uid: 'existing-uid', isAnonymous: false, email: 'user@example.com' })),
     signOutGoogle: vi.fn(async () => undefined),
+    signOutGuest: vi.fn(async () => undefined),
   }
   vi.mocked(createFirebaseAuthService).mockReturnValue(service)
 })
 
 describe('Firebase Auth startup and account UI', () => {
+  it('unsubscribes Guest Firestore paths and mounts only the new Google UID without writes or migrated records', async () => {
+    const stopped = { expense: vi.fn(), income: vi.fn(), exercise: vi.fn() }
+    const write = vi.fn(async () => undefined)
+    vi.mocked(createFirestoreExpenseRepository).mockImplementation((_db, uid) => ({
+      subscribeExpenses(observer) {
+        observer.next([{ id: 'synthetic', title: uid === guest.uid ? 'Guest-only record' : 'Google-only record', amountSen: 100, category: 'other', source: 'manual', occurredAt: '2026-11-14', createdAt: '2026-11-14', updatedAt: '2026-11-14' }])
+        return stopped.expense
+      }, createExpense: write, updateExpense: write, deleteExpense: write,
+    }))
+    vi.mocked(createFirestoreIncomeRepository).mockReturnValue({ subscribeIncomes(observer) { observer.next([]); return stopped.income }, createIncome: write, updateIncome: write, deleteIncome: write })
+    vi.mocked(createFirestoreExerciseRepository).mockReturnValue({ subscribeExercises(observer) { observer.next([]); return stopped.exercise }, createExercise: write, updateExercise: write, deleteExercise: write })
+    vi.mocked(service.signInWithGoogle).mockResolvedValue({ ...linked, uid: 'existing-google-uid' })
+    function RecordsLabel() { return <output>{useRecords().expenses.map((item) => item.title).join(',')}</output> }
+    render(<FirebaseAuthProvider><RecordsProvider><Workspace /><RecordsLabel /></RecordsProvider></FirebaseAuthProvider>)
+    restore(guest)
+    await screen.findByText('Guest-only record')
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand I may permanently/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Guest and sign out' }))
+    await screen.findByText('Open your workspace')
+    Object.values(stopped).forEach((stop) => expect(stop).toHaveBeenCalledOnce())
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' }))
+    await screen.findByText('Google-only record')
+    expect(screen.queryByText('Guest-only record')).toBeNull()
+    for (const factory of [createFirestoreExpenseRepository, createFirestoreIncomeRepository, createFirestoreExerciseRepository]) {
+      expect(vi.mocked(factory).mock.calls.map(([, uid]) => uid)).toEqual([guest.uid, 'existing-google-uid'])
+    }
+    expect(write).not.toHaveBeenCalled()
+  })
+
+  it.each(['empty', 'saved data', 'unavailable'] as const)('reviews %s without changing identity, then exits only after explicit consent and permits existing Google login', async (kind) => {
+    if (kind === 'unavailable') vi.mocked(getGuestDataSummary).mockRejectedValue(new Error('permission-denied'))
+    else vi.mocked(getGuestDataSummary).mockResolvedValue(kind === 'empty' ? emptyGuestSummary : expenseGuestSummary)
+    localStorage.setItem(animeProgressStorageKey(guest.uid), 'synthetic Guest records retained')
+    vi.mocked(service.signInWithGoogle).mockResolvedValue({ ...linked, uid: 'existing-google-uid' })
+    renderProvider(); restore(guest)
+    fireEvent.click(screen.getByRole('button', { name: 'Create session state' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    expect(screen.getByTestId('uid').textContent).toBe(guest.uid)
+    expect(service.signOutGuest).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand I may permanently/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Guest and sign out' }))
+    await screen.findByText('Open your workspace')
+    expect(service.signOutGuest).toHaveBeenCalledExactlyOnceWith(guest.uid)
+    expect(service.signOutGoogle).not.toHaveBeenCalled()
+    expect(service.continueAnonymously).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' }))
+    await waitFor(() => expect(screen.getByTestId('uid').textContent).toBe('existing-google-uid'))
+    expect(screen.getByTestId('session-value').textContent).toBe('fresh')
+    expect(localStorage.getItem(animeProgressStorageKey(guest.uid))).toBe('synthetic Guest records retained')
+    expect(localStorage.getItem(animeProgressStorageKey('existing-google-uid'))).toBeNull()
+  })
+
+  it('does not sign out when the Guest cancels the review', async () => {
+    renderProvider(); restore(guest)
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    fireEvent.click(screen.getByRole('button', { name: 'Stay in Guest' }))
+    expect(screen.getByTestId('uid').textContent).toBe(guest.uid)
+    expect(service.signOutGuest).not.toHaveBeenCalled()
+    expect(service.linkGoogle).not.toHaveBeenCalled()
+  })
+
+  it('retains the Guest after an exit failure', async () => {
+    vi.mocked(service.signOutGuest).mockRejectedValue(new Error('synthetic failure'))
+    renderProvider(); restore(guest)
+    let review!: Awaited<ReturnType<FirebaseSession['reviewGuestExit']>>
+    await act(async () => { review = await currentSession.reviewGuestExit() })
+    await act(async () => { await expect(review.confirmExit()).rejects.toThrow('synthetic failure') })
+    expect(screen.getByTestId('uid').textContent).toBe(guest.uid)
+    expect(service.continueAnonymously).not.toHaveBeenCalled()
+  })
+
+  it('deduplicates repeated exit confirmation and never signs out a replacement identity', async () => {
+    renderProvider(); restore(guest)
+    const review = await currentSession.reviewGuestExit()
+    let finish!: () => void
+    vi.mocked(service.signOutGuest).mockImplementation(() => new Promise<void>((resolve) => { finish = resolve }))
+    let first!: Promise<void>
+    await act(async () => {
+      first = review.confirmExit()
+      await expect(review.confirmExit()).rejects.toThrow('already in progress')
+    })
+    expect(service.signOutGuest).toHaveBeenCalledOnce()
+    await act(async () => { finish(); await first })
+    restore({ ...linked, uid: 'replacement-google-uid' })
+    await expect(review.confirmExit()).rejects.toThrow('already in progress')
+    expect(screen.getByTestId('uid').textContent).toBe('replacement-google-uid')
+  })
+
+  it('bounds an unavailable summary and clears the review timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(getGuestDataSummary).mockReturnValue(new Promise(() => undefined))
+      renderProvider(); restore(guest)
+      const reviewPromise = currentSession.reviewGuestExit()
+      await act(async () => { await vi.advanceTimersByTimeAsync(8000) })
+      expect((await reviewPromise).summary).toBe('unavailable')
+      expect(service.signOutGuest).not.toHaveBeenCalled()
+    } finally { vi.useRealTimers() }
+  })
+
   it('stays initializing until the restored auth state is known', () => {
     renderProvider()
     expect(screen.getByText('Opening your private workspace')).toBeTruthy()
@@ -158,7 +279,9 @@ describe('Firebase Auth startup and account UI', () => {
     expect(screen.getByTestId('session-value').textContent).toBe('guest-state')
     fireEvent.click(screen.getByRole('button', { name: 'Account' }))
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue with existing Google account' }))
+    const switchButton = await screen.findByRole('button', { name: 'Continue with existing Google account' })
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand switching/ }))
+    fireEvent.click(switchButton)
     await waitFor(() => expect(screen.getByTestId('uid').textContent).toBe('existing-uid'))
     expect(screen.getByTestId('session-value').textContent).toBe('fresh')
     expect(getGuestDataSummary).toHaveBeenCalledTimes(2)
@@ -194,6 +317,7 @@ describe('Firebase Auth startup and account UI', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
     const alert = await screen.findByRole('alert')
     expect(alert.textContent).toContain('Anime progress on 1 title')
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand switching/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Continue with existing Google account' }))
     await waitFor(() => expect(screen.getByTestId('uid').textContent).toBe('existing-uid'))
     expect(localStorage.getItem(animeProgressStorageKey('guest-uid'))).toContain('"currentEpisode":2')
@@ -230,7 +354,9 @@ describe('Firebase Auth startup and account UI', () => {
     renderProvider(); restore(guest)
     fireEvent.click(screen.getByRole('button', { name: 'Account' }))
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue with existing Google account' }))
+    const switchButton = await screen.findByRole('button', { name: 'Continue with existing Google account' })
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand switching/ }))
+    fireEvent.click(switchButton)
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('1 Expense'))
     expect(service.continueWithExistingGoogle).not.toHaveBeenCalled()
     expect(screen.getByTestId('uid').textContent).toBe('guest-uid')
@@ -294,7 +420,9 @@ describe('Firebase Auth startup and account UI', () => {
     await waitFor(() => expect(screen.getByTestId('account-kind').textContent).toBe('guest'))
     fireEvent.click(screen.getByRole('button', { name: 'Account' }))
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue with existing Google account' }))
+    const switchButton = await screen.findByRole('button', { name: 'Continue with existing Google account' })
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand switching/ }))
+    fireEvent.click(switchButton)
     await waitFor(() => expect(screen.getByTestId('uid').textContent).toBe('existing-uid'))
   })
 })

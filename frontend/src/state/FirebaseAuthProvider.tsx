@@ -145,6 +145,39 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     firestore,
     isAnonymous: identity.isAnonymous,
     email: identity.email,
+    async reviewGuestExit() {
+      if (!identity.isAnonymous) throw new Error('Only a Guest session can be reviewed for Guest exit.')
+      let summary: GuestDataSummary | 'unavailable' = 'unavailable'
+      let timer: ReturnType<typeof setTimeout> | undefined
+      try {
+        summary = await Promise.race([
+          summarizeGuest(),
+          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Guest review timed out.')), 8000) }),
+        ])
+      } catch {
+        // Unknown is never treated as empty. The explicit exit warning is still
+        // available; this does not authorize the protected Google conflict path.
+      } finally {
+        clearTimeout(timer)
+      }
+      let started = false
+      return {
+        summary,
+        async confirmExit() {
+          if (started) throw new Error('This Guest exit is already in progress or complete.')
+          started = true
+          try {
+            await bootSessions.trackAction(async () => {
+              await authService.signOutGuest(identity.uid)
+              setAuthentication({ status: 'unauthenticated' })
+            }, () => false)
+          } catch (error) {
+            started = false
+            throw error
+          }
+        },
+      }
+    },
     async connectGoogle() {
       if (!identity.isAnonymous) throw new Error('This account is already connected.')
       let linked: AuthIdentity | null

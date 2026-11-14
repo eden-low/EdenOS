@@ -1,6 +1,6 @@
 import { createContext } from 'react'
 import type { Firestore } from 'firebase/firestore'
-import type { ConnectGoogleResult, ContinueExistingGoogleResult } from '../types/account'
+import type { ConnectGoogleResult, ContinueExistingGoogleResult, GuestExitReview } from '../types/account'
 
 export interface FirebaseSession {
   uid: string
@@ -11,6 +11,7 @@ export interface FirebaseSession {
   continueWithExistingGoogle: () => Promise<ContinueExistingGoogleResult>
   discardExistingGoogleChoice: () => void
   signOutGoogle: () => Promise<void>
+  reviewGuestExit: () => Promise<GuestExitReview>
 }
 
 export const FirebaseAuthContext = createContext<FirebaseSession | null>(null)
