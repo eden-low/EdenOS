@@ -12,6 +12,7 @@ import { PrivacyLockSettings } from './PrivacyLockSettings'
 import { NetworkSpeedTest } from './NetworkSpeedTest'
 import { GenesisBootSettings } from '../../boot/GenesisBootSettings'
 import { GuestExitWarning } from './GuestExitWarning'
+import { StagingVersionDiagnostics } from '../../pwa/StagingVersionDiagnostics'
 
 export function AccountDialog({ children }: { children: ReactNode }) {
   const { uid, isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle, reviewGuestExit } = useFirebaseAuth()
@@ -179,6 +180,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
           </div>
         </div>
 
+        <StagingVersionDiagnostics disabled={pending !== null || isConflict || error !== null} />
         <ThemeSettings />
         <GenesisBootSettings onReplay={closeAccount} replayDisabled={pending !== null || isConflict || error !== null} />
         <PrivacyLockSettings />
