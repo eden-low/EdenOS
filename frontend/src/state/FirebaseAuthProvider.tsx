@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { BootAuthContext } from '../boot/bootAuthContext'
+import { BootAuthSessions } from '../boot/bootAuthSession'
 import { AuthChoiceScreen } from '../components/account/AuthChoiceScreen'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { firebaseInitialization } from '../lib/firebase'
@@ -35,9 +37,14 @@ function accountDiagnostic(event: string, details: Record<string, unknown>): voi
 }
 
 export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
-  const [authentication, setAuthentication] = useState<AuthenticationState>(
+  const [authentication, setAuthenticationState] = useState<AuthenticationState>(
     createInitialAuthenticationState,
   )
+  const [bootSessions] = useState(() => new BootAuthSessions())
+  const setAuthentication = useCallback((next: AuthenticationState) => {
+    bootSessions.observe(next.status, next.status === 'authenticated' ? next.identity.uid : undefined)
+    setAuthenticationState(next)
+  }, [bootSessions])
   const authService = useMemo(
     () => firebaseInitialization.status === 'ready'
       ? createFirebaseAuthService(firebaseInitialization.services.auth)
@@ -82,7 +89,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
       cancelled = true
       unsubscribe()
     }
-  }, [authService])
+  }, [authService, setAuthentication])
 
   if (authentication.status === 'initializing') {
     return (
@@ -109,12 +116,17 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     return (
       <AuthChoiceScreen
         onContinueAnonymous={async () => {
-          const identity = await authService.continueAnonymously()
-          setAuthentication({ status: 'authenticated', identity })
+          await bootSessions.trackAction(async () => {
+            const identity = await authService.continueAnonymously()
+            setAuthentication({ status: 'authenticated', identity })
+          })
         }}
         onSignInGoogle={async () => {
-          const identity = await authService.signInWithGoogle()
-          if (identity) setAuthentication({ status: 'authenticated', identity })
+          await bootSessions.trackAction(async () => {
+            const identity = await authService.signInWithGoogle()
+            if (identity) setAuthentication({ status: 'authenticated', identity })
+            return identity
+          }, (identity) => identity !== null)
         }}
       />
     )
@@ -210,5 +222,14 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     },
   }
 
-  return <FirebaseAuthContext.Provider key={identity.uid} value={session}>{children}</FirebaseAuthContext.Provider>
+  // Decorate UI outcomes only; the original auth operations and results are unchanged.
+  const bootAwareSession: FirebaseSession = {
+    ...session,
+    connectGoogle: () => bootSessions.trackAction(() => session.connectGoogle(), (result) => result.status === 'connected'),
+    continueWithExistingGoogle: () => bootSessions.trackAction(() => session.continueWithExistingGoogle(), (result) => result.status === 'connected'),
+    signOutGoogle: () => bootSessions.trackAction(() => session.signOutGoogle(), () => false),
+  }
+  return <BootAuthContext.Provider value={{ sessions: bootSessions, uid: identity.uid }}>
+    <FirebaseAuthContext.Provider key={identity.uid} value={bootAwareSession}>{children}</FirebaseAuthContext.Provider>
+  </BootAuthContext.Provider>
 }

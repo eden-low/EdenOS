@@ -1,22 +1,30 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import type { BootAuthSession } from './bootAuthSession'
 import { BootAnimationContext } from './bootContext'
 import { claimAutomaticBoot, isBootHomeEntry, markBootSeen, prefersReducedBootMotion, readBootPreference, saveBootPreference } from './bootStorage'
 import { GenesisBootSequence } from './GenesisBootSequence'
 import './genesisBoot.css'
 
 /** An optional sibling of the running app; never a gate around its children. */
-export function GenesisBootProvider({ children, ready, blocked = false }: {
-  children: ReactNode; ready: boolean; blocked?: boolean
+export function GenesisBootProvider({ children, ready, blocked = false, authSession = null }: {
+  children: ReactNode; ready: boolean; blocked?: boolean; authSession?: BootAuthSession | null
 }) {
   const [enabled, setEnabledState] = useState(readBootPreference)
   const [preferenceSaved, setPreferenceSaved] = useState(true)
-  const [playback, setPlayback] = useState<{ id: number; reduced: boolean } | null>(null)
-  const [homeEntry] = useState(() => isBootHomeEntry(window.location))
+  const [playback, setPlayback] = useState<{ id: number; reduced: boolean; session: BootAuthSession | null } | null>(null)
+  // A new successful auth session gets a new decision without remounting the app.
   const decided = useRef(false)
+  const entry = useRef({ session: authSession, home: isBootHomeEntry(window.location) })
   const sequence = useRef(0)
   const replayTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const finish = useCallback(() => setPlayback(null), [])
   const canReplay = ready && !blocked
+
+  useEffect(() => {
+    if (entry.current.session === authSession) return
+    entry.current = { session: authSession, home: isBootHomeEntry(window.location) }
+    decided.current = false
+  }, [authSession])
 
   useEffect(() => {
     if (!canReplay || decided.current) return
@@ -24,29 +32,34 @@ export function GenesisBootProvider({ children, ready, blocked = false }: {
     // before the tab marker is claimed; data subscriptions are already running.
     const frame = requestAnimationFrame(() => {
       decided.current = true
-      if (!homeEntry || !isBootHomeEntry(window.location) || !enabled ||
+      if (authSession && !authSession.claim()) return
+      if (!entry.current.home || !isBootHomeEntry(window.location) || !enabled ||
         prefersReducedBootMotion() || document.visibilityState === 'hidden') return
-      if (claimAutomaticBoot()) setPlayback({ id: ++sequence.current, reduced: false })
+      if (authSession?.kind === 'sign-in') {
+        markBootSeen()
+        setPlayback({ id: ++sequence.current, reduced: false, session: authSession })
+      } else if (claimAutomaticBoot()) setPlayback({ id: ++sequence.current, reduced: false, session: authSession })
     })
     return () => cancelAnimationFrame(frame)
-  }, [canReplay, enabled, homeEntry])
+  }, [canReplay, enabled, authSession])
 
   useEffect(() => {
     if (canReplay) return
     // An error/update/lock wins immediately in render. Also discard pending replay
     // so recovery never resurrects a sequence that covered an interrupted state.
-    if (blocked) decided.current = true
+    if (blocked) { decided.current = true; authSession?.discard() }
     if (replayTimer.current !== null) clearTimeout(replayTimer.current)
     const timer = setTimeout(finish, 0)
     return () => clearTimeout(timer)
-  }, [canReplay, blocked, finish])
+  }, [canReplay, blocked, finish, authSession])
 
   useEffect(() => {
     // Once the user is working (including in Account/auth dialogs), never open
     // an automatic welcome over that interaction when data finishes loading.
-    const interacting = () => { decided.current = true }
+    const interacting = () => { decided.current = true; authSession?.discard() }
     const dismiss = () => {
       decided.current = true
+      authSession?.discard()
       if (replayTimer.current !== null) clearTimeout(replayTimer.current)
       finish()
     }
@@ -64,7 +77,7 @@ export function GenesisBootProvider({ children, ready, blocked = false }: {
       document.removeEventListener('pointerdown', interacting, true)
       document.removeEventListener('keydown', interacting, true)
     }
-  }, [finish])
+  }, [finish, authSession])
 
   return <BootAnimationContext.Provider value={{
     enabled, preferenceSaved, canReplay,
@@ -75,17 +88,18 @@ export function GenesisBootProvider({ children, ready, blocked = false }: {
     replay() {
       if (!canReplay) return false
       decided.current = true
+      authSession?.discard()
       if (replayTimer.current !== null) clearTimeout(replayTimer.current)
       // Let the existing Account dialog finish closing before moving focus.
       replayTimer.current = setTimeout(() => {
         replayTimer.current = null
         markBootSeen()
-        setPlayback({ id: ++sequence.current, reduced: prefersReducedBootMotion() })
+        setPlayback({ id: ++sequence.current, reduced: prefersReducedBootMotion(), session: authSession })
       }, 180)
       return true
     },
   }}>
     {children}
-    {playback && canReplay && <GenesisBootSequence key={playback.id} reduced={playback.reduced} onFinish={finish} />}
+    {playback && canReplay && playback.session === authSession && <GenesisBootSequence key={playback.id} reduced={playback.reduced} onFinish={finish} />}
   </BootAnimationContext.Provider>
 }
