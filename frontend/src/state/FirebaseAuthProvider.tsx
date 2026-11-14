@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { BootAuthContext } from '../boot/bootAuthContext'
 import { BootAuthSessions } from '../boot/bootAuthSession'
+import { useGenesisLaunchAuth } from '../boot/genesisLaunchContext'
 import { AuthChoiceScreen } from '../components/account/AuthChoiceScreen'
 import { AppStatusScreen } from '../components/layout/AppStatusScreen'
 import { firebaseInitialization } from '../lib/firebase'
@@ -41,6 +42,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
     createInitialAuthenticationState,
   )
   const [bootSessions] = useState(() => new BootAuthSessions())
+  useGenesisLaunchAuth(authentication.status, bootSessions)
   const setAuthentication = useCallback((next: AuthenticationState) => {
     bootSessions.observe(next.status, next.status === 'authenticated' ? next.identity.uid : undefined)
     setAuthenticationState(next)

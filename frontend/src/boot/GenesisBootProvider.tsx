@@ -4,11 +4,13 @@ import { BootAnimationContext } from './bootContext'
 import { claimAutomaticBoot, isBootHomeEntry, markBootSeen, prefersReducedBootMotion, readBootPreference, saveBootPreference } from './bootStorage'
 import { GenesisBootSequence } from './GenesisBootSequence'
 import './genesisBoot.css'
+import { useGenesisLaunch } from './genesisLaunchContext'
 
 /** An optional sibling of the running app; never a gate around its children. */
 export function GenesisBootProvider({ children, ready, blocked = false, authSession = null }: {
   children: ReactNode; ready: boolean; blocked?: boolean; authSession?: BootAuthSession | null
 }) {
+  const launch = useGenesisLaunch()
   const [enabled, setEnabledState] = useState(readBootPreference)
   const [preferenceSaved, setPreferenceSaved] = useState(true)
   const [playback, setPlayback] = useState<{ id: number; reduced: boolean; session: BootAuthSession | null } | null>(null)
@@ -33,6 +35,7 @@ export function GenesisBootProvider({ children, ready, blocked = false, authSess
     const frame = requestAnimationFrame(() => {
       decided.current = true
       if (authSession && !authSession.claim()) return
+      if (launch?.suppressWelcome(authSession)) return
       if (!entry.current.home || !isBootHomeEntry(window.location) || !enabled ||
         prefersReducedBootMotion() || document.visibilityState === 'hidden') return
       if (authSession?.kind === 'sign-in') {
@@ -41,7 +44,7 @@ export function GenesisBootProvider({ children, ready, blocked = false, authSess
       } else if (claimAutomaticBoot()) setPlayback({ id: ++sequence.current, reduced: false, session: authSession })
     })
     return () => cancelAnimationFrame(frame)
-  }, [canReplay, enabled, authSession])
+  }, [canReplay, enabled, authSession, launch])
 
   useEffect(() => {
     if (canReplay) return
@@ -64,8 +67,12 @@ export function GenesisBootProvider({ children, ready, blocked = false, authSess
       finish()
     }
     const visibility = () => { if (document.visibilityState === 'hidden') dismiss() }
+    const restored = (event: PageTransitionEvent) => { if (event.persisted) dismiss() }
     window.addEventListener('popstate', dismiss)
     window.addEventListener('hashchange', dismiss)
+    window.addEventListener('pagehide', dismiss)
+    window.addEventListener('pageshow', restored)
+    document.addEventListener('freeze', dismiss)
     document.addEventListener('visibilitychange', visibility)
     document.addEventListener('pointerdown', interacting, true)
     document.addEventListener('keydown', interacting, true)
@@ -73,6 +80,9 @@ export function GenesisBootProvider({ children, ready, blocked = false, authSess
       if (replayTimer.current !== null) clearTimeout(replayTimer.current)
       window.removeEventListener('popstate', dismiss)
       window.removeEventListener('hashchange', dismiss)
+      window.removeEventListener('pagehide', dismiss)
+      window.removeEventListener('pageshow', restored)
+      document.removeEventListener('freeze', dismiss)
       document.removeEventListener('visibilitychange', visibility)
       document.removeEventListener('pointerdown', interacting, true)
       document.removeEventListener('keydown', interacting, true)
@@ -87,6 +97,7 @@ export function GenesisBootProvider({ children, ready, blocked = false, authSess
     },
     replay() {
       if (!canReplay) return false
+      launch?.dismiss()
       decided.current = true
       authSession?.discard()
       if (replayTimer.current !== null) clearTimeout(replayTimer.current)

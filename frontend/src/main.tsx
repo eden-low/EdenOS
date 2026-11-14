@@ -14,12 +14,14 @@ import { PrivacyLockProvider } from './privacy/PrivacyLockProvider'
 import { FinanceRulesProvider } from './state/FinanceRulesProvider'
 import { FinancePlanningProvider } from './state/FinancePlanningProvider'
 import { GenesisBoot } from './boot/GenesisBoot'
+import { GenesisLaunchProvider } from './boot/GenesisLaunchProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
     <ConnectivityProvider>
       <PwaProvider>
+        <GenesisLaunchProvider>
         <OfflineIndicator />
         <FirebaseAuthProvider>
           <RecordsProvider>
@@ -36,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
             </UserSettingsProvider>
           </RecordsProvider>
         </FirebaseAuthProvider>
+        </GenesisLaunchProvider>
       </PwaProvider>
     </ConnectivityProvider>
     </ThemeProvider>
