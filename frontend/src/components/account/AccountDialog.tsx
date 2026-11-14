@@ -10,6 +10,7 @@ import { triggerPressFeedback } from '../ui/pressFeedback'
 import { ThemeSettings } from './ThemeSettings'
 import { PrivacyLockSettings } from './PrivacyLockSettings'
 import { NetworkSpeedTest } from './NetworkSpeedTest'
+import { GenesisBootSettings } from '../../boot/GenesisBootSettings'
 
 export function AccountDialog({ children }: { children: ReactNode }) {
   const { uid, isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle } = useFirebaseAuth()
@@ -141,6 +142,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
         </div>
 
         <ThemeSettings />
+        <GenesisBootSettings onReplay={closeAccount} replayDisabled={pending !== null || isConflict || error !== null} />
         <PrivacyLockSettings />
         <NetworkSpeedTest />
 

@@ -13,6 +13,7 @@ import { ThemeProvider } from './theme/ThemeProvider'
 import { PrivacyLockProvider } from './privacy/PrivacyLockProvider'
 import { FinanceRulesProvider } from './state/FinanceRulesProvider'
 import { FinancePlanningProvider } from './state/FinancePlanningProvider'
+import { GenesisBoot } from './boot/GenesisBoot'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -27,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
               <FinanceRulesProvider>
               <AnimeProgressProvider>
                 <PrivacyLockProvider>
-                  <App />
+                  <GenesisBoot><App /></GenesisBoot>
                 </PrivacyLockProvider>
               </AnimeProgressProvider>
               </FinanceRulesProvider>
