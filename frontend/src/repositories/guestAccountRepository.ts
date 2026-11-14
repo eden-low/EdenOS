@@ -8,7 +8,8 @@ const knownPreferenceFields = new Set([
 
 function count(snapshot: Awaited<ReturnType<typeof getCountFromServer>>): number {
   const value = snapshot.data().count
-  return Number.isSafeInteger(value) && value >= 0 ? value : 0
+  if (!Number.isSafeInteger(value) || value < 0) throw new Error('Guest record count could not be verified.')
+  return value
 }
 
 // Read the owner's persisted data from the server. A cache-only or failed read must
@@ -19,7 +20,7 @@ export async function getGuestDataSummary(
   localAnimeProgressCount = 0,
 ): Promise<GuestDataSummary> {
   const user = ['users', uid] as const
-  const [expenses, incomes, exercises, animeProgress, financeRules, weeklyReviews, financeGoals, financeBudgets, goalAllocations, preferences] = await Promise.all([
+  const [expenses, incomes, exercises, animeProgress, financeRules, weeklyReviews, financeGoals, financeBudgets, goalAllocations, bodyMeasurements, preferences] = await Promise.all([
     getCountFromServer(query(collection(firestore, ...user, 'expenses'))),
     getCountFromServer(query(collection(firestore, ...user, 'incomes'))),
     getCountFromServer(query(collection(firestore, ...user, 'exercises'))),
@@ -29,6 +30,7 @@ export async function getGuestDataSummary(
     getCountFromServer(query(collection(firestore, ...user, 'financeGoals'))),
     getCountFromServer(query(collection(firestore, ...user, 'financeBudgets'))),
     getCountFromServer(query(collection(firestore, ...user, 'financeGoalAllocations'))),
+    getCountFromServer(query(collection(firestore, ...user, 'bodyMeasurements'))),
     getDocFromServer(doc(firestore, ...user, 'settings', 'preferences')),
   ])
 
@@ -49,6 +51,7 @@ export async function getGuestDataSummary(
   if (count(financeGoals) > 0) otherBlockingData.push('financeGoals')
   if (count(financeBudgets) > 0) otherBlockingData.push('financeBudgets')
   if (count(goalAllocations) > 0) otherBlockingData.push('financeGoalAllocations')
+  if (count(bodyMeasurements) > 0) otherBlockingData.push('bodyMeasurements')
   otherBlockingData.sort()
   const hasBlockingData = expensesCount > 0 || incomesCount > 0 || exercisesCount > 0 || hasBodyWeight || hasHeight || hasBudget ||
     hasSavingsGoal || otherBlockingData.length > 0

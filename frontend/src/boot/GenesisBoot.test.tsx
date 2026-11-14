@@ -78,10 +78,24 @@ beforeEach(() => {
     continueAnonymously: vi.fn(async () => identity), signInWithGoogle: vi.fn(async () => identity),
     linkGoogle: vi.fn(async () => identity), continueWithExistingGoogle: vi.fn(async () => identity),
     hasPendingGoogleConflict: vi.fn(() => false), discardConflictingGoogleCredential: vi.fn(), signOutGoogle: write,
+    signOutGuest: vi.fn(async () => undefined),
   })
 })
 
 describe('successful authentication welcomes', () => {
+  it('welcomes existing Google login after explicit Guest exit, never the exit warning or sign-out screen', async () => {
+    const guest = { ...identity, uid: 'synthetic-exiting-guest', isAnonymous: true, email: null }
+    vi.mocked(getGuestDataSummary).mockRejectedValue(new Error('permission-denied'))
+    render(tree()); act(() => { observer.next(guest) }); advance(); await click('Skip')
+    await click('Account settings'); await click('Sign Out / Switch Account')
+    expect(screen.getByText('Before leaving Guest')).toBeTruthy(); expect(boot()).toBeNull()
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand I may permanently/ }))
+    await click('Leave Guest and sign out'); advance()
+    expect(screen.getByText('Open your workspace')).toBeTruthy(); expect(boot()).toBeNull()
+    await click('Sign in with Google'); advance(); expect(boot()).toBeTruthy()
+    await click('Skip'); act(() => { observer.next(identity) }); advance(); expect(boot()).toBeNull()
+    expect(service().signOutGuest).toHaveBeenCalledExactlyOnceWith(guest.uid)
+  })
   it('is StrictMode safe for explicit entry and subsequent ordinary remounts', async () => {
     sessionStorage.setItem(bootSessionKey, 'seen')
     const view = render(<StrictMode>{tree()}</StrictMode>); signedOut()
@@ -216,7 +230,7 @@ describe('successful authentication welcomes', () => {
     vi.mocked(service().hasPendingGoogleConflict).mockReturnValue(true)
     await click('Account settings'); await click('Connect Google account')
     expect(boot()).toBeNull()
-    await click('Continue with existing Google account'); advance()
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand switching/ })); await click('Continue with existing Google account'); advance()
     expect(boot()).toBeTruthy()
     expect(getGuestDataSummary).toHaveBeenCalled()
   })

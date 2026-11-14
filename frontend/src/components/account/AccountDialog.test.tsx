@@ -14,6 +14,8 @@ const connectGoogle = vi.fn()
 const signOutGoogle = vi.fn()
 const continueWithExistingGoogle = vi.fn()
 const discardExistingGoogleChoice = vi.fn()
+const reviewGuestExit = vi.fn()
+const confirmExit = vi.fn()
 const emptySummary: GuestDataSummary = {
   expensesCount: 0, incomesCount: 0, exercisesCount: 0, hasBodyWeight: false, hasHeight: false, hasBudget: false,
   hasSavingsGoal: false, animeProgressCount: 0, animeCloudProgressCount: 0,
@@ -29,6 +31,7 @@ function renderAccount(isAnonymous = true, email: string | null = null, uid = 't
     continueWithExistingGoogle,
     discardExistingGoogleChoice,
     signOutGoogle,
+    reviewGuestExit,
   } as unknown as ReturnType<typeof useFirebaseAuth>)
   render(<UserSettingsContext.Provider value={{
     settings: emptyUserSettings, status: 'loaded',
@@ -45,9 +48,72 @@ beforeEach(() => {
   continueWithExistingGoogle.mockReset()
   continueWithExistingGoogle.mockResolvedValue({ status: 'connected' })
   discardExistingGoogleChoice.mockReset()
+  confirmExit.mockReset().mockResolvedValue(undefined)
+  reviewGuestExit.mockReset().mockResolvedValue({ summary: emptySummary, confirmExit })
 })
 
 describe('Account dialog presentation', () => {
+  it.each(['empty', 'saved records', 'unavailable'] as const)('requires informed confirmation before leaving a Guest with %s', async (kind) => {
+    reviewGuestExit.mockResolvedValue({ summary: kind === 'unavailable' ? 'unavailable' : { ...emptySummary, hasBlockingData: kind === 'saved records' }, confirmExit })
+    renderAccount()
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    expect(confirmExit).not.toHaveBeenCalled()
+    expect(screen.getByText(/no verified way to restore/)).toBeTruthy()
+    expect(screen.getByText(/Copying the UID does not provide recovery/)).toBeTruthy()
+    expect(screen.getByRole('alert').textContent).toContain(kind === 'unavailable' ? 'could not verify all Guest data' : kind === 'saved records' ? 'Saved Guest data was found' : 'No saved records were reported')
+    const exit = screen.getByRole('button', { name: 'Leave Guest and sign out' }) as HTMLButtonElement
+    expect(exit.disabled).toBe(true)
+    fireEvent.click(exit)
+    expect(confirmExit).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand I may permanently/ }))
+    fireEvent.click(exit)
+    await waitFor(() => expect(confirmExit).toHaveBeenCalledOnce())
+    expect(signOutGoogle).not.toHaveBeenCalled()
+    expect(connectGoogle).not.toHaveBeenCalled()
+  })
+
+  it('lets the user stay, close and reopen without retaining consent', async () => {
+    renderAccount()
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand I may permanently/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stay in Guest' }))
+    expect(screen.getByRole('button', { name: 'Connect Google account' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open account' }))
+    expect(screen.queryByText('Before leaving Guest')).toBeNull()
+    expect(confirmExit).not.toHaveBeenCalled()
+  })
+
+  it('keeps exit available from an unverifiable Google conflict without signing out automatically', async () => {
+    connectGoogle.mockResolvedValue({ status: 'existing-unavailable' })
+    reviewGuestExit.mockResolvedValue({ summary: 'unavailable', confirmExit })
+    renderAccount()
+    fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
+    await screen.findByText(/could not verify a safe switch/)
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    expect(confirmExit).not.toHaveBeenCalled()
+    expect(continueWithExistingGoogle).not.toHaveBeenCalled()
+  })
+
+  it('shows an exit failure and permits retry without claiming recovery', async () => {
+    confirmExit.mockRejectedValueOnce(new Error('synthetic failure')).mockResolvedValue(undefined)
+    renderAccount()
+    fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
+    await screen.findByText('Before leaving Guest')
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand I may permanently/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Guest and sign out' }))
+    await screen.findByText(/Could not leave this Guest session/)
+    expect(screen.getByText('Before leaving Guest')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Guest and sign out' }))
+    await waitFor(() => expect(confirmExit).toHaveBeenCalledTimes(2))
+  })
+
   it('shows the guest status and returns focus when closed', async () => {
     const trigger = renderAccount()
     const dialog = screen.getByRole('dialog', { name: 'Account' })
@@ -94,6 +160,7 @@ describe('Account dialog presentation', () => {
     renderAccount()
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
     expect(await screen.findByRole('button', { name: 'Continue with existing Google account' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand switching/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Continue with existing Google account' }))
     await waitFor(() => expect(continueWithExistingGoogle).toHaveBeenCalledOnce())
     expect(signOutGoogle).not.toHaveBeenCalled()
@@ -104,7 +171,9 @@ describe('Account dialog presentation', () => {
     continueWithExistingGoogle.mockRejectedValue({ code: 'auth/network-request-failed' })
     renderAccount()
     fireEvent.click(screen.getByRole('button', { name: 'Connect Google account' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Continue with existing Google account' }))
+    const switchButton = await screen.findByRole('button', { name: 'Continue with existing Google account' })
+    fireEvent.click(screen.getByRole('checkbox', { name: /I understand switching/ }))
+    fireEvent.click(switchButton)
     await waitFor(() => expect(screen.getByText(/connection was interrupted/)).toBeTruthy())
     expect(screen.getByText('Guest')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Continue with existing Google account' })).toBeTruthy()

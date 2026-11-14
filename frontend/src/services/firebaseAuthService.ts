@@ -36,6 +36,7 @@ export interface FirebaseAuthService {
   discardConflictingGoogleCredential: () => void
   continueWithExistingGoogle: (expectedGuestUid: string) => Promise<AuthIdentity | null>
   signOutGoogle: () => Promise<void>
+  signOutGuest: (expectedGuestUid: string) => Promise<void>
 }
 
 function toIdentity(user: User): AuthIdentity {
@@ -124,6 +125,19 @@ export function createFirebaseAuthService(auth: Auth): FirebaseAuthService {
         throw new Error('A guest account cannot be signed out without a recovery identity.')
       }
       await signOut(auth)
+    },
+
+    // Only called after the separate, explicit Guest-exit review. Never delete
+    // the anonymous user or its records, and never substitute another identity.
+    async signOutGuest(expectedGuestUid) {
+      const user = auth.currentUser
+      if (!user || !user.isAnonymous || user.uid !== expectedGuestUid) {
+        throw new Error('The Guest session changed. Review the current account before signing out.')
+      }
+      await signOut(auth)
+      if (auth.currentUser) throw new Error('The account changed during sign-out. Review the current account.')
+      conflictingCredential = null
+      pendingGoogleConflict = false
     },
   }
 }
