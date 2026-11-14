@@ -2,11 +2,21 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { stagingBuildMetadata } from './scripts/stagingBuildMetadata.ts'
+
+const stagingBuild = stagingBuildMetadata(process.env)
 
 export default defineConfig({
+  define: { __EDENOS_STAGING_BUILD__: JSON.stringify(stagingBuild) },
   plugins: [
     react(),
     tailwindcss(),
+    {
+      name: 'staging-build-metadata',
+      generateBundle() {
+        if (stagingBuild) this.emitFile({ type: 'asset', fileName: 'staging-build.json', source: JSON.stringify(stagingBuild) })
+      },
+    },
     VitePWA({
       registerType: 'prompt',
       injectRegister: null,
