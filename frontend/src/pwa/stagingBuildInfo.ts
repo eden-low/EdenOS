@@ -11,7 +11,7 @@ export const stagingBuildInfo: PublicBuildInfo | null =
 export async function readServerBuild(signal: AbortSignal): Promise<PublicBuildInfo> {
   // Not a navigation request, not precached by Workbox. No cookies/auth headers.
   const response = await fetch('/staging-build.json', {
-    cache: 'no-store', credentials: 'omit', headers: { Accept: 'application/json' }, signal,
+    cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { Accept: 'application/json' }, signal,
   })
   if (!response.ok || response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() !== 'application/json') {
     throw new Error('Server build is unavailable.')

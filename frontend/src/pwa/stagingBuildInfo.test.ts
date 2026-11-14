@@ -15,7 +15,7 @@ describe('read-only staging version inspection', () => {
     const signal = new AbortController().signal
     expect(await readServerBuild(signal)).toEqual({ schema: 1, sha })
     expect(fetcher).toHaveBeenCalledExactlyOnceWith('/staging-build.json', {
-      cache: 'no-store', credentials: 'omit', headers: { Accept: 'application/json' }, signal,
+      cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { Accept: 'application/json' }, signal,
     })
   })
   it.each([null, [], {}, { schema: 2, sha }, { schema: 1, sha: 'old' }, { schema: 1, sha: 'z'.repeat(40) }])('rejects unverifiable server data: %j', async (value) => {
