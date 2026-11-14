@@ -80,6 +80,7 @@ describe('Account dialog presentation', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /I understand I may permanently/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Stay in Guest' }))
     expect(screen.getByRole('button', { name: 'Connect Google account' })).toBeTruthy()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sign Out / Switch Account' }))
     await screen.findByText('Before leaving Guest')
     expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false)
