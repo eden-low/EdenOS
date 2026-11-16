@@ -1,5 +1,5 @@
-import { CircleCheck, ShieldCheck, UserRound } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { ArrowLeft, ChevronRight, CircleCheck, ShieldCheck, UserRound, Wrench } from 'lucide-react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { googleAuthErrorMessage } from '../../lib/googleAuthError'
 import { useFirebaseAuth } from '../../state/useFirebaseAuth'
 import type { GuestDataSummary, GuestExitReview } from '../../types/account'
@@ -17,8 +17,16 @@ import { StagingVersionDiagnostics } from '../../pwa/StagingVersionDiagnostics'
 export function AccountDialog({ children }: { children: ReactNode }) {
   const { uid, isAnonymous, email, connectGoogle, continueWithExistingGoogle, discardExistingGoogleChoice, signOutGoogle, reviewGuestExit } = useFirebaseAuth()
   const [open, setOpen] = useState(false)
+  const [view, setView] = useState<'account' | 'tools'>('account')
+  const contentRef = useRef<HTMLDivElement>(null)
+  const toolsRef = useRef<HTMLButtonElement>(null)
+  const backRef = useRef<HTMLButtonElement>(null)
+  const previousView = useRef(view)
+  const accountScroll = useRef(0)
   const [pending, setPending] = useState<'link' | 'switch' | 'sign-out' | 'guest-review' | null>(null)
   const [guestExit, setGuestExit] = useState<GuestExitReview | null>(null)
+  const guestActionRef = useRef<HTMLButtonElement>(null)
+  const previousGuestExit = useRef(guestExit)
   const [switchAcknowledged, setSwitchAcknowledged] = useState(false)
   const [uidCopyStatus, setUidCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -26,6 +34,20 @@ export function AccountDialog({ children }: { children: ReactNode }) {
   const isConflict = conflict !== null
   const summary = conflict !== 'unavailable' ? conflict : null
   const safeSwitch = summary !== null && !summary.hasBlockingData
+
+  useLayoutEffect(() => {
+    if (open && view !== previousView.current) {
+      const target = view === 'tools' ? backRef.current : toolsRef.current
+      target?.focus({ preventScroll: true })
+      if (contentRef.current) contentRef.current.scrollTop = view === 'tools' ? 0 : accountScroll.current
+    }
+    previousView.current = view
+  }, [open, view])
+
+  useLayoutEffect(() => {
+    if (open && previousGuestExit.current && !guestExit) guestActionRef.current?.focus()
+    previousGuestExit.current = guestExit
+  }, [open, guestExit])
 
   const blockingSummaryItems = summary ? [
     ...(summary.expensesCount > 0 ? [`${summary.expensesCount} ${summary.expensesCount === 1 ? 'Expense' : 'Expenses'}`] : []),
@@ -40,6 +62,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
 
   function closeAccount() {
     setOpen(false)
+    setView('account')
     setError(null)
     setConflict(null)
     setGuestExit(null)
@@ -134,25 +157,31 @@ export function AccountDialog({ children }: { children: ReactNode }) {
       if (pending) return
       setOpen(nextOpen)
       if (!nextOpen) {
-        setError(null); setConflict(null); setGuestExit(null); setSwitchAcknowledged(false); setUidCopyStatus('idle')
+        setView('account'); setError(null); setConflict(null); setGuestExit(null); setSwitchAcknowledged(false); setUidCopyStatus('idle')
         discardExistingGoogleChoice()
       }
     }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent variant="account" closeDisabled={pending !== null} className="sm:w-[min(30rem,calc(100vw-2rem))]">
+      <DialogContent ref={contentRef} variant="account" closeDisabled={pending !== null} className="overscroll-contain sm:w-[min(30rem,calc(100vw-2rem))]">
         <div className="pr-11">
+          {view === 'tools' && <Button ref={backRef} type="button" variant="ghost" className="-ml-3 mb-2 px-3" onClick={() => setView('account')}>
+            <ArrowLeft aria-hidden="true" size={16} />Back to Account
+          </Button>}
           <p className="section-label text-[var(--accent-soft)]">Eden OS</p>
           <DialogTitle className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-[var(--text-primary)]">
-            Account
+            {view === 'tools' ? 'Tools & Diagnostics' : 'Account'}
           </DialogTitle>
           <DialogDescription className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-            {isAnonymous
+            {view === 'tools' ? 'Optional checks for this browser. Each tool runs only when you choose.' : isAnonymous
               ? 'Connect Google to use this same EdenOS account on another device.'
               : 'Your EdenOS account is connected to Google.'}
           </DialogDescription>
         </div>
 
-        {guestExit ? <>
+        {view === 'tools' ? <>
+          <NetworkSpeedTest />
+          <StagingVersionDiagnostics />
+        </> : guestExit ? <>
           <GuestExitWarning summary={guestExit.summary} pending={pending !== null}
             onStay={() => { setGuestExit(null); setError(null) }} onExit={() => void handleGuestExit()} />
           {error ? <InlineError message={error} /> : null}
@@ -179,12 +208,6 @@ export function AccountDialog({ children }: { children: ReactNode }) {
             </span>
           </div>
         </div>
-
-        <StagingVersionDiagnostics disabled={pending !== null || isConflict || error !== null} />
-        <ThemeSettings />
-        <GenesisBootSettings onReplay={closeAccount} replayDisabled={pending !== null || isConflict || error !== null} />
-        <PrivacyLockSettings />
-        <NetworkSpeedTest />
 
         {isConflict ? (
           <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-[var(--border-strong)] bg-[var(--accent-teal-wash)] p-4 text-sm leading-6">
@@ -225,12 +248,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
           <span>I understand switching may permanently remove access to this Guest identity and its records. Copying the UID does not provide recovery.</span>
         </label>}
 
-        <div className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:justify-end">
-          {isConflict ? null : (
-            <Button {...triggerPressFeedback} type="button" variant="ghost" className="press-feedback" onClick={closeAccount} disabled={pending !== null}>
-              Close
-            </Button>
-          )}
+        <div aria-label="Account actions" role="group" className="mt-4 grid gap-2">
           {isAnonymous && !isConflict ? (
             <Button {...triggerPressFeedback} type="button" className="press-feedback" onClick={() => void handleConnect()} disabled={pending !== null}>
               {pending === 'link' ? 'Connecting…' : 'Connect Google account'}
@@ -240,7 +258,7 @@ export function AccountDialog({ children }: { children: ReactNode }) {
               {pending === 'sign-out' ? 'Signing out…' : 'Sign out'}
             </Button>
           ) : null}
-          {isAnonymous && <Button type="button" variant="secondary" onClick={() => void handleGuestReview()} disabled={pending !== null}>
+          {isAnonymous && <Button ref={guestActionRef} type="button" variant="secondary" onClick={() => void handleGuestReview()} disabled={pending !== null}>
             {pending === 'guest-review' ? 'Checking Guest data…' : 'Sign Out / Switch Account'}
           </Button>}
           {safeSwitch && (
@@ -254,6 +272,16 @@ export function AccountDialog({ children }: { children: ReactNode }) {
             </Button>
           )}
         </div>
+        <ThemeSettings />
+        <GenesisBootSettings onReplay={closeAccount} replayDisabled={pending !== null || isConflict || error !== null} />
+        <PrivacyLockSettings />
+        <Button ref={toolsRef} type="button" variant="ghost" className="mt-5 w-full justify-between border border-[var(--border-subtle)] px-4" disabled={pending !== null || isConflict || error !== null} onClick={() => { accountScroll.current = contentRef.current?.scrollTop ?? 0; setView('tools') }}>
+          <span className="flex items-center gap-2"><Wrench aria-hidden="true" size={16} />Tools & Diagnostics</span>
+          <ChevronRight aria-hidden="true" size={16} />
+        </Button>
+        {!isConflict && <div className="mt-3 flex justify-end">
+          <Button type="button" variant="ghost" onClick={closeAccount} disabled={pending !== null}>Close</Button>
+        </div>}
         </>}
       </DialogContent>
     </Dialog>
