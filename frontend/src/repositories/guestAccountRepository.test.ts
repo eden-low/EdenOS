@@ -23,8 +23,9 @@ function state(
   financeGoalsCount = 0,
   financeBudgetsCount = 0,
   goalAllocationsCount = 0,
+  bodyMeasurementsCount = 0,
 ) {
-  for (const value of [expensesCount, incomesCount, exercisesCount, animeCloudProgressCount, financeRulesCount, weeklyReviewsCount, financeGoalsCount, financeBudgetsCount, goalAllocationsCount]) {
+  for (const value of [expensesCount, incomesCount, exercisesCount, animeCloudProgressCount, financeRulesCount, weeklyReviewsCount, financeGoalsCount, financeBudgetsCount, goalAllocationsCount, bodyMeasurementsCount]) {
     sdk.getCountFromServer.mockResolvedValueOnce({ data: () => ({ count: value }) })
   }
   sdk.getDocFromServer.mockResolvedValue({ exists: () => settings !== null, data: () => settings })
@@ -57,6 +58,7 @@ describe('authoritative Guest data summary', () => {
       ['users', 'guest-uid', 'financeGoals'],
       ['users', 'guest-uid', 'financeBudgets'],
       ['users', 'guest-uid', 'financeGoalAllocations'],
+      ['users', 'guest-uid', 'bodyMeasurements'],
     ])
     expect(sdk.doc).toHaveBeenCalledWith(db, 'users', 'guest-uid', 'settings', 'preferences')
   })
@@ -111,6 +113,7 @@ describe('authoritative Guest data summary', () => {
     ['financeGoals', [0, 0, 0, null, 0, 0, 0, 1, 0, 0]],
     ['financeBudgets', [0, 0, 0, null, 0, 0, 0, 0, 1, 0]],
     ['financeGoalAllocations', [0, 0, 0, null, 0, 0, 0, 0, 0, 1]],
+    ['bodyMeasurements', [0, 0, 0, null, 0, 0, 0, 0, 0, 0, 1]],
   ])('protects %s during a Guest account switch', async (label, args) => {
     state(...args as Parameters<typeof state>)
     expect(await getGuestDataSummary(db, 'guest-uid')).toMatchObject({ otherBlockingData: [label], hasBlockingData: true })
@@ -131,5 +134,20 @@ describe('authoritative Guest data summary', () => {
     sdk.getCountFromServer.mockRejectedValue(new Error('offline'))
     sdk.getDocFromServer.mockResolvedValue({ exists: () => false })
     await expect(getGuestDataSummary(db, 'guest-uid')).rejects.toThrow('offline')
+  })
+
+  it.each([-1, 0.5, NaN, '0', undefined])('rejects an unverified aggregate count %s instead of assuming empty', async (value) => {
+    state()
+    sdk.getCountFromServer.mockReset().mockResolvedValue({ data: () => ({ count: value }) })
+    await expect(getGuestDataSummary(db, 'guest-uid')).rejects.toThrow('could not be verified')
+  })
+
+  it('fails closed when weekly review enumeration is denied by the existing Rules', async () => {
+    sdk.getCountFromServer.mockReset().mockImplementation(async (path: string) => {
+      if (path.endsWith('/weeklyReviews')) throw Object.assign(new Error('permission-denied'), { code: 'permission-denied' })
+      return { data: () => ({ count: 0 }) }
+    })
+    sdk.getDocFromServer.mockResolvedValue({ exists: () => false })
+    await expect(getGuestDataSummary(db, 'guest-uid')).rejects.toThrow('permission-denied')
   })
 })

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing'
-import { collection, deleteDoc, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getCountFromServer, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore'
 
 const rules = readFileSync(new URL('../../firestore.rules', import.meta.url), 'utf8')
 const environment = await initializeTestEnvironment({ projectId: 'demo-edenos-rules', firestore: { rules } })
@@ -179,6 +179,10 @@ try {
   await assertSucceeds(getDoc(doc(alice, reviewPath)))
   await assertFails(getDoc(doc(bob, reviewPath)))
   await assertFails(getDocs(collection(alice, 'users/alice/weeklyReviews')))
+  // An aggregate is also a list operation. Guest-switch safety checks must not
+  // turn this rejection into an empty-data result or relax the Rules.
+  await assertFails(getCountFromServer(collection(anonymousUser, 'users/anonymous-user/weeklyReviews')))
+  await assertSucceeds(getCountFromServer(collection(anonymousUser, 'users/anonymous-user/expenses')))
   await assertFails(setDoc(doc(bob, 'users/alice/weeklyReviews/2026-09-21'), review))
   await assertFails(setDoc(doc(alice, 'users/alice/weeklyReviews/too-long'), { ...review, wentWell: 'x'.repeat(2001) }))
   process.stdout.write('Firestore ownership, catalogue, progress, Finance rules, goals, budgets, allocations, Weekly Reviews, settings, and body measurements rules passed.\n')

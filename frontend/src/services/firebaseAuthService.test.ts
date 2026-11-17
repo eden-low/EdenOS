@@ -25,6 +25,7 @@ let auth: Auth
 
 beforeEach(() => {
   vi.clearAllMocks()
+  sdk.signOut.mockReset().mockResolvedValue(undefined)
   auth = { currentUser: null } as unknown as Auth
   sdk.onAuthStateChanged.mockReturnValue(vi.fn())
 })
@@ -183,5 +184,44 @@ describe('Firebase auth adapter', () => {
     await createFirebaseAuthService(auth).signOutGoogle()
     expect(sdk.signOut).toHaveBeenCalledWith(auth)
     expect(sdk.signInAnonymously).not.toHaveBeenCalled()
+  })
+
+  it('exits only the reviewed Guest, clearing the conflict without deleting or replacing the identity', async () => {
+    auth = { currentUser: guest } as Auth
+    const service = createFirebaseAuthService(auth)
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toBeTruthy()
+    sdk.signOut.mockImplementation(async () => { Object.assign(auth, { currentUser: null }) })
+    await service.signOutGuest(guest.uid)
+    expect(sdk.signOut).toHaveBeenCalledExactlyOnceWith(auth)
+    expect(auth.currentUser).toBeNull()
+    expect(service.hasPendingGoogleConflict()).toBe(false)
+    expect(sdk.signInWithCredential).not.toHaveBeenCalled()
+    expect(sdk.signInWithPopup).not.toHaveBeenCalled()
+    expect(sdk.signInAnonymously).not.toHaveBeenCalled()
+  })
+
+  it.each([null, google, { ...guest, uid: 'other-guest' }])('rejects a stale Guest exit when the current user is %s', async (currentUser) => {
+    auth = { currentUser } as Auth
+    await expect(createFirebaseAuthService(auth).signOutGuest(guest.uid)).rejects.toThrow('Guest session changed')
+    expect(sdk.signOut).not.toHaveBeenCalled()
+  })
+
+  it('keeps a Guest and its pending conflict if explicit exit fails', async () => {
+    auth = { currentUser: guest } as Auth
+    const service = createFirebaseAuthService(auth)
+    sdk.linkWithPopup.mockRejectedValue({ code: 'auth/credential-already-in-use' })
+    await expect(service.linkGoogle(guest.uid)).rejects.toBeTruthy()
+    sdk.signOut.mockRejectedValue(new Error('synthetic sign-out failure'))
+    await expect(service.signOutGuest(guest.uid)).rejects.toThrow('synthetic sign-out failure')
+    expect(auth.currentUser).toBe(guest)
+    expect(service.hasPendingGoogleConflict()).toBe(true)
+  })
+
+  it('does not report signed out if another identity appears during exit', async () => {
+    auth = { currentUser: guest } as Auth
+    sdk.signOut.mockImplementation(async () => { Object.assign(auth, { currentUser: google }) })
+    await expect(createFirebaseAuthService(auth).signOutGuest(guest.uid)).rejects.toThrow('account changed during sign-out')
+    expect(auth.currentUser).toBe(google)
   })
 })

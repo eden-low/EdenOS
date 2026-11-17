@@ -20,3 +20,9 @@ export type ConnectGoogleResult =
 export type ContinueExistingGoogleResult =
   | { status: 'connected' | 'cancelled' }
   | { status: 'blocked'; summary: GuestDataSummary }
+
+/** An in-memory review for one current Guest; never a recovery credential. */
+export interface GuestExitReview {
+  summary: GuestDataSummary | 'unavailable'
+  confirmExit: () => Promise<void>
+}
