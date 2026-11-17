@@ -88,6 +88,7 @@
 @media (max-height: 560px) { .genesis-art { width: min(48vh, 280px); } .genesis-copy { min-height: 108px; } .genesis-whisper { margin-top: 8px; } }
 @media (min-width: 768px) { .genesis-masthead { left: 48px; top: 36px; } .genesis-skip { top: 28px; right: 40px; } }
 @media (max-width: 767px) and (display-mode: standalone) {
+  .genesis-masthead { top: max(32px, calc(env(safe-area-inset-top, 0px) + 16px)); }
   .genesis-skip { top: max(32px, calc(env(safe-area-inset-top, 0px) + 16px)); }
 }
 @media (prefers-reduced-motion: reduce) {
