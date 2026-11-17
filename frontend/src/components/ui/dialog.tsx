@@ -32,7 +32,8 @@ export function DialogContent({
       )} />
       <DialogPrimitive.Content
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 max-h-[88vh] rounded-t-[1.75rem] border border-[var(--border-strong)] bg-[var(--surface-elevated)] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[var(--text-primary)] shadow-[var(--dialog-shadow)] outline-none sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-[min(31rem,calc(100vw-2rem))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[1.75rem] sm:p-8 sm:pb-8',
+          'fixed inset-x-0 bottom-0 z-50 max-h-[88vh] rounded-t-[1.75rem] border border-[var(--border-strong)] bg-[var(--surface-elevated)] p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[var(--text-primary)] shadow-[var(--dialog-shadow)] outline-none',
+          variant !== 'drawer' && 'sm:inset-auto sm:left-1/2 sm:top-1/2 sm:w-[min(31rem,calc(100vw-2rem))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[1.75rem] sm:p-8 sm:pb-8',
           variant === 'capture'
             ? 'capture-dialog'
             : variant === 'default'
@@ -42,7 +43,7 @@ export function DialogContent({
                 : variant === 'player'
                   ? 'overflow-hidden data-[state=closed]:animate-[dialog-out_160ms_ease-in] data-[state=open]:animate-[dialog-in_200ms_cubic-bezier(0.22,1,0.36,1)]'
                   : variant === 'drawer'
-                    ? 'left-0 top-0 bottom-0 right-auto h-[100dvh] max-h-none w-[min(20rem,88vw)] rounded-none rounded-r-[1.75rem] border-y-0 border-l-0 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] data-[state=closed]:animate-[drawer-out_180ms_ease-in] data-[state=open]:animate-[drawer-in_220ms_cubic-bezier(0.22,1,0.36,1)]'
+                    ? 'left-0 top-0 bottom-0 right-auto h-[100dvh] max-h-none w-[min(20rem,88vw)] overflow-y-auto rounded-none rounded-r-[1.75rem] border-y-0 border-l-0 p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] pl-[calc(1.25rem+env(safe-area-inset-left))] pr-[calc(1.25rem+env(safe-area-inset-right))] pb-[calc(1.25rem+env(safe-area-inset-bottom))] data-[state=closed]:animate-[drawer-out_180ms_ease-in] data-[state=open]:animate-[drawer-in_220ms_cubic-bezier(0.22,1,0.36,1)]'
                   : 'confirmation-dialog z-60 overflow-y-auto',
           className,
         )}
@@ -64,7 +65,12 @@ export function DialogContent({
           <DialogPrimitive.Close
             aria-label="Close dialog"
             disabled={closeDisabled}
-            className="absolute right-5 top-5 grid size-10 place-items-center rounded-xl text-[var(--text-muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] disabled:pointer-events-none disabled:opacity-45 sm:right-6 sm:top-6"
+            className={cn(
+              'absolute grid size-10 place-items-center rounded-xl text-[var(--text-muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)] disabled:pointer-events-none disabled:opacity-45',
+              variant === 'drawer'
+                ? 'right-[calc(1.25rem+env(safe-area-inset-right))] top-[calc(1.25rem+env(safe-area-inset-top))]'
+                : 'right-5 top-5 sm:right-6 sm:top-6',
+            )}
           >
             <X aria-hidden="true" size={19} />
           </DialogPrimitive.Close>
