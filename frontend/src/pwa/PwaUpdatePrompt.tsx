@@ -8,16 +8,19 @@ import { usePwaUpdate } from './usePwaUpdate'
 export function PwaUpdatePrompt() {
   const { drafts } = useRecords()
   const { updateAvailable, applyUpdate, dismissUpdate } = usePwaUpdate()
-  const [draftWarningAcknowledged, setDraftWarningAcknowledged] = useState(false)
+  const [reviewedDraftIds, setReviewedDraftIds] = useState<string[]>([])
   const [isApplying, setIsApplying] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
-  const hasDrafts = drafts.some((draft) => draft.status === 'draft')
+  const pendingDraftIds = drafts.filter((draft) => draft.status === 'draft').map((draft) => draft.id)
+  const hasDrafts = pendingDraftIds.length > 0
+  const draftWarningAcknowledged = hasDrafts && pendingDraftIds.length === reviewedDraftIds.length &&
+    pendingDraftIds.every((id) => reviewedDraftIds.includes(id))
 
   if (!updateAvailable) return null
 
   async function handleUpdate() {
     if (hasDrafts && !draftWarningAcknowledged) {
-      setDraftWarningAcknowledged(true)
+      setReviewedDraftIds(pendingDraftIds)
       return
     }
 

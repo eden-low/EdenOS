@@ -20,6 +20,20 @@ afterEach(() => {
 
 describe('fresh launch evidence', () => {
   it.each([
+    '/?utm_source=owner', '/?utm_source=owner&utm_medium=link',
+    '/?code=synthetic&state=synthetic', '/?apiKey=synthetic&oobCode=synthetic&mode=signIn',
+    '/#state=synthetic', '/#/expenses', '/anime?q=synthetic',
+  ])('preserves the conservative query/fragment launch policy for %s', (url) => {
+    window.history.replaceState(null, '', url)
+    const before = window.location.href
+    vi.spyOn(performance, 'getEntriesByType').mockReturnValue([{ type: 'navigate' }] as unknown as PerformanceEntry[])
+    const signals = readGenesisLaunchSignals()
+    expect(signals.home).toBe(false)
+    expect(isFreshGenesisLaunch(signals)).toBe(false)
+    expect(window.location.href).toBe(before)
+  })
+
+  it.each([
     ['fresh browser tab', {}, true],
     ['fresh tab with opener-copied marker', { marker: 'seen', opener: true }, true],
     ['fresh tab retaining about:blank and an opener-copied marker', { marker: 'seen', opener: true, historyLength: 2 }, true],
