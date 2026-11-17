@@ -87,6 +87,9 @@
 @keyframes genesis-static-dismiss { 0%, 99% { visibility: visible; } 100% { visibility: hidden; pointer-events: none; } }
 @media (max-height: 560px) { .genesis-art { width: min(48vh, 280px); } .genesis-copy { min-height: 108px; } .genesis-whisper { margin-top: 8px; } }
 @media (min-width: 768px) { .genesis-masthead { left: 48px; top: 36px; } .genesis-skip { top: 28px; right: 40px; } }
+@media (max-width: 767px) and (display-mode: standalone) {
+  .genesis-skip { top: max(32px, calc(env(safe-area-inset-top, 0px) + 16px)); }
+}
 @media (prefers-reduced-motion: reduce) {
   .genesis-boot-screen { animation: genesis-static-dismiss 600ms linear forwards !important; animation-duration: 600ms !important; }
   .genesis-boot-screen *, .genesis-boot-screen *::before, .genesis-boot-screen *::after { animation: none !important; transition: none !important; }
