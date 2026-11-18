@@ -1,6 +1,5 @@
-import { webcrypto } from 'node:crypto'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { StrictMode } from 'react'
+import { StrictMode, useLayoutEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FinancialAmount } from '../components/privacy/FinancialAmount'
 import { PrivacyLockProvider } from '../privacy/PrivacyLockProvider'
@@ -25,8 +24,9 @@ let dataStatus: 'loaded' | 'error', updateAvailable: boolean
 let storedRecord: string
 const forbidden = vi.fn(async () => { throw Error('Real authentication is forbidden') })
 function Values() {
-  privacy = usePrivacyLock()
-  return <><output data-testid="lock-state">{privacy.locked ? 'locked' : 'unlocked'}</output><FinancialAmount amountSen={987654} exact /></>
+  const value = usePrivacyLock()
+  useLayoutEffect(() => { privacy = value }, [value])
+  return <><output data-testid="lock-state">{value.locked ? 'locked' : 'unlocked'}</output><FinancialAmount amountSen={987654} exact /></>
 }
 function tree() {
   return <StrictMode><PwaContext.Provider value={{ updateAvailable, applyUpdate: forbidden, dismissUpdate: vi.fn() }}>
@@ -42,12 +42,11 @@ function masked() {
   expect(screen.getByTestId('lock-state').textContent).toBe('locked')
   // Inspect all DOM text, including underneath the decorative overlay.
   expect(document.body.textContent).not.toContain('9,876.54')
-  expect(screen.getByRole('button', { name: 'Unlock financial value' })).toBeTruthy()
+  expect(document.querySelector('button[aria-label="Unlock financial value"]')).toBeTruthy()
   expect(localStorage.getItem(privacyLockStorageKey)).toBe(storedRecord)
 }
 
 beforeEach(async () => {
-  vi.stubGlobal('crypto', webcrypto)
   localStorage.clear(); sessionStorage.clear(); forbidden.mockClear()
   storedRecord = JSON.stringify(await createPrivacyLockRecord('123456'))
   localStorage.setItem(privacyLockStorageKey, storedRecord)

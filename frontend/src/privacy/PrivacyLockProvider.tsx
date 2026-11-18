@@ -3,8 +3,10 @@ import { Button } from '../components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../components/ui/dialog'
 import { createPrivacyLockRecord, privacyAutoLockMs, privacyLockStorageKey, privacyRetryDelayMs, readPrivacyLockRecord, verifyPrivacyPin } from './privacyLock'
 import { PrivacyLockContext, type PrivacyLockContextValue } from './privacyLockContext'
+import { useGenesisLaunch } from '../boot/genesisLaunchContext'
 
 export function PrivacyLockProvider({ children }: { children: ReactNode }) {
+  const launch = useGenesisLaunch()
   const [record, setRecord] = useState(() => readPrivacyLockRecord(localStorage))
   const [locked, setLocked] = useState(() => readPrivacyLockRecord(localStorage) !== null)
   const failures = useRef(0)
@@ -15,6 +17,7 @@ export function PrivacyLockProvider({ children }: { children: ReactNode }) {
   const hiddenAt = useRef<number | null>(null)
 
   const unlock = useCallback(async (candidate: string) => {
+    launch?.dismiss()
     if (!record || Date.now() < retryAt) return false
     const valid = await verifyPrivacyPin(candidate, record)
     if (valid) { setLocked(false); failures.current = 0; setRetryAt(0); return true }
@@ -22,7 +25,7 @@ export function PrivacyLockProvider({ children }: { children: ReactNode }) {
     const delay = privacyRetryDelayMs(failures.current)
     if (delay) setRetryAt(Date.now() + delay)
     return false
-  }, [record, retryAt])
+  }, [record, retryAt, launch])
 
   useEffect(() => {
     function visibility() {
@@ -46,7 +49,7 @@ export function PrivacyLockProvider({ children }: { children: ReactNode }) {
       setRecord(next); setLocked(false); failures.current = 0; setRetryAt(0)
     },
     unlock,
-    lock() { if (record) setLocked(true) },
+    lock() { if (record) { launch?.dismiss(); setLocked(true) } },
     async changePin(currentPin, nextPin) {
       if (!record || !(await verifyPrivacyPin(currentPin, record))) return false
       const next = await createPrivacyLockRecord(nextPin)
@@ -60,8 +63,8 @@ export function PrivacyLockProvider({ children }: { children: ReactNode }) {
       setRecord(null); setLocked(false); failures.current = 0; setRetryAt(0)
       return true
     },
-    requestUnlock() { if (record && locked) { setPin(''); setUnlockError(''); setUnlockOpen(true) } },
-  }), [locked, record, retryAt, unlock])
+    requestUnlock() { if (record && locked) { launch?.dismiss(); setPin(''); setUnlockError(''); setUnlockOpen(true) } },
+  }), [locked, record, retryAt, unlock, launch])
 
   async function submitUnlock(event: FormEvent) {
     event.preventDefault()

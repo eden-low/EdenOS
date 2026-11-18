@@ -198,7 +198,7 @@ describe('Genesis application startup', () => {
   })
 
   it.each(['privacy', 'data error', 'draft', 'PWA update'])('gives %s priority over startup', (kind) => {
-    const view = render(tree()); advance(); expect(boot()).toBeTruthy()
+    const view = render(tree()); observe(google); advance(); expect(boot()).toBeTruthy()
     if (kind === 'privacy') locked = true
     else if (kind === 'data error') readiness = 'error'
     else if (kind === 'draft') draft = true
