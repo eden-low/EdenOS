@@ -15,8 +15,9 @@ export function GenesisBoot({ children }: { children: ReactNode }) {
   const privacy = usePrivacyLock()
   const auth = useBootAuthState()
   const statuses = [records.expenseStatus, records.incomeStatus, records.exerciseStatus, settings.status]
-  const blocked = statuses.includes('error') || pwa.updateAvailable || privacy.locked || records.drafts.some((draft) => draft.status === 'draft')
-  useGenesisLaunchBlock(blocked)
+  const interrupted = statuses.includes('error') || pwa.updateAvailable || records.drafts.some((draft) => draft.status === 'draft')
+  const blocked = interrupted || privacy.locked
+  useGenesisLaunchBlock(interrupted, privacy.locked)
   return <GenesisBootProvider
     authSession={auth.session}
     ready={!auth.pending && statuses.every((status) => status === 'loaded')}
