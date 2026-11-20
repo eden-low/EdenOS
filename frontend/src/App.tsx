@@ -7,6 +7,7 @@ import {
 import { TodayPage } from './pages/TodayPage'
 import { PwaUpdatePrompt } from './pwa/PwaUpdatePrompt'
 import { appPageFromLocation, pushAppPage } from './routing/appRoutes'
+import { EdenAvatarProvider } from './components/avatar/EdenAvatar'
 
 const ExpensesPage = lazy(() => import('./pages/ExpensesPage').then((module) => ({ default: module.ExpensesPage })))
 const ExercisePage = lazy(() => import('./pages/ExercisePage').then((module) => ({ default: module.ExercisePage })))
@@ -52,6 +53,7 @@ function App() {
   }
 
   return (
+    <EdenAvatarProvider enabled={activePage === 'today'}>
     <div className="min-h-[100dvh] text-[var(--text-primary)]">
       <DesktopNavigation activePage={activePage} onNavigate={navigate} />
 
@@ -79,6 +81,7 @@ function App() {
       <PwaUpdatePrompt />
       {commandOpen && <Suspense fallback={null}><CommandPalette open onClose={() => setCommandOpen(false)} onNavigate={navigate} onAnimeSearch={searchAnime} /></Suspense>}
     </div>
+    </EdenAvatarProvider>
   )
 }
 

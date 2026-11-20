@@ -6,6 +6,7 @@ import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft, RecordDraf
 import type { ReceiptCandidate } from '../../types/receipt'
 import type { FitnessScreenshotCandidate } from '../../types/fitnessScreenshot'
 import { CaptureSheet } from './CaptureSheet'
+import { AvatarCaptureContext } from '../avatar/AvatarCaptureContext'
 
 const { readReceiptImage } = vi.hoisted(() => ({
   readReceiptImage: vi.fn(async (): Promise<ReceiptCandidate> => ({ title: 'STARBUCKS', amountSen: 1590, category: 'food' })),
@@ -116,6 +117,22 @@ function openExerciseReview(text: string) {
 }
 
 describe('Capture prototype', () => {
+  it('publishes the actual sheet for every entry and keeps the anchor until a dirty close is confirmed', async () => {
+    const publish = vi.fn()
+    render(<AvatarCaptureContext.Provider value={publish}><Harness /></AvatarCaptureContext.Provider>)
+    fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
+    await waitFor(() => expect(publish.mock.calls.some(([anchor]) => anchor?.sheet === screen.getByRole('dialog'))).toBe(true))
+    fireEvent.click(screen.getByRole('button', { name: 'Expense Manual' }))
+    fireEvent.change(screen.getByLabelText(/Merchant/), { target: { value: 'Synthetic draft' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    await waitFor(() => expect(publish.mock.calls.at(-1)?.[0]?.suspended).toBe(true))
+    fireEvent.click(within(screen.getAllByRole('dialog').at(-1)!).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(publish.mock.calls.at(-1)?.[0]?.suspended).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    fireEvent.click(screen.getByRole('button', { name: /Discard/i }))
+    await waitFor(() => expect(publish.mock.calls.at(-1)?.[0]).toBeNull())
+    expect(confirmExpenseDraft).not.toHaveBeenCalled()
+  })
   it('groups all existing methods by domain with clear labels', () => {
     render(<Harness />)
     fireEvent.click(screen.getByRole('button', { name: 'Capture' }))
