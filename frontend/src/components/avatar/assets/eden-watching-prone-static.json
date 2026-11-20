@@ -1,0 +1,77 @@
+{
+  "id": "eden-watching",
+  "version": "4B-static-v1",
+  "source": {
+    "file": "EdenOS趴姿追番角色设计表.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 2331263,
+    "sha256": "7599d68ee83f4d0f4f0a5ceeb2d748d9d046fe5b21c19ca685b5a71fd7033939",
+    "use": "left-main-illustration-only"
+  },
+  "extraction": {
+    "method": "built-in-image-edit-background-extraction",
+    "file": "watching-cutout.png",
+    "width": 1407,
+    "height": 1118,
+    "bytes": 2207434,
+    "sha256": "5e34ed5a52337dc228027c028a4b6715c7e05d8c390c2fc3a0f892e8275796f5",
+    "removed": [
+      "board-background",
+      "titles",
+      "measurement-guides",
+      "preview-panels",
+      "detail-cards",
+      "attention-rays",
+      "popcorn",
+      "drink",
+      "book-stack"
+    ]
+  },
+  "derivation": {
+    "fit": "inside",
+    "scaled": {
+      "width": 336,
+      "height": 267
+    },
+    "padding": {
+      "left": 8,
+      "right": 8,
+      "top": 381,
+      "bottom": 8
+    },
+    "mirror": false,
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-watching-prone-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 38806,
+    "sha256": "76aca599f54482003bf550555dbd124f7ab7ce023e1cedc394338f6b53e0c393",
+    "hasAlpha": true,
+    "nativeFacing": "left",
+    "posture": "prone",
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    },
+    "anchorMeaning": "lower-resting-plane-of-tablet-and-cushion"
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "gaze": false,
+    "yawn": false,
+    "capturePerch": false
+  }
+}

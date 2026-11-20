@@ -1,6 +1,7 @@
 import treasurerArt from './assets/eden-treasurer-abacus-static.webp'
 import archivistArt from './assets/eden-archivist-clipboard-static.webp'
 import reflectorArt from './assets/eden-reflector-journal-static.webp'
+import watchingArt from './assets/eden-watching-prone-static.webp'
 
 export const avatarIds = [
   'eden-default', 'eden-treasurer', 'eden-swim', 'eden-boxing', 'eden-archivist',
@@ -25,6 +26,7 @@ export interface StaticAvatar extends AvatarIdentity {
     cssFrame: { width: number; height: number }
     footAnchor: { x: number; y: number }
   }
+  posture?: 'standing' | 'prone'
 }
 export type RenderableAvatar = LegacyAvatar | StaticAvatar
 export type AvatarDefinition = PlannedAvatar | RenderableAvatar
@@ -48,7 +50,10 @@ export const avatarRegistry: Readonly<Record<AvatarId, AvatarDefinition>> = {
     id: 'eden-reflector', label: 'Reflector Eden', status: 'ready', kind: 'static-image', prototype: '4B-static', nativeFacing: 'right', blink: false, capturePerch: false,
     asset: { src: reflectorArt, width: 352, height: 656, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
   },
-  'eden-watching': { id: 'eden-watching', label: 'Watching Eden', status: 'planned' },
+  'eden-watching': {
+    id: 'eden-watching', label: 'Watching Eden', status: 'ready', kind: 'static-image', prototype: '4B-static', nativeFacing: 'left', posture: 'prone', blink: false, capturePerch: false,
+    asset: { src: watchingArt, width: 352, height: 656, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
+  },
   'eden-tarot': { id: 'eden-tarot', label: 'Tarot Eden', status: 'planned' },
   'eden-iching': { id: 'eden-iching', label: 'I Ching Eden', status: 'planned' },
   'eden-bazi': { id: 'eden-bazi', label: 'BaZi Eden', status: 'planned' },

@@ -40,6 +40,12 @@ const reflectorResponse = await fetch(origin + '/assets/' + reflectorFile); asse
 const reflectorBytes = Buffer.from(await reflectorResponse.arrayBuffer())
 const reflectorLocal = await readFile('src/components/avatar/assets/eden-reflector-journal-static.webp')
 assert.equal(createHash('sha256').update(reflectorBytes).digest('hex'),createHash('sha256').update(reflectorLocal).digest('hex'))
+const watchingFile = main.match(/eden-watching-prone-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(watchingFile, 'Watching runtime material must be referenced by the global renderer')
+const watchingResponse = await fetch(origin + '/assets/' + watchingFile); assert.equal(watchingResponse.status,200)
+const watchingBytes = Buffer.from(await watchingResponse.arrayBuffer())
+const watchingLocal = await readFile('src/components/avatar/assets/eden-watching-prone-static.webp')
+assert.equal(createHash('sha256').update(watchingBytes).digest('hex'),createHash('sha256').update(watchingLocal).digest('hex'))
 const aboutChunk = main.match(/AboutPage-[A-Za-z0-9_-]+\.js/)?.[0]
 assert(aboutChunk, 'About must be a lazy chunk')
 const aboutResponse = await fetch(origin + '/assets/' + aboutChunk); assert.equal(aboutResponse.status, 200)
@@ -63,6 +69,7 @@ for (const asset of [...art, aboutChunk]) assert(workerJs.includes(asset), 'Abou
 assert(workerJs.includes(treasurerFile),'Treasurer must be precached for offline Expenses')
 assert(workerJs.includes(archivistFile),'Archivist must be precached for offline Records')
 assert(workerJs.includes(reflectorFile),'Reflector must be precached for offline Review')
+assert(workerJs.includes(watchingFile),'Watching must be precached for offline Anime')
 // Workbox's AMD loader appends .js to the extensionless module in define().
 const workerModule = workerJs.match(/workbox-[A-Za-z0-9_-]+/)?.[0]
 assert(workerModule, 'Service worker must reference its Workbox runtime')
@@ -99,7 +106,7 @@ try {
   assert.equal(await evaluate('Boolean(document.querySelector(".about-page"))'), false)
   await session.shot(path.join(output, 'staging-about-auth-offline.png'))
   assert.deepEqual(session.errors, [])
-  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true}, manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
+  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true}, manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
   await writeFile(path.join(output, 'staging-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally { await session.close() }

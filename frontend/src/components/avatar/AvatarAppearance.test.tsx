@@ -17,7 +17,7 @@ async function loaded() { await act(async () => { loaders.at(-1)!.onload!() }) }
 beforeEach(() => { loaders = []; vi.stubGlobal('Image', LoaderImage) })
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
+describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 352, 656], ['eden-watching', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
   it('preloads/decode-checks the approved image while retaining a safe default', async () => {
     const view = render(<AvatarAppearance avatarId={avatarId} {...idle} />)
     expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')
@@ -27,6 +27,7 @@ describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['ede
     expect(loaders[0].decode).toHaveBeenCalledOnce()
     expect(appearance().getAttribute('data-avatar-id')).toBe(avatarId)
     expect(appearance().getAttribute('data-avatar-mode')).toBe('static-prototype')
+    expect(appearance().getAttribute('data-avatar-posture')).toBe(avatarId === 'eden-watching' ? 'prone' : null)
     const image = document.querySelector('img')!
     expect(image.width).toBe(width); expect(image.height).toBe(height)
     expect(image.style.objectPosition).toBe('50% 100%')

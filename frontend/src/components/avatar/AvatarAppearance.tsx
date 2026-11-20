@@ -33,7 +33,7 @@ function StaticAppearance({ visual, pose, faceInward }: { visual: StaticAvatar; 
 
   const ready = status === 'ready'
   return <Facing nativeFacing={ready ? visual.nativeFacing : resolveAvatar('eden-default').nativeFacing} faceInward={faceInward}><div className="eden-avatar-appearance" data-avatar-id={ready ? visual.id : 'eden-default'} data-avatar-requested={visual.id}
-    data-avatar-mode={ready ? 'static-prototype' : 'sprite'} data-asset-state={status}>
+    data-avatar-mode={ready ? 'static-prototype' : 'sprite'} data-asset-state={status} data-avatar-posture={ready && visual.posture === 'prone' ? 'prone' : undefined}>
     {ready ? <img className="eden-avatar-static-image" src={visual.asset.src} width={visual.asset.width} height={visual.asset.height}
       alt="" draggable={false} decoding="async" onError={() => setStatus('error')}
       style={{ objectPosition: `${visual.asset.footAnchor.x * 100}% ${visual.asset.footAnchor.y * 100}%` }} />
