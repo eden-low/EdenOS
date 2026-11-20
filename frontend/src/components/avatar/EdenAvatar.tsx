@@ -5,6 +5,7 @@ import { AvatarCaptureContext, type CaptureAnchor } from './AvatarCaptureContext
 import { AvatarSprite } from './AvatarSprite'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
+import { isIdleAvatarObstacle } from './avatarObstacles'
 import './avatar.css'
 
 const controlSelector = 'button, a, input, select, textarea, summary, [role="button"], [role="link"], [role="tab"], [role="slider"], [role="checkbox"], [role="switch"], [role="combobox"], [role="spinbutton"], [role="menuitem"], [contenteditable="true"], video[controls], audio[controls]'
@@ -74,11 +75,12 @@ function EdenAvatar({ anchor, corner, reserveCapture }: { anchor: CaptureAnchor 
       setOccluded(anotherDialog || Boolean(document.querySelector('.genesis-boot-screen')) || Boolean(document.fullscreenElement) || nativeMediaFullscreen)
       const obstacles = controls.filter((control) => {
         if (anchor && !anchor.sheet.contains(control)) return false
+        if (!anchor && !isIdleAvatarObstacle(control)) return false
         // Capture's top controls are measured too; feet/hands must never cover them.
         const styles = getComputedStyle(control)
         return styles.visibility !== 'hidden' && styles.display !== 'none' && control.getClientRects().length > 0
       }).map(rectOf)
-      const next = avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, obstacles, { corner, reserveCapture })
+      const next = avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, reserveCapture, idleObstacles: anchor ? [] : obstacles })
       setPlacement((current) => {
         // Preserve the last safe coordinates while hidden, so a later return never flies from (0, 0).
         if (next.mode === 'hidden') return current.mode === 'hidden' ? current : { ...current, mode: 'hidden' }
@@ -94,6 +96,8 @@ function EdenAvatar({ anchor, corner, reserveCapture }: { anchor: CaptureAnchor 
     if (anchor) resize?.observe(anchor.sheet)
     window.addEventListener('resize', invalidate)
     window.addEventListener('scroll', invalidate, true)
+    document.addEventListener('focusin', invalidate)
+    document.addEventListener('focusout', invalidate)
     const enterMedia = () => { nativeMediaFullscreen = true; invalidate() }
     const exitMedia = () => { nativeMediaFullscreen = false; invalidate() }
     document.addEventListener('fullscreenchange', invalidate)
@@ -108,6 +112,8 @@ function EdenAvatar({ anchor, corner, reserveCapture }: { anchor: CaptureAnchor 
       observer.disconnect(); resize?.disconnect()
       window.removeEventListener('resize', invalidate)
       window.removeEventListener('scroll', invalidate, true)
+      document.removeEventListener('focusin', invalidate)
+      document.removeEventListener('focusout', invalidate)
       document.removeEventListener('fullscreenchange', invalidate)
       document.removeEventListener('webkitbeginfullscreen', enterMedia, true)
       document.removeEventListener('webkitendfullscreen', exitMedia, true)
@@ -124,7 +130,9 @@ function EdenAvatar({ anchor, corner, reserveCapture }: { anchor: CaptureAnchor 
     <div ref={probe} className="eden-avatar-safe-area" aria-hidden="true" />
     <div ref={element} className="eden-avatar" aria-hidden="true" inert data-state={state} data-sheet={open || undefined}
       data-reduced={reduced || undefined} data-visible={visible} style={style}>
-      <AvatarSprite perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
+      <div className="eden-avatar-facing" data-mirrored={corner === 'left' || undefined}>
+        <AvatarSprite perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
+      </div>
     </div>
   </>, document.body)
 }

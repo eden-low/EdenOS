@@ -56,7 +56,7 @@ describe('Global avatar page and overlay scope', () => {
     expect(avatar().getAttribute('data-visible')).toBe('true')
   })
 
-  it('ignores ordinary text, status and chart geometry but protects real controls', async () => {
+  it('allows scrolling text, charts and buttons, while protecting a fixed control', async () => {
     render(<EdenAvatarProvider enabled><p>Page fixture</p></EdenAvatarProvider>)
     await measure()
     const obstruction = document.createElement('div')
@@ -73,10 +73,40 @@ describe('Global avatar page and overlay scope', () => {
     expect(avatar().getAttribute('data-visible')).toBe('true')
     obstruction.setAttribute('role', 'button')
     await measure()
+    expect(avatar().getAttribute('data-visible')).toBe('true')
+    obstruction.style.position = 'fixed'
+    await measure()
     expect(avatar().getAttribute('data-visible')).toBe('false')
     obstruction.remove()
     await measure()
     expect(avatar().getAttribute('data-visible')).toBe('true')
+  })
+
+  it('hides for a focused input and restores on blur without any scroll', async () => {
+    render(<EdenAvatarProvider enabled><p>Page fixture</p></EdenAvatarProvider>)
+    const input = document.createElement('input')
+    const rect = DOMRect.fromRect({ x: 900, y: 580, width: 124, height: 188 })
+    input.getBoundingClientRect = () => rect
+    input.getClientRects = () => [rect] as unknown as DOMRectList
+    document.body.append(input)
+    await measure()
+    expect(avatar().getAttribute('data-visible')).toBe('true')
+    act(() => input.focus())
+    await waitFor(() => expect(avatar().getAttribute('data-visible')).toBe('false'))
+    act(() => input.blur())
+    await waitFor(() => expect(avatar().getAttribute('data-visible')).toBe('true'))
+    input.remove()
+  })
+
+  it('mirrors only Review, preserving the standing viewport and Reduced Motion', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
+    const view = render(pageFixture('review'))
+    await measure()
+    expect(avatar().querySelector('.eden-avatar-facing')?.getAttribute('data-mirrored')).toBe('true')
+    expect(avatar().querySelector('.eden-avatar-art')?.getAttribute('viewBox')).toBe('144 0 256 512')
+    expect(avatar().querySelector('.eden-avatar-art')?.getAttribute('data-still')).toBe('true')
+    view.rerender(pageFixture('today'))
+    expect(avatar().querySelector('.eden-avatar-facing')?.hasAttribute('data-mirrored')).toBe(false)
   })
 
   it('hides during native iPhone fullscreen media and resumes standing afterwards', async () => {

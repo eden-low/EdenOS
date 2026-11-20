@@ -4,9 +4,10 @@ import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createBrowserSession, delay } from './browserSession.mjs'
+import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const origin = 'http://127.0.0.1:5181'
-const output = path.resolve('artifacts/browser-validation/avatar-part3')
+const output = path.resolve('artifacts/browser-validation/avatar-part3-1')
 await mkdir(output, { recursive: true })
 let harness = await readFile('artifacts/browser-validation/about/harness.tsx', 'utf8')
 assert(harness.includes("import App from '/src/App'"))
@@ -16,9 +17,9 @@ harness = harness.replace('items:[],cloudError:null', 'items:[],cloudError:null,
   .replace('<FinancePlanningContext.Provider', "<FinanceRulesContext.Provider value={{rules:[],status:'loaded',createRule:forbidden,setRuleEnabled:forbidden,deleteRule:forbidden}}><FinancePlanningContext.Provider")
   .replace('</FinancePlanningContext.Provider>', '</FinancePlanningContext.Provider></FinanceRulesContext.Provider>')
 await writeFile(path.join(output, 'harness.tsx'), harness)
-await writeFile(path.join(output, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/artifacts/browser-validation/avatar-part3/harness.tsx"></script></body></html>')
+await writeFile(path.join(output, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/artifacts/browser-validation/avatar-part3-1/harness.tsx"></script></body></html>')
 await delay(250)
-const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part3/index.html')).text()
+const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part3-1/index.html')).text()
 const session = await createBrowserSession()
 const { send, evaluate, waitFor, click } = session
 const results = []
@@ -34,7 +35,7 @@ const pages = [
 ]
 const avatar = `document.querySelector('.eden-avatar')`
 const overlap = `(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top`
-const audit = `(()=>{const a=${avatar};if(!a)return null;const r=a.getBoundingClientRect();const intersects=${overlap};return {visible:a.dataset.visible,state:a.dataset.state,sheet:a.hasAttribute('data-sheet'),pose:a.querySelector('.eden-avatar-art').viewBox.baseVal.y===0?'standing':'perched',left:r.left,top:r.top,width:r.width,height:r.height,pointer:getComputedStyle(a).pointerEvents,inert:a.inert,ariaHidden:a.getAttribute('aria-hidden'),collision:a.dataset.visible==='true'&&[...document.querySelectorAll('button,a,input,select,textarea,summary,[role="button"],[tabindex]:not([tabindex="-1"])')].some(e=>!a.contains(e)&&getComputedStyle(e).visibility!=='hidden'&&e.getClientRects().length&&intersects(r,e.getBoundingClientRect())),overflow:document.documentElement.scrollWidth>innerWidth}})()`
+const audit = `(()=>{const a=${avatar};if(!a)return null;const r=a.getBoundingClientRect();const intersects=${overlap};const important=e=>{if(e.closest('[data-avatar-priority]')||(e===document.activeElement&&e.matches('input,textarea,select,[contenteditable="true"]')))return true;for(let p=e;p&&p!==document.body;p=p.parentElement)if(['fixed','sticky'].includes(getComputedStyle(p).position))return true;return false};return {visible:a.dataset.visible,state:a.dataset.state,sheet:a.hasAttribute('data-sheet'),pose:a.querySelector('.eden-avatar-art').viewBox.baseVal.y===0?'standing':'perched',left:r.left,top:r.top,width:r.width,height:r.height,pointer:getComputedStyle(a).pointerEvents,inert:a.inert,ariaHidden:a.getAttribute('aria-hidden'),mirrored:getComputedStyle(a.querySelector('.eden-avatar-facing')).transform==='matrix(-1, 0, 0, 1, 0, 0)',collision:a.dataset.visible==='true'&&[...document.querySelectorAll('button,a,input,select,textarea,summary,[role="button"]')].some(e=>!a.contains(e)&&important(e)&&getComputedStyle(e).visibility!=='hidden'&&e.getClientRects().length&&intersects(r,e.getBoundingClientRect())),overflow:document.documentElement.scrollWidth>innerWidth}})()`
 const ready = (page) => page.heading ? `document.querySelector('main h1')?.textContent.includes(${JSON.stringify(page.heading)})` : `document.querySelector('.today-dashboard')`
 const clickText = async (text) => evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)}&&b.getClientRects().length);if(!b)throw Error('Missing button: '+${JSON.stringify(text)});b.click()})()`)
 let mobile = true
@@ -54,10 +55,8 @@ try {
     const url = new URL(request.url)
     let body, mime = 'application/javascript'
     if (request.url.startsWith(origin) && !url.pathname.includes('/src/') && !url.pathname.includes('/artifacts/')) { body = html; mime = 'text/html' }
-    else if (url.pathname.includes('firestoreAnimeRepository')) body = `const a={externalId:'sample-anime',title:'Synthetic Anime',titleNormalized:'synthetic anime',score:8,mediaType:'anime',region:'japan',genres:[],status:'completed',year:2025,totalEpisodes:1,updatedAt:1,filterKeys:[]};export const createFirestoreAnimeRepository=()=>({fetchPage:async()=>({items:[a],total:1,hasMore:false}),fetchPublishedSince:async()=>[],countPublishedSince:async()=>0,fetchRecent:async()=>[],getCatalogueStatus:async()=>null,searchTitles:async()=>[a]});`
-    else if (url.pathname.includes('firestoreWeeklyReviewRepository')) body = `export const createFirestoreWeeklyReviewRepository=()=>({subscribe:(_,h)=>{h.next(null);return()=>{}},save:async()=>{throw Error('No financial or reflection writes allowed')}});`
-    else if (url.pathname.includes('animeDetailService')) body = `export class AnimeDetailError extends Error{};export const invalidateAnimeDetail=()=>{};export const loadAnimeDetail=async()=>({schemaVersion:1,externalId:'sample-anime',title:'Synthetic Anime',description:'Synthetic local media only',episodes:[{episodeNumber:1,title:'Fixture',sources:[{label:'Local synthetic video',format:'mp4',url:window.syntheticMediaUrl}]}]});`
-    else body = 'export const useGoalAllocations=()=>({allocations:[],status:"loaded"});'
+    else body = syntheticRepositorySource(url.pathname)
+    assert(body, 'Only explicit synthetic modules may be intercepted')
     await send('Fetch.fulfillRequest', { requestId, responseCode: 200, responseHeaders: [{name:'Content-Type',value:mime}], body: Buffer.from(body).toString('base64') })
   }
   await send('Fetch.enable', { patterns: [
@@ -83,6 +82,16 @@ try {
     }
     for (const page of pages) {
       await navigate(page)
+      if (width===390) {
+        await send('Page.navigate',{url:origin+page.path});await delay(100)
+        await waitFor(`location.pathname===${JSON.stringify(page.path)}&&Boolean(${ready(page)})`,'direct link '+page.path)
+        await evaluate('window.routeReloadMarker=true');await send('Page.reload');await delay(100)
+        await waitFor(`!window.routeReloadMarker&&location.pathname===${JSON.stringify(page.path)}&&Boolean(${ready(page)})`,'reload retains '+page.path)
+        if (safeInsets) {await send('Emulation.setSafeAreaInsets',{insets:{top:47,bottom:34}});await evaluate(`dispatchEvent(new Event('resize'))`);await delay(80)}
+        await click('[aria-label="Open apps"]');await waitFor(`document.querySelector('[aria-label="App drawer"]')`,'route highlight')
+        assert.equal(await evaluate(`document.querySelector('[aria-label="App drawer"] [aria-current="page"]')?.textContent.trim()`),page.label)
+        await closeDialog()
+      }
       assert.equal(await evaluate(`Boolean(document.querySelector('[data-global-capture]'))`), page.path==='/')
       assert.equal(await evaluate(`document.querySelectorAll('[aria-label="Capture something"]').length`), page.path==='/'?1:0)
       if (page.path==='/about') { assert.equal(await evaluate(`${avatar}===null`),true); continue }
@@ -95,6 +104,7 @@ try {
         await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))')
         const sample = await evaluate(audit)
         assert.equal(sample.state,'idle'); assert.equal(sample.pose,'standing'); assert.equal(sample.sheet,false)
+        assert.equal(sample.mirrored,page.path==='/weekly-review')
         assert.equal(sample.pointer,'none'); assert.equal(sample.inert,true); assert.equal(sample.ariaHidden,'true'); assert.equal(sample.overflow,false)
         if (sample.visible==='true') {
           visibleSamples++; assert.equal(sample.collision,false,JSON.stringify({page:page.path,width,sample}))
@@ -104,6 +114,16 @@ try {
       }
       assert(visibleSamples>0, 'avatar must have safe standing space on '+page.path)
       assert(positions.every(p=>Math.abs(p[0]-positions[0][0])<1&&Math.abs(p[1]-positions[0][1])<1),'scroll never moves the standing anchor')
+      await evaluate(`(()=>{const r=${avatar}.getBoundingClientRect();const b=document.createElement('button');b.id='ordinary-scroll-action';b.textContent='Synthetic scrolling action';Object.assign(b.style,{position:'absolute',left:(r.left+scrollX)+'px',top:(r.top+scrollY)+'px',width:r.width+'px',height:r.height+'px',zIndex:1});window.avatarButtonClicks=0;b.onclick=()=>window.avatarButtonClicks++;document.body.append(b)})()`)
+      await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+      assert.equal((await evaluate(audit)).visible,'true','ordinary buttons never hide idle')
+      const hit=await evaluate(`(()=>{const b=document.querySelector('#ordinary-scroll-action'),r=b.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,receives:b.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))}})()`)
+      assert(hit.receives,'inert avatar must not intercept the button behind it')
+      await send('Input.dispatchMouseEvent',{type:'mousePressed',x:hit.x,y:hit.y,button:'left',clickCount:1})
+      await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:hit.x,y:hit.y,button:'left',clickCount:1})
+      assert.equal(await evaluate('window.avatarButtonClicks'),1)
+      assert.equal((await evaluate(audit)).visible,'true')
+      await evaluate(`document.querySelector('#ordinary-scroll-action').remove()`)
       await evaluate(`void(window.avatarBeforeLock=${avatar})`)
       for (const locked of [true,false]) {
         await evaluate(`window.aboutHarness.setLocked(${locked})`); await delay(60)
@@ -114,6 +134,12 @@ try {
       if (width===390) await session.shot(path.join(output,page.label.replaceAll(' ','-')+'.png'))
     }
     await navigate(pages[4])
+    await evaluate(`(()=>{const i=document.querySelector('textarea'),a=${avatar}.getBoundingClientRect();window.scrollBy(0,i.getBoundingClientRect().top-a.top);i.focus({preventScroll:true})})()`)
+    const focusedOverlap=await evaluate(`(()=>{const a=${avatar}.getBoundingClientRect(),b=document.activeElement.getBoundingClientRect();return (${overlap})(a,b)})()`)
+    if(focusedOverlap) await waitFor(`${avatar}.dataset.visible==='false'`,'focused Review field protected')
+    else assert.equal((await evaluate(audit)).collision,false,'desktop Review field already clears the avatar')
+    await evaluate(`document.querySelector('textarea').blur();window.scrollTo(0,0)`)
+    await waitFor(`${avatar}.dataset.visible==='true'`,'Review blur restores standing')
     await evaluate(`document.querySelector('textarea').scrollIntoView({block:'center'})`); await delay(100)
     assert.equal((await evaluate(audit)).collision,false,'Review inputs never intersect a visible avatar')
     assert(await evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Save reflection');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return b.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})()`),'Save reflection remains hit-testable; no write performed')
@@ -132,6 +158,13 @@ try {
     }
   }
   mobile=false
+  await send('Page.navigate',{url:origin+'/expenses#/'});await delay(100)
+  await waitFor(ready(pages[1]),'canonical Expenses beats stale root hash')
+  await send('Page.navigate',{url:origin+'/#/expenses'});await delay(100)
+  await waitFor(ready(pages[1]),'legacy root hash still supported')
+  await navigate(pages[0])
+  await evaluate(`history.replaceState(null,'','/expenses');dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}))`)
+  await waitFor(ready(pages[1]),'pageshow restores URL-backed content')
   await navigate(pages[6])
   await clickText('洗牌 / Shuffle')
   await waitFor(`document.querySelector('#cosmos-tarot-panel input')`,'local Cosmos shuffle')
@@ -178,7 +211,7 @@ try {
   await send('Emulation.setDeviceMetricsOverride',{width:844,height:390,deviceScaleFactor:1,mobile:true});await delay(100)
   assert.equal((await evaluate(audit)).collision,false);assert.equal((await evaluate(audit)).overflow,false)
   assert.deepEqual(session.errors,[])
-  const report={results,allEightRoutes:true,globalPlusOnlyToday:true,existingPageEntries:true,reviewInputsAndSaveProtected:true,cosmosLocalOnly:true,actualAnimePlayerSyntheticMedia:true,fullscreen:true,historyAndCaptureCleanup:true,accountAndGenesisHidden:true,shortViewportAndLandscape:true,noLiveDataOrPaidCalls:true,errors:session.errors}
+  const report={results,allEightRoutes:true,directLinksReloadAndDrawerHighlight:true,pageshowAndLegacyHash:true,ordinaryButtonsClickableBehindAvatar:true,reviewOnlyMirror:true,globalPlusOnlyToday:true,existingPageEntries:true,reviewInputsAndSaveProtected:true,cosmosLocalOnly:true,actualAnimePlayerSyntheticMedia:true,fullscreen:true,historyAndCaptureCleanup:true,accountAndGenesisHidden:true,shortViewportAndLandscape:true,noLiveDataOrPaidCalls:true,errors:session.errors}
   await writeFile(path.join(output,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2))
 } catch(error) { console.error(JSON.stringify({page:await evaluate('document.body.innerText'),errors:session.errors}));throw error }
 finally { await session.close() }

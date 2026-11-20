@@ -1,18 +1,19 @@
 // Local production-mode PWA with an in-memory signed-in context. Never deployed.
-// Run aboutBrowserValidation.mjs first to create the guarded synthetic harness.
+// Run avatarRouteBrowserValidation.mjs first to create the guarded synthetic harness.
 import assert from 'node:assert/strict'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { build, loadConfigFromFile, mergeConfig, preview } from 'vite'
 import { createBrowserSession, delay } from './browserSession.mjs'
+import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/avatar-part3-pwa')
+const output = path.resolve('artifacts/browser-validation/avatar-part3-1-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
 await mkdir(root, { recursive: true })
-let harness = await readFile('artifacts/browser-validation/about/harness.tsx', 'utf8')
+let harness = await readFile('artifacts/browser-validation/avatar-part3-1/harness.tsx', 'utf8')
 const oldImport = "import {PwaContext} from '/src/pwa/pwaContextDefinition'"
 const oldProvider = '<PwaContext.Provider value={{updateAvailable:false,applyUpdate:forbidden,dismissUpdate:forbidden}}>'
 assert(harness.includes(oldImport) && harness.includes(oldProvider) && harness.includes('isAnonymous:false'))
@@ -24,6 +25,7 @@ const resolved = await loadConfigFromFile({ command: 'build', mode: 'production'
 assert(resolved)
 await build(mergeConfig(resolved.config, {
   configFile: false, root, publicDir: path.join(frontend, 'public'),
+  plugins: [{ name: 'synthetic-readonly-repositories', enforce: 'pre', load(id) { return syntheticRepositorySource(id) ?? null } }],
   resolve: { alias: { '/src': path.join(frontend, 'src') } },
   build: { outDir, emptyOutDir: false },
 }))
@@ -69,8 +71,25 @@ try {
     await session.click('[aria-label="Close dialog"]')
     await waitFor(`!document.querySelector('[data-eden-capture]')&&document.body.style.pointerEvents!=='none'`, 'offline Capture cleanup')
   }
+  const routes = [
+    ['/expenses','Finance','Expenses'],['/exercise','Exercise','Exercise'],['/records','Records','Records'],
+    ['/weekly-review','Weekly Review','Review'],['/anime','Anime','Anime'],['/cosmos','Cosmos','Cosmos'],['/about','About Eden','About Eden'],
+  ]
+  for (const [route,heading,label] of routes) {
+    // A new offline document exercises cold deep-link entry, then an actual reload.
+    await send('Page.navigate',{url:'http://127.0.0.1:5182'+route});await delay(100)
+    const routeReady=`location.pathname===${JSON.stringify(route)}&&document.querySelector('main h1')?.textContent.includes(${JSON.stringify(heading)})`
+    await waitFor(routeReady,'offline cold deep link '+route)
+    await evaluate('window.routeReloadMarker=true');await send('Page.reload');await delay(100)
+    await waitFor(`!window.routeReloadMarker&&${routeReady}`,'offline reload '+route)
+    await session.click('[aria-label="Open apps"]')
+    await waitFor(`document.querySelector('[aria-label="App drawer"]')`,'offline current page')
+    assert.equal(await evaluate(`document.querySelector('[aria-label="App drawer"] [aria-current="page"]')?.textContent.trim()`),label)
+    await session.click('[aria-label="Close dialog"]')
+    await waitFor(`!document.querySelector('[role="dialog"][data-state="open"]')`,'offline drawer close')
+  }
   assert.deepEqual(session.errors, [])
-  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, cache: cached, errors: session.errors }
+  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

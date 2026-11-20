@@ -25,6 +25,13 @@ describe('application routes', () => {
     expect(appPagePath('review')).toBe('/weekly-review')
   })
 
+  it.each(['/expenses', '/exercise', '/records', '/weekly-review', '/anime', '/cosmos', '/about'])('keeps the canonical path authoritative over a stale root hash: %s', (path) => {
+    window.history.replaceState(null, '', path)
+    const expected = appPageFromLocation()
+    window.history.replaceState(null, '', path + '#/')
+    expect(appPageFromLocation()).toBe(expected)
+  })
+
   it('falls back safely to Today for unknown paths', () => {
     window.history.replaceState(null, '', '/not-an-edenos-page')
     expect(appPageFromLocation()).toBe('today')

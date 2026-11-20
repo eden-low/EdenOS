@@ -18,6 +18,9 @@
 /* Once perched, anchor coordinates follow every animation frame without transition lag. */
 .eden-avatar[data-state="idle"], .eden-avatar[data-state="perched"], .eden-avatar[data-reduced] { transition: opacity 100ms; }
 .eden-avatar-art { overflow: visible; }
+.eden-avatar-facing { width: 100%; height: 100%; }
+/* This static orientation survives Reduced Motion; blink/pose timing stays inside. */
+.eden-avatar-facing[data-mirrored] { transform: scaleX(-1); }
 .eden-avatar-art[data-attentive] { transform: rotate(-4deg) translateY(-3px); }
 .eden-avatar-eyes-open { animation: eden-eyes-open 6.8s steps(1) infinite; }
 .eden-avatar-eyes-closed { opacity: 0; animation: eden-eyes-closed 6.8s steps(1) infinite; }

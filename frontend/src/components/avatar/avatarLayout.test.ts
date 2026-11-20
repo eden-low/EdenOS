@@ -37,11 +37,12 @@ describe('Avatar safe placement', () => {
     expect(avatarPlacement({ ...iphone, top: 190, height: 300 }, { ...sheet, top: 240 }).mode).toBe('hidden')
     expect(avatarPlacement(iphone, { ...sheet, top: 80 }).mode).toBe('hidden')
   })
-  it('hides a blocked idle avatar instead of substituting the Capture bust', () => {
+  it('ignores scrolling controls in idle, but hides for protected idle controls and Capture controls', () => {
     const idle = avatarPlacement(iphone, null)
     const tallControl = { left: idle.left, top: idle.top, width: idle.width, height: 40 }
-    expect(avatarPlacement(iphone, null, [tallControl]).mode).toBe('hidden')
-    expect(avatarPlacement(iphone, null, [idle]).mode).toBe('hidden')
+    expect(avatarPlacement(iphone, null, [tallControl])).toEqual(idle)
+    expect(avatarPlacement(iphone, null, [idle])).toEqual(idle)
+    expect(avatarPlacement(iphone, null, [], { idleObstacles: [tallControl] }).mode).toBe('hidden')
     const close = { left: 330, top: sheet.top + 20, width: 40, height: 40 }
     expect(overlaps(avatarPlacement(iphone, sheet), close)).toBe(false)
     expect(avatarPlacement(iphone, sheet, [avatarPlacement(iphone, sheet)]).mode).toBe('hidden')
@@ -55,7 +56,7 @@ describe('Avatar safe placement', () => {
           const control = { left: width - 120, top, width: 108, height: 36 }
           const result = avatarPlacement(view, null, [control])
           expect(result.mode).not.toBe('bust')
-          if (result.mode === 'full') expect(overlaps(result, control)).toBe(false)
+          expect(result).toEqual(avatarPlacement(view, null))
         }
       }
     }

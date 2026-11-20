@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import {
   DesktopNavigation,
   MobileNavigation,
@@ -6,7 +6,7 @@ import {
 } from './components/layout/Navigation'
 import { TodayPage } from './pages/TodayPage'
 import { PwaUpdatePrompt } from './pwa/PwaUpdatePrompt'
-import { appPageFromLocation, pushAppPage } from './routing/appRoutes'
+import { appPageFromLocation, pushAppPage, pushAppUrl, subscribeAppRoute } from './routing/appRoutes'
 import { EdenAvatarProvider } from './components/avatar/EdenAvatar'
 
 const ExpensesPage = lazy(() => import('./pages/ExpensesPage').then((module) => ({ default: module.ExpensesPage })))
@@ -19,18 +19,8 @@ const AboutPage = lazy(() => import('./pages/AboutPage').then((module) => ({ def
 const CommandPalette = lazy(() => import('./components/command/CommandPalette').then((module) => ({ default: module.CommandPalette })))
 
 function App() {
-  const [activePage, setActivePage] = useState<AppPage>(() => appPageFromLocation())
+  const activePage = useSyncExternalStore(subscribeAppRoute, appPageFromLocation)
   const [commandOpen, setCommandOpen] = useState(false)
-
-  useEffect(() => {
-    function syncPageFromUrl() { setActivePage(appPageFromLocation()) }
-    window.addEventListener('popstate', syncPageFromUrl)
-    window.addEventListener('hashchange', syncPageFromUrl)
-    return () => {
-      window.removeEventListener('popstate', syncPageFromUrl)
-      window.removeEventListener('hashchange', syncPageFromUrl)
-    }
-  }, [])
 
   useEffect(() => {
     function openCommand(event: KeyboardEvent) {
@@ -45,12 +35,10 @@ function App() {
 
   function navigate(page: AppPage) {
     if (page !== activePage || window.location.hash) pushAppPage(page)
-    setActivePage(page)
   }
 
   function searchAnime(query: string) {
-    window.history.pushState(null, '', `/anime?q=${encodeURIComponent(query)}`)
-    setActivePage('anime')
+    pushAppUrl(`/anime?q=${encodeURIComponent(query)}`)
   }
 
   return (
