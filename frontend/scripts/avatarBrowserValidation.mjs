@@ -1,7 +1,7 @@
 // Synthetic only: this harness has no Auth provider, Firebase session or write implementation.
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -40,7 +40,7 @@ createRoot(document.getElementById('root')).render(<React.StrictMode><Harness />
 const profile = await mkdtemp(path.join(os.tmpdir(), 'eden-avatar-'))
 const browser = spawn(process.env.CHROME_PATH ?? 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe', [
   '--headless=new', '--disable-gpu', '--no-first-run', '--disable-default-apps',
-  '--remote-debugging-port=9341', `--user-data-dir=${profile}`, 'about:blank',
+  '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank',
 ], { stdio: 'ignore' })
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 let socket, nextId = 0
@@ -71,8 +71,12 @@ const audit = `(() => {
 })()`
 try {
   let page
+  let port
   for (let i = 0; i < 80; i++) {
-    try { page = (await (await fetch('http://127.0.0.1:9341/json/list')).json()).find((p) => p.type === 'page'); if (page) break } catch {}
+    try {
+      if (!port) port = Number((await readFile(path.join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0])
+      page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((p) => p.type === 'page'); if (page) break
+    } catch {}
     await delay(100)
   }
   assert(page, 'Chrome must start')
@@ -101,11 +105,12 @@ try {
     await send('Emulation.setDeviceMetricsOverride', {...view, deviceScaleFactor:1, mobile:view.width<768})
     await send('Page.navigate', {url:baseUrl+'/artifacts/browser-validation/avatar/index.html'})
     await waitFor(`document.querySelector('.eden-avatar')?.dataset.visible==='true'`, 'idle avatar')
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
     await shot(`idle-${view.width}`)
     // Reproduce the iPhone report: a control intersects only the standing avatar's head.
     // The old layout chooses the smaller bust, which must never change the idle pose.
     await evaluate(`(() => { const r=document.querySelector('.eden-avatar').getBoundingClientRect(); const b=document.createElement('button');b.id='avatar-scroll-obstacle';b.textContent='Synthetic obstruction';Object.assign(b.style,{position:'fixed',left:r.left+'px',top:(r.top+4)+'px',width:r.width+'px',height:'24px'});document.body.append(b) })()`)
-    await delay(80)
+    await waitFor(`document.querySelector('.eden-avatar')?.dataset.visible==='false'`, 'idle obstruction hides standing avatar')
     const obstructed = await evaluate(audit)
     assert.equal(obstructed.state,'idle'); assert.equal(obstructed.pose,'standing'); assert.equal(obstructed.visible,'false')
     await evaluate(`document.querySelector('#avatar-scroll-obstacle').remove()`)
@@ -177,6 +182,7 @@ try {
   await writeFile(path.join(output,'results.json'),JSON.stringify(result,null,2))
   console.log(JSON.stringify(result,null,2))
 } finally {
+  if (socket?.readyState === WebSocket.OPEN) await Promise.race([send('Browser.close').catch(() => undefined), delay(1500)])
   socket?.close(); browser.kill()
   // Preserve the diagnostic profile and screenshots for review; no filesystem cleanup risk.
 }

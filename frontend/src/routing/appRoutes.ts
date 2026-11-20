@@ -8,6 +8,7 @@ const pagePaths: Record<AppPage, string> = {
   review: '/weekly-review',
   anime: '/anime',
   cosmos: '/cosmos',
+  about: '/about',
 }
 
 const pathPages = new Map(Object.entries(pagePaths).map(([page, path]) => [path, page as AppPage]))

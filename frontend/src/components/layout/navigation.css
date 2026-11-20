@@ -1,0 +1,6 @@
+/* With eight destinations, a short desktop window needs a scrollable rail. */
+@media (max-height: 650px) {
+  .desktop-nav { overflow-y: auto; }
+  .desktop-nav-items { position: static; transform: none; margin-block: 1rem; flex-shrink: 0; }
+  .desktop-nav > div, .desktop-nav > button { flex-shrink: 0; }
+}
