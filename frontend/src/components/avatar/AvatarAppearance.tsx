@@ -18,6 +18,7 @@ function Facing({ nativeFacing, faceInward, children }: { nativeFacing: AvatarFa
 
 function StaticAppearance({ visual, pose, faceInward }: { visual: StaticAvatar; pose: Pose; faceInward: boolean }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     let active = true
     const image = new Image()
@@ -29,7 +30,13 @@ function StaticAppearance({ visual, pose, faceInward }: { visual: StaticAvatar; 
     image.onerror = failed
     image.src = visual.asset.src
     return () => { active = false; image.onload = null; image.onerror = null }
-  }, [visual.asset.src])
+  }, [visual.asset.src, attempt])
+  useEffect(() => {
+    if (status !== 'error') return
+    const retry = () => { setStatus('loading'); setAttempt(value => value + 1) }
+    window.addEventListener('online', retry)
+    return () => window.removeEventListener('online', retry)
+  }, [status])
 
   const ready = status === 'ready'
   return <Facing nativeFacing={ready ? visual.nativeFacing : resolveAvatar('eden-default').nativeFacing} faceInward={faceInward}><div className="eden-avatar-appearance" data-avatar-id={ready ? visual.id : 'eden-default'} data-avatar-requested={visual.id}

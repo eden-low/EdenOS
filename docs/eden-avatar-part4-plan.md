@@ -11,6 +11,8 @@ See the [Archivist handoff](eden-avatar-part4b-archivist.md),
 validation and acceptance checklists; Treasurer provenance below is retained.
 Part 4C subsequently authorizes the approved standalone Swim/Boxing sources and
 deterministic Exercise entry alternation; see [the current 4C handoff](eden-avatar-part4c-exercise.md).
+Part 4D now authorizes six visually verified final sources and shared Cosmos
+selection; see [the 4D static handoff](eden-avatar-part4d-cosmos.md).
 
 ## Stage boundaries
 
@@ -19,13 +21,13 @@ deterministic Exercise entry alternation; see [the current 4C handoff](eden-avat
 | 4A | Shared specification for 13 identities, selector architecture, approved abacus Treasurer static prototype | Yes |
 | 4B | Expenses, Records, Weekly Review and Anime outfits with basic idle | Batches 1–3: Records, Review and Anime static prototypes; all new motion pending |
 | 4C | Exercise Swim / Boxing dual form with deterministic alternation | Static outfits and per-tab entry parity; dedicated animation frames pending |
-| 4D | Six Cosmos forms mapped directly to its internal systems | No |
+| 4D | Six Cosmos forms mapped directly to its internal systems | Six static outfits and shared selection; dedicated action frames pending |
 | 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | No; current batches only perform their required regression checks |
 
 Part 4A was accepted by the owner. Part 4B batches 1–3 authorize Records, Review and Anime only.
 Part 4C static forms and parity are now authorized. Part 5 financial reactions are
-separate. Do not start further animation batches, 4D–4E or
-Part 5 automatically; await the owner's Exercise dual-form real-device acceptance.
+separate. Do not start further animation batches, 4E or
+Part 5 automatically; await the owner's Cosmos six-form real-device acceptance.
 
 ## Shared character and material specification
 
@@ -56,20 +58,20 @@ Part 5 automatically; await the owner's Exercise dual-form real-device acceptanc
 | `eden-archivist` | Records, 4B batch 1 | Approved **static 4B prototype**, no blink, reading, page turn or nod |
 | `eden-reflector` | Weekly Review, 4B batch 2 | Approved **static 4B prototype**, native right-facing; no blink, page turn, writing or look-up |
 | `eden-watching` | Anime, 4B batch 3 | Static prone cutout derived from the approved board; no blink, gaze or yawn |
-| `eden-tarot` | Cosmos Tarot, 4D | Planned; no resource |
-| `eden-iching` | Cosmos I Ching, 4D | Planned; no resource |
-| `eden-bazi` | Cosmos BaZi, 4D | Planned; no resource |
-| `eden-astrology` | Cosmos Astrology, 4D | Planned; no resource |
-| `eden-ziwei` | Cosmos Zi Wei, 4D | Planned; no resource |
-| `eden-ai-explorer` | Cosmos Ask Cosmos, 4D | Planned; no resource |
+| `eden-tarot` | Cosmos Tarot, 4D | Approved static star-cloak/card |
+| `eden-iching` | Cosmos I Ching, 4D | Approved static green robe/three coins |
+| `eden-bazi` | Cosmos BaZi, 4D | Approved static scholar/calendar scroll |
+| `eden-astrology` | Cosmos Astrology, 4D | Approved static astronomical coat/star chart |
+| `eden-ziwei` | Cosmos Zi Wei, 4D | Approved static ornate star officer/chart/ribbons |
+| `eden-ai-explorer` | Cosmos Ask Cosmos, 4D | Approved static technical coat/hologram |
 
-There are exactly 13 requested IDs: seven available definitions (including the
-existing default) and six explicitly planned Cosmos definitions. Part 4C adds only
-Swim/Boxing artwork. No user-facing clothes picker is added: the selector
+There are exactly 13 requested IDs, now all with available artwork (one accepted
+original sprite and twelve static prototypes). Part 4D adds only the six Cosmos
+resources. No user-facing clothes picker is added: the selector
 is deterministic page intent. Today always selects `eden-default`; Expenses selects
 Treasurer; Records selects Archivist; Review selects Reflector;
 Anime selects Watching; Exercise alternates Swim/Boxing on committed page entries;
-Cosmos keeps default; About selects none.
+Cosmos uses its actual selected system via one shared typed store; About selects none.
 Account remains an existing modal that hides the global avatar.
 
 ## Approved files and deterministic derivation
@@ -112,6 +114,7 @@ preview. Source PNGs and all visual QA artifacts must stay outside public commit
 | Role IDs, readiness, capabilities, visual dimensions/anchor/URL | `avatarRegistry.ts` |
 | Page → ID selection; no records, amounts, randomness or save events | `avatarPageSelection.ts` |
 | Per-document committed Exercise entries and session parity | `exerciseAvatarEntry.ts` and `useExerciseAvatarEntry.ts` |
+| One canonical Cosmos experience, shared with the page | `cosmosSelection.ts` and `CosmosSelectionProvider.tsx` |
 | Original sprite vs static image; preload/decode/error, actual-material facing and unload cleanup | `AvatarAppearance.tsx` |
 | Original blink/perch pixels | Existing `AvatarSprite.tsx` and original atlas, unchanged |
 | Today action sequence/timers | Existing `avatarMachine.ts`, unchanged |
@@ -140,7 +143,11 @@ Reduced Motion does not animate or recreate the static image.
 - Exercise adds two static outfits with one tab-local parity advance per committed
   entry. Scroll, rerenders, overlays, lock state and duplicate restore events do
   not select another form. Resource failures retain the consumed entry.
-- PWA adds only the six available static outfit filename patterns to the existing precache;
+- Cosmos maps all six actual system selections directly to its six approved
+  static forms. Results, inputs, scrolling and rerenders do not change clothes.
+  A fresh visit resets both actual UI and avatar to Tarot. Online resource retry
+  keeps the same selected system and calculation state.
+- PWA adds only the twelve available static outfit filename patterns to the existing precache;
   update prompting, manifest/start URL, routing and offline security are unchanged.
 - No financial records are read by wardrobe modules; no real writes, Guest exit,
   paid APIs, Firebase/Rules, Netlify sensitive settings or Production changes.
@@ -154,9 +161,9 @@ Reduced Motion does not animate or recreate the static image.
 - **4C animations:** entry parity is implemented independently of renderer and
   data. Dedicated goggles/shoulder/punch/glove/blink frames are still absent;
   never fake them by transforming the static art or triggering on workout saves.
-- **4D:** Cosmos owns its active tab. A future selection context maps
-  `tarot/iching/bazi/astrology/ziwei/ai` directly to the six listed Cosmos IDs.
-  No autonomous rotation or AI invocation belongs in the avatar renderer.
+- **4D animations:** shared selection and all six static forms are implemented.
+  Card/coin/scroll/star-chart/hologram actions and new blink frames still require
+  dedicated approved art. No autonomous rotation or AI invocation belongs in the renderer.
 - **4E:** measure all-role decoded memory, preload/cache budgets, route transitions,
   Reduced Motion, accessibility, keyboard/safe-area behavior and actual Safari/PWA.
   Current single-resource tests are not a claim that the whole 4E phase is complete.

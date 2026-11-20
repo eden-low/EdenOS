@@ -8,12 +8,12 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/avatar-part4c-exercise-pwa')
+const output = path.resolve('artifacts/browser-validation/avatar-part4d-cosmos-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
 await mkdir(root, { recursive: true })
-let harness = await readFile('artifacts/browser-validation/avatar-part4c-exercise/harness.tsx', 'utf8')
+let harness = await readFile('artifacts/browser-validation/avatar-part4d-cosmos/harness.tsx', 'utf8')
 const oldImport = "import {PwaContext} from '/src/pwa/pwaContextDefinition'"
 const oldProvider = '<PwaContext.Provider value={{updateAvailable:false,applyUpdate:forbidden,dismissUpdate:forbidden}}>'
 assert(harness.includes(oldImport) && harness.includes(oldProvider) && harness.includes('isAnonymous:false'))
@@ -39,11 +39,11 @@ try {
   await waitFor(ready, 'synthetic signed-in production About')
   let cached
   for (let i = 0; i < 60; i++) {
-    cached = await evaluate(`(async()=>{const regs=await navigator.serviceWorker.getRegistrations();const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:regs.some(r=>r.active?.state==='activated'),wave:urls.some(url=>url.includes('eden-about-wave-v2-')),treasurer:urls.some(url=>url.includes('eden-treasurer-abacus-static-')),archivist:urls.some(url=>url.includes('eden-archivist-clipboard-static-')),reflector:urls.some(url=>url.includes('eden-reflector-journal-static-')),watching:urls.some(url=>url.includes('eden-watching-prone-static-')),swim:urls.some(url=>url.includes('eden-swim-static-')),boxing:urls.some(url=>url.includes('eden-boxing-static-')),entries:urls.length}})()`)
-    if (cached.active && cached.wave && cached.treasurer && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing) break
+    cached = await evaluate(`(async()=>{const regs=await navigator.serviceWorker.getRegistrations();const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:regs.some(r=>r.active?.state==='activated'),wave:urls.some(url=>url.includes('eden-about-wave-v2-')),treasurer:urls.some(url=>url.includes('eden-treasurer-abacus-static-')),archivist:urls.some(url=>url.includes('eden-archivist-clipboard-static-')),reflector:urls.some(url=>url.includes('eden-reflector-journal-static-')),watching:urls.some(url=>url.includes('eden-watching-prone-static-')),swim:urls.some(url=>url.includes('eden-swim-static-')),boxing:urls.some(url=>url.includes('eden-boxing-static-')),cosmos:['tarot','iching','bazi','astrology','ziwei','ai-explorer'].every(id=>urls.some(url=>url.includes('eden-'+id+'-static-'))),entries:urls.length}})()`)
+    if (cached.active && cached.wave && cached.treasurer && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos) break
     await delay(1000)
   }
-  assert(cached.active && cached.wave && cached.treasurer && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing)
+  assert(cached.active && cached.wave && cached.treasurer && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos)
   await evaluate('window.pwaReloadMarker=true'); await send('Page.reload')
   await waitFor('!window.pwaReloadMarker', 'new controlled document')
   await waitFor(ready, 'synthetic session persists through reload')
@@ -109,6 +109,12 @@ try {
       assert.equal(await evaluate(`document.querySelector('.eden-avatar').dataset.state`),'idle')
       assert.equal(await evaluate(`document.querySelector('.eden-avatar').hasAttribute('data-sheet')`),false)
     }
+    if(route==='/cosmos') {
+      for(const [system,id] of [['tarot','eden-tarot'],['ai','eden-ai-explorer'],['iching','eden-iching'],['ziwei','eden-ziwei'],['bazi','eden-bazi'],['astrology','eden-astrology']]) {
+        await session.click('#cosmos-'+system+'-tab')
+        await waitFor(`document.querySelector('#cosmos-${system}-tab').getAttribute('aria-selected')==='true'&&document.querySelector('.eden-avatar-appearance')?.dataset.avatarId===${JSON.stringify(id)}&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===352`,'offline Cosmos '+system)
+      }
+    }
     await session.click('[aria-label="Open apps"]')
     await waitFor(`document.querySelector('[aria-label="App drawer"]')`,'offline current page')
     assert.equal(await evaluate(`document.querySelector('[aria-label="App drawer"] [aria-current="page"]')?.textContent.trim()`),label)
@@ -116,7 +122,7 @@ try {
     await waitFor(`!document.querySelector('[role="dialog"][data-state="open"]')`,'offline drawer close')
   }
   assert.deepEqual(session.errors, [])
-  const report = { offlineExerciseForms, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedAndOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
+  const report = { offlineExerciseForms, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedAndOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,allSixCosmosOfflineDecoded:true,offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

@@ -4,17 +4,13 @@ import { selectAvatarForPage } from './avatarPageSelection'
 import type { AppPage } from '../layout/Navigation'
 
 describe('avatar wardrobe registry and page intent', () => {
-  it('registers the 13 approved IDs with seven available appearances and six planned Cosmos roles', () => {
+  it('registers all 13 approved IDs with real available artwork', () => {
     expect(avatarIds).toEqual(['eden-default','eden-treasurer','eden-swim','eden-boxing','eden-archivist','eden-reflector','eden-watching','eden-tarot','eden-iching','eden-bazi','eden-astrology','eden-ziwei','eden-ai-explorer'])
     expect(Object.keys(avatarRegistry)).toHaveLength(13)
     for (const id of avatarIds) {
       expect(avatarRegistry[id].id).toBe(id)
-      if (['eden-default', 'eden-treasurer', 'eden-archivist', 'eden-reflector', 'eden-watching', 'eden-swim', 'eden-boxing'].includes(id)) expect(avatarRegistry[id].status).toBe('ready')
-      else {
-        expect(avatarRegistry[id].status).toBe('planned')
-        expect('asset' in avatarRegistry[id]).toBe(false)
-        expect(resolveAvatar(id).id).toBe('eden-default')
-      }
+      expect(avatarRegistry[id].status).toBe('ready')
+      expect(resolveAvatar(id).id).toBe(id)
     }
     expect(resolveAvatar('unavailable-id' as AvatarId).id).toBe('eden-default')
   })
@@ -45,8 +41,14 @@ describe('avatar wardrobe registry and page intent', () => {
     for (const page of ['today', 'expenses', 'records', 'review', 'anime', 'about'] as AppPage[])
       expect(selectAvatarForPage(page, 'eden-boxing')).toBe(selectAvatarForPage(page))
   })
-  it.each<AppPage>(['cosmos'])('keeps %s on the original until its assets are approved', (page) => {
-    expect(selectAvatarForPage(page)).toBe('eden-default')
+  it.each([
+    ['tarot', 'eden-tarot'], ['iching', 'eden-iching'], ['bazi', 'eden-bazi'],
+    ['astrology', 'eden-astrology'], ['ziwei', 'eden-ziwei'], ['ai', 'eden-ai-explorer'],
+  ] as const)('maps Cosmos %s directly to %s', (system, id) => {
+    expect(selectAvatarForPage('cosmos', 'eden-boxing', system)).toBe(id)
+    expect(resolveAvatar(id)).toMatchObject({ prototype: '4D-static', blink: false, capturePerch: false })
+    expect(selectAvatarForPage('today', 'eden-boxing', system)).toBe('eden-default')
   })
+  it('defaults Cosmos to Tarot', () => { expect(selectAvatarForPage('cosmos')).toBe('eden-tarot') })
   it('excludes About from the global wardrobe', () => { expect(selectAvatarForPage('about')).toBeNull() })
 })

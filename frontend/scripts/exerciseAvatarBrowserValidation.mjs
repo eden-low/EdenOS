@@ -10,7 +10,7 @@ const origin = 'http://127.0.0.1:5181'
 const key = 'edenos:exercise-avatar:v1'
 const output = path.resolve('artifacts/browser-validation/avatar-part4c-entry')
 await mkdir(output, { recursive: true })
-let harness = await readFile('artifacts/browser-validation/avatar-part4c-exercise/harness.tsx', 'utf8')
+let harness = await readFile('artifacts/browser-validation/avatar-part4d-cosmos/harness.tsx', 'utf8')
 harness = harness.replace('.render(<Harness/>)', '.render(<React.StrictMode><Harness/></React.StrictMode>)')
 assert(harness.includes('.render(<React.StrictMode><Harness/></React.StrictMode>)'))
 await writeFile(path.join(output, 'harness.tsx'), harness)

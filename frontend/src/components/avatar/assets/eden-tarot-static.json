@@ -1,0 +1,57 @@
+{
+  "id": "eden-tarot",
+  "version": "4D-static-v1",
+  "source": {
+    "file": "eden-tarot-source.png",
+    "suppliedFile": "ChatGPT 图像 2026年11月21日 06_36_36-1.png",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 2524467,
+    "sha256": "2d93cfc7908634d2038a2208a8c49e1fab87940763c880a3b19c25de5382f4ac",
+    "verifiedIdentity": "tarot"
+  },
+  "derivation": {
+    "crop": {
+      "left": 24,
+      "top": 0,
+      "width": 987,
+      "height": 1536
+    },
+    "padding": 8,
+    "fit": "contain",
+    "position": "bottom",
+    "mirror": false,
+    "alphaCleanup": {
+      "maximumClearedAlpha": 3,
+      "clearedPixels": 36831
+    },
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-tarot-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 90404,
+    "sha256": "d0ab2c6ba0bf20d08eb691d684afb035fb662abe1db54a472d0ee6703317220d",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "dedicatedActionFrames": false,
+    "capturePerch": false
+  }
+}

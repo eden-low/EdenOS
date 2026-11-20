@@ -1,0 +1,57 @@
+{
+  "id": "eden-astrology",
+  "version": "4D-static-v1",
+  "source": {
+    "file": "eden-astrology-source.png",
+    "suppliedFile": "ChatGPT 图像 2026年11月21日 06_36_40-4.png",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 2476403,
+    "sha256": "d0b5284ac28446d99d8a7455b73199cf4f006d1d2ea30feaa05bb5a5d9445976",
+    "verifiedIdentity": "astrology"
+  },
+  "derivation": {
+    "crop": {
+      "left": 24,
+      "top": 0,
+      "width": 987,
+      "height": 1536
+    },
+    "padding": 8,
+    "fit": "contain",
+    "position": "bottom",
+    "mirror": false,
+    "alphaCleanup": {
+      "maximumClearedAlpha": 3,
+      "clearedPixels": 19864
+    },
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-astrology-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 80058,
+    "sha256": "8ab0c4c29e067d91885cedf817e6d8e08170f8390335e6290245647629b4c57b",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "dedicatedActionFrames": false,
+    "capturePerch": false
+  }
+}

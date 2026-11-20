@@ -58,6 +58,42 @@ const boxingResponse = await fetch(origin + '/assets/' + boxingFile); assert.equ
 const boxingBytes = Buffer.from(await boxingResponse.arrayBuffer())
 const boxingLocal = await readFile('src/components/avatar/assets/eden-boxing-static.webp')
 assert.equal(createHash('sha256').update(boxingBytes).digest('hex'),createHash('sha256').update(boxingLocal).digest('hex'))
+const tarotFile = main.match(/eden-tarot-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(tarotFile, 'Tarot runtime material must be referenced by the global renderer')
+const tarotResponse = await fetch(origin + '/assets/' + tarotFile); assert.equal(tarotResponse.status,200)
+const tarotBytes = Buffer.from(await tarotResponse.arrayBuffer())
+const tarotLocal = await readFile('src/components/avatar/assets/eden-tarot-static.webp')
+assert.equal(createHash('sha256').update(tarotBytes).digest('hex'),createHash('sha256').update(tarotLocal).digest('hex'))
+const ichingFile = main.match(/eden-iching-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(ichingFile, 'Iching runtime material must be referenced by the global renderer')
+const ichingResponse = await fetch(origin + '/assets/' + ichingFile); assert.equal(ichingResponse.status,200)
+const ichingBytes = Buffer.from(await ichingResponse.arrayBuffer())
+const ichingLocal = await readFile('src/components/avatar/assets/eden-iching-static.webp')
+assert.equal(createHash('sha256').update(ichingBytes).digest('hex'),createHash('sha256').update(ichingLocal).digest('hex'))
+const baziFile = main.match(/eden-bazi-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(baziFile, 'Bazi runtime material must be referenced by the global renderer')
+const baziResponse = await fetch(origin + '/assets/' + baziFile); assert.equal(baziResponse.status,200)
+const baziBytes = Buffer.from(await baziResponse.arrayBuffer())
+const baziLocal = await readFile('src/components/avatar/assets/eden-bazi-static.webp')
+assert.equal(createHash('sha256').update(baziBytes).digest('hex'),createHash('sha256').update(baziLocal).digest('hex'))
+const astrologyFile = main.match(/eden-astrology-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(astrologyFile, 'Astrology runtime material must be referenced by the global renderer')
+const astrologyResponse = await fetch(origin + '/assets/' + astrologyFile); assert.equal(astrologyResponse.status,200)
+const astrologyBytes = Buffer.from(await astrologyResponse.arrayBuffer())
+const astrologyLocal = await readFile('src/components/avatar/assets/eden-astrology-static.webp')
+assert.equal(createHash('sha256').update(astrologyBytes).digest('hex'),createHash('sha256').update(astrologyLocal).digest('hex'))
+const ziweiFile = main.match(/eden-ziwei-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(ziweiFile, 'Ziwei runtime material must be referenced by the global renderer')
+const ziweiResponse = await fetch(origin + '/assets/' + ziweiFile); assert.equal(ziweiResponse.status,200)
+const ziweiBytes = Buffer.from(await ziweiResponse.arrayBuffer())
+const ziweiLocal = await readFile('src/components/avatar/assets/eden-ziwei-static.webp')
+assert.equal(createHash('sha256').update(ziweiBytes).digest('hex'),createHash('sha256').update(ziweiLocal).digest('hex'))
+const aiExplorerFile = main.match(/eden-ai-explorer-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(aiExplorerFile, 'Ai-Explorer runtime material must be referenced by the global renderer')
+const aiExplorerResponse = await fetch(origin + '/assets/' + aiExplorerFile); assert.equal(aiExplorerResponse.status,200)
+const aiExplorerBytes = Buffer.from(await aiExplorerResponse.arrayBuffer())
+const aiExplorerLocal = await readFile('src/components/avatar/assets/eden-ai-explorer-static.webp')
+assert.equal(createHash('sha256').update(aiExplorerBytes).digest('hex'),createHash('sha256').update(aiExplorerLocal).digest('hex'))
 const aboutChunk = main.match(/AboutPage-[A-Za-z0-9_-]+\.js/)?.[0]
 assert(aboutChunk, 'About must be a lazy chunk')
 const aboutResponse = await fetch(origin + '/assets/' + aboutChunk); assert.equal(aboutResponse.status, 200)
@@ -83,6 +119,7 @@ assert(workerJs.includes(archivistFile),'Archivist must be precached for offline
 assert(workerJs.includes(reflectorFile),'Reflector must be precached for offline Review')
 assert(workerJs.includes(watchingFile),'Watching must be precached for offline Anime')
 assert(workerJs.includes(swimFile)&&workerJs.includes(boxingFile),'Both Exercise forms must be precached')
+for(const file of [tarotFile,ichingFile,baziFile,astrologyFile,ziweiFile,aiExplorerFile])assert(workerJs.includes(file),'All six Cosmos forms must be precached')
 // Workbox's AMD loader appends .js to the extensionless module in define().
 const workerModule = workerJs.match(/workbox-[A-Za-z0-9_-]+/)?.[0]
 assert(workerModule, 'Service worker must reference its Workbox runtime')
@@ -119,7 +156,7 @@ try {
   assert.equal(await evaluate('Boolean(document.querySelector(".about-page"))'), false)
   await session.shot(path.join(output, 'staging-about-auth-offline.png'))
   assert.deepEqual(session.errors, [])
-  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true},swim:{file:swimFile,bytes:swimBytes.length,hashMatched:true,precached:true},boxing:{file:boxingFile,bytes:boxingBytes.length,hashMatched:true,precached:true}, manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
+  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true},swim:{file:swimFile,bytes:swimBytes.length,hashMatched:true,precached:true},boxing:{file:boxingFile,bytes:boxingBytes.length,hashMatched:true,precached:true},cosmos:[{file:tarotFile,bytes:tarotBytes.length,hashMatched:true,precached:true},{file:ichingFile,bytes:ichingBytes.length,hashMatched:true,precached:true},{file:baziFile,bytes:baziBytes.length,hashMatched:true,precached:true},{file:astrologyFile,bytes:astrologyBytes.length,hashMatched:true,precached:true},{file:ziweiFile,bytes:ziweiBytes.length,hashMatched:true,precached:true},{file:aiExplorerFile,bytes:aiExplorerBytes.length,hashMatched:true,precached:true}], manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
   await writeFile(path.join(output, 'staging-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally { await session.close() }

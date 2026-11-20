@@ -5,6 +5,8 @@ import { AvatarCaptureContext, type CaptureAnchor } from './AvatarCaptureContext
 import { AvatarAppearance } from './AvatarAppearance'
 import { selectAvatarForPage } from './avatarPageSelection'
 import { useExerciseAvatarEntry } from './useExerciseAvatarEntry'
+import { useCosmosSelection } from '../../cosmos/cosmosSelection'
+import { CosmosSelectionProvider } from '../../cosmos/CosmosSelectionProvider'
 import type { AvatarId } from './avatarRegistry'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
@@ -15,6 +17,10 @@ const controlSelector = 'button, a, input, select, textarea, summary, [role="but
 function rectOf(element: Element): AvatarRect { return element.getBoundingClientRect() }
 
 export function EdenAvatarProvider({ enabled, page = 'today', children }: { enabled: boolean; page?: AppPage; children: ReactNode }) {
+  return <CosmosSelectionProvider active={page === 'cosmos'}><AvatarScene enabled={enabled} page={page}>{children}</AvatarScene></CosmosSelectionProvider>
+}
+
+function AvatarScene({ enabled, page, children }: { enabled: boolean; page: AppPage; children: ReactNode }) {
   const [capture, setCapture] = useState<{ page: AppPage; anchor: CaptureAnchor } | null>(null)
   const publish = useCallback((next: CaptureAnchor | null, owner: symbol) => {
     setCapture((current) => next ? { page, anchor: next } : current?.anchor.owner === owner ? null : current)
@@ -22,7 +28,8 @@ export function EdenAvatarProvider({ enabled, page = 'today', children }: { enab
   // Only Today owns a perch. Other pages' Capture dialogs remain ordinary occluders.
   const anchor = page === 'today' && capture?.page === page ? capture.anchor : null
   const exerciseForm = useExerciseAvatarEntry(page)
-  const avatarId = page === 'exercise' && !exerciseForm ? null : selectAvatarForPage(page, exerciseForm ?? undefined)
+  const [cosmosExperience] = useCosmosSelection()
+  const avatarId = page === 'exercise' && !exerciseForm ? null : selectAvatarForPage(page, exerciseForm ?? undefined, cosmosExperience)
   return <AvatarCaptureContext.Provider value={publish}>
     {children}
     {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} />}

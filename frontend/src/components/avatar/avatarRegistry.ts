@@ -4,6 +4,12 @@ import reflectorArt from './assets/eden-reflector-journal-static.webp'
 import watchingArt from './assets/eden-watching-prone-static.webp'
 import swimArt from './assets/eden-swim-static.webp'
 import boxingArt from './assets/eden-boxing-static.webp'
+import tarotArt from './assets/eden-tarot-static.webp'
+import ichingArt from './assets/eden-iching-static.webp'
+import baziArt from './assets/eden-bazi-static.webp'
+import astrologyArt from './assets/eden-astrology-static.webp'
+import ziweiArt from './assets/eden-ziwei-static.webp'
+import aiExplorerArt from './assets/eden-ai-explorer-static.webp'
 
 export const avatarIds = [
   'eden-default', 'eden-treasurer', 'eden-swim', 'eden-boxing', 'eden-archivist',
@@ -21,7 +27,7 @@ interface LegacyAvatar extends AvatarIdentity {
 }
 export interface StaticAvatar extends AvatarIdentity {
   status: 'ready'; kind: 'static-image'; blink: false; capturePerch: false
-  prototype: '4A-static' | '4B-static' | '4C-static'
+  prototype: '4A-static' | '4B-static' | '4C-static' | '4D-static'
   nativeFacing: AvatarFacing
   asset: {
     src: string; width: number; height: number
@@ -62,12 +68,17 @@ export const avatarRegistry: Readonly<Record<AvatarId, AvatarDefinition>> = {
     id: 'eden-watching', label: 'Watching Eden', status: 'ready', kind: 'static-image', prototype: '4B-static', nativeFacing: 'left', posture: 'prone', blink: false, capturePerch: false,
     asset: { src: watchingArt, width: 352, height: 656, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
   },
-  'eden-tarot': { id: 'eden-tarot', label: 'Tarot Eden', status: 'planned' },
-  'eden-iching': { id: 'eden-iching', label: 'I Ching Eden', status: 'planned' },
-  'eden-bazi': { id: 'eden-bazi', label: 'BaZi Eden', status: 'planned' },
-  'eden-astrology': { id: 'eden-astrology', label: 'Astrology Eden', status: 'planned' },
-  'eden-ziwei': { id: 'eden-ziwei', label: 'Zi Wei Eden', status: 'planned' },
-  'eden-ai-explorer': { id: 'eden-ai-explorer', label: 'AI Explorer Eden', status: 'planned' },
+  'eden-tarot': cosmosStatic('eden-tarot', 'Tarot Eden', tarotArt),
+  'eden-iching': cosmosStatic('eden-iching', 'I Ching Eden', ichingArt),
+  'eden-bazi': cosmosStatic('eden-bazi', 'BaZi Eden', baziArt),
+  'eden-astrology': cosmosStatic('eden-astrology', 'Astrology Eden', astrologyArt),
+  'eden-ziwei': cosmosStatic('eden-ziwei', 'Zi Wei Eden', ziweiArt),
+  'eden-ai-explorer': cosmosStatic('eden-ai-explorer', 'AI Explorer Eden', aiExplorerArt, 'left'),
+}
+
+function cosmosStatic(id: AvatarId, label: string, src: string, nativeFacing: AvatarFacing = 'right'): StaticAvatar {
+  return { id, label, status: 'ready', kind: 'static-image', prototype: '4D-static', nativeFacing, blink: false, capturePerch: false,
+    asset: { src, width: 352, height: 656, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } } }
 }
 
 // Planned IDs have no asset URL and cannot instantiate a loader.
