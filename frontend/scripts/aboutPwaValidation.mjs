@@ -7,7 +7,7 @@ import { build, loadConfigFromFile, mergeConfig, preview } from 'vite'
 import { createBrowserSession, delay } from './browserSession.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/about-2-1')
+const output = path.resolve('artifacts/browser-validation/about-2-2')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
@@ -50,13 +50,14 @@ try {
   await evaluate('window.pwaReloadMarker=true'); await send('Page.reload')
   await waitFor('!window.pwaReloadMarker', 'new offline document')
   await waitFor(ready, 'offline signed-in About shell')
+  await evaluate('window.aboutHarness.setLocked(true)')
   await evaluate(`document.querySelector('#interactive-eden').scrollIntoView();Array.from(document.querySelectorAll('.about-gesture-button')).find(b=>b.textContent==='挥手').click()`)
   await waitFor(`document.querySelector('.about-avatar-stage').dataset.phase==='wave'`, 'offline compact waving frame from cache')
   await session.shot(path.join(output, 'offline-signed-in-wave.png'))
   await waitFor(`document.querySelector('.about-avatar-stage').dataset.action==='idle'`, 'offline wave returns idle')
   assert.equal(await evaluate('Boolean(document.querySelector(".eden-avatar"))'), false)
   assert.deepEqual(session.errors, [])
-  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, offlineReloadChineseAbout: true, offlineWaveRaiseWaveLower: true, cache: cached, errors: session.errors }
+  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, cache: cached, errors: session.errors }
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

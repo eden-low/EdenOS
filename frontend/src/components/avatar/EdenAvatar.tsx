@@ -1,6 +1,5 @@
-import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { PrivacyLockContext } from '../../privacy/privacyLockContext'
 import { AvatarCaptureContext, type CaptureAnchor } from './AvatarCaptureContext'
 import { AvatarSprite } from './AvatarSprite'
 import { avatarTransition } from './avatarMachine'
@@ -22,7 +21,6 @@ export function EdenAvatarProvider({ enabled, children }: { enabled: boolean; ch
 }
 
 function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
-  const { locked } = useContext(PrivacyLockContext)
   const [state, dispatch] = useReducer(avatarTransition, 'idle')
   const [reduced, setReduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const element = useRef<HTMLDivElement>(null)
@@ -106,7 +104,7 @@ function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
     }
   }, [anchor])
 
-  const visible = !locked && !occluded && !anchor?.suspended && placement.mode !== 'hidden'
+  const visible = !occluded && !anchor?.suspended && placement.mode !== 'hidden'
   // Layout/collisions can hide the standing avatar; only an open Capture may select its perch.
   const perched = open && (state === 'perched' || reduced)
   const style = useMemo(() => ({ left: placement.left, top: placement.top, width: placement.width, height: placement.height }), [placement])

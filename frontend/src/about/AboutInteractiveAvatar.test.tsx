@@ -60,15 +60,28 @@ describe('independent About avatar', () => {
     advance(1000)
     expect(figure().getAttribute('data-action')).toBe('idle')
   })
-  it('cancels interaction when Privacy Lock is engaged', () => {
-    const view = render(<PrivacyLockContext.Provider value={unlockedPrivacyLock}><AboutInteractiveAvatar /></PrivacyLockContext.Provider>)
+  it.each<AboutAvatarAction>(['smile', 'think', 'wave'])('plays %s while locked and preserves its timer through lock changes', (action) => {
+    const tree = (locked: boolean) => <PrivacyLockContext.Provider value={{ ...unlockedPrivacyLock, enabled: true, locked }}><AboutInteractiveAvatar /></PrivacyLockContext.Provider>
+    const view = render(tree(true))
     waveLoaded()
-    fireEvent.click(screen.getByRole('button', { name: '挥手' }))
-    view.rerender(<PrivacyLockContext.Provider value={{ ...unlockedPrivacyLock, locked: true }}><AboutInteractiveAvatar /></PrivacyLockContext.Provider>)
+    for (const label of Object.values(labels)) expect((screen.getByRole('button', { name: label }) as HTMLButtonElement).disabled).toBe(false)
+    const original = figure()
+    fireEvent.click(screen.getByRole('button', { name: labels[action] }))
+    const frames = aboutAvatarSequences[action]
+    advance(frames[0].ms / 2)
+    for (const locked of [false, true, false, true]) {
+      view.rerender(tree(locked))
+      expect(figure()).toBe(original)
+      expect(figure().getAttribute('data-action')).toBe(action)
+      expect(figure().getAttribute('data-cell')).toBe(String(frames[0].cell))
+    }
+    advance(frames[0].ms / 2)
+    expect(figure().getAttribute('data-cell')).toBe(String(frames[1].cell))
+    for (const frame of frames.slice(1)) advance(frame.ms)
     expect(figure().getAttribute('data-action')).toBe('idle')
-    expect((screen.getByRole('button', { name: '挥手' }) as HTMLButtonElement).disabled).toBe(true)
-    advance(1500)
-    expect(figure().getAttribute('data-action')).toBe('idle')
+    view.rerender(tree(false))
+    fireEvent.click(screen.getByRole('button', { name: labels[action] }))
+    expect(figure().getAttribute('data-action')).toBe(action)
   })
   it('pauses behind Genesis without modifying the boot implementation', async () => {
     const overlay = document.createElement('section'); overlay.className = 'genesis-boot-screen'
@@ -104,7 +117,7 @@ describe('independent About avatar', () => {
     await act(async () => { document.body.append(dialog) })
     expect(figure().getAttribute('data-action')).toBe('idle')
     expect((screen.getByRole('button', { name: '挥手' }) as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByRole('status').textContent).toBe('隐私锁或弹窗开启时，人物互动会暂时休息。')
+    expect(screen.getByRole('status').textContent).toBe('弹窗或欢迎画面开启时，人物互动会暂时休息。')
     await act(async () => { dialog.remove() })
     expect(figure().getAttribute('data-action')).toBe('idle')
   })

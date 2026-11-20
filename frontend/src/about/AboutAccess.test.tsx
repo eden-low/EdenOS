@@ -54,10 +54,12 @@ describe('About uses the existing app security boundary', () => {
     expect(document.querySelector('.genesis-boot-screen')).toBeNull()
     expect(window.location.pathname).toBe('/about')
   })
-  it('respects Privacy Lock and removes About when the auth session ends', async () => {
+  it('allows gestures behind Finance Lock and removes About when the auth session ends', async () => {
     render(tree(true)); await restore()
     const wave = await screen.findByRole('button', { name: '挥手' })
-    expect((wave as HTMLButtonElement).disabled).toBe(true)
+    expect((wave as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByRole('button', { name: '微笑' }) as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByRole('button', { name: '思考' }) as HTMLButtonElement).disabled).toBe(false)
     expect(document.querySelector('.genesis-boot-screen')).toBeNull()
     await act(async () => { observer!.next(null) })
     expect(await screen.findByRole('heading', { name: 'Open your workspace' })).toBeTruthy()

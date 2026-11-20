@@ -105,6 +105,10 @@ try {
     await send('Emulation.setDeviceMetricsOverride', {...view, deviceScaleFactor:1, mobile:view.width<768})
     await send('Page.navigate', {url:baseUrl+'/artifacts/browser-validation/avatar/index.html'})
     await waitFor(`document.querySelector('.eden-avatar')?.dataset.visible==='true'`, 'idle avatar')
+    await evaluate(`window.avatarOriginal=document.querySelector('.eden-avatar');window.avatarHarness.setLocked(true)`)
+    await delay(80)
+    assert.equal((await evaluate(audit)).visible,'true','Finance Locked leaves Today avatar visible')
+    assert(await evaluate(`window.avatarOriginal===document.querySelector('.eden-avatar')`))
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
     await shot(`idle-${view.width}`)
     // Reproduce the iPhone report: a control intersects only the standing avatar's head.
@@ -138,6 +142,12 @@ try {
       assert.equal(result.pose,'perched')
       assert.equal(result.visible,'true'); assert.equal(result.collision,false); assert.equal(result.pointerEvents,'none'); assert.equal(result.overflow,false)
       assert(Math.abs(result.bottom-result.sheetTop-3)<1,'hands must follow sheet edge')
+      for (const locked of [false,true]) {
+        await evaluate(`window.avatarHarness.setLocked(${locked})`); await delay(40)
+        assert.equal((await evaluate(audit)).state,'perched','Finance Lock changes preserve Capture state')
+        assert.equal((await evaluate(audit)).visible,'true')
+        assert(await evaluate(`window.avatarOriginal===document.querySelector('.eden-avatar')`))
+      }
       results.push({view,entry,stage:'perched',...result})
       await shot(`perched-${view.width}-${entry.split(' ')[0]}`)
       await click('[aria-label="Expense Manual"]'); await delay(500)
@@ -174,11 +184,19 @@ try {
   assert(await evaluate(`parseFloat(getComputedStyle(document.querySelector('.eden-avatar')).transitionDuration)<=0.00002`), 'reduced motion is effectively immediate')
   await click('[aria-label="Close dialog"]'); await delay(80)
   await evaluate(`window.avatarHarness.setLocked(true)`); await delay(80)
-  assert.equal((await evaluate(audit)).visible,'false')
+  assert.equal((await evaluate(audit)).visible,'true')
+  assert.equal((await evaluate(audit)).state,'idle')
+  assert.equal((await evaluate(audit)).pose,'standing')
+  for (const kind of ['dialog','genesis']) {
+    await evaluate(`(() => {const e=document.createElement('div');e.id='avatar-overlay';${kind==='dialog' ? `e.setAttribute('role','dialog');e.dataset.state='open'` : `e.className='genesis-boot-screen'`};document.body.append(e)})()`)
+    await waitFor(`document.querySelector('.eden-avatar').dataset.visible==='false'`, 'real overlay hides locked avatar')
+    await evaluate(`document.querySelector('#avatar-overlay').remove()`)
+    await waitFor(`document.querySelector('.eden-avatar').dataset.visible==='true'`, 'overlay removal restores locked avatar')
+  }
   await evaluate(`window.avatarHarness.setEnabled(false)`)
   await waitFor(`!document.querySelector('.eden-avatar')`, 'avatar removed outside Today')
   assert.deepEqual(errors,[])
-  const result = {results,rapidReopen:true,reducedMotion:true,privacyLock:true,todayOnly:true,externalNetworkBlocked:true,errors}
+  const result = {results,rapidReopen:true,reducedMotion:true,financeLockDecoupled:true,lockedModalAndGenesisStillHide:true,todayOnly:true,externalNetworkBlocked:true,errors}
   await writeFile(path.join(output,'results.json'),JSON.stringify(result,null,2))
   console.log(JSON.stringify(result,null,2))
 } finally {

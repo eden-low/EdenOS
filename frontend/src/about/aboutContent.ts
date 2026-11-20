@@ -41,7 +41,7 @@ export const aboutContent = {
     imageAlt: '可互动的 Q 版 Eden 人物',
     controlsLabel: '小 Eden 的互动动作',
     idle: '小 Eden 安静地站着。可以选择微笑、思考或挥手。',
-    paused: '隐私锁或弹窗开启时，人物互动会暂时休息。',
+    paused: '弹窗或欢迎画面开启时，人物互动会暂时休息。',
     preparingWave: '小 Eden 正在准备挥手，稍等一下。',
     waveUnavailable: '挥手素材暂时没有加载好，请刷新后再试。微笑和思考仍然可以使用。',
     actions: {

@@ -1,6 +1,5 @@
 import { Brain, Hand, Smile } from 'lucide-react'
-import { useContext, useEffect, useId, useReducer, useState } from 'react'
-import { PrivacyLockContext } from '../privacy/privacyLockContext'
+import { useEffect, useId, useReducer, useState } from 'react'
 import { aboutContent } from './aboutContent'
 import { aboutAvatarInitialState, aboutAvatarReducer, aboutAvatarReducedFrames, aboutAvatarSequences, type AboutAvatarAction } from './aboutAvatarMachine'
 import atlas from './assets/eden-about-gestures.webp'
@@ -13,11 +12,10 @@ const overlaySelector = '.genesis-boot-screen, [role="dialog"][data-state="open"
 export function AboutInteractiveAvatar() {
   const [state, dispatch] = useReducer(aboutAvatarReducer, aboutAvatarInitialState)
   const [waveStatus, setWaveStatus] = useState<'loading' | 'ready' | 'error'>('loading')
-  const { locked } = useContext(PrivacyLockContext)
   const [overlay, setOverlay] = useState(() => typeof document !== 'undefined' && Boolean(document.querySelector(overlaySelector)))
   const [reduced, setReduced] = useState(() => typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false))
   const figureId = useId()
-  const blocked = locked || overlay
+  const blocked = overlay
   const waitingForWave = state.action === 'wave' && waveStatus !== 'ready'
 
   useEffect(() => {
