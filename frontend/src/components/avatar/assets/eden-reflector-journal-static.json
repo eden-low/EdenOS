@@ -1,0 +1,51 @@
+{
+  "id": "eden-reflector",
+  "version": "4B-static-v1",
+  "source": {
+    "file": "思考中的少年与飞翼书册.png",
+    "width": 817,
+    "height": 1925,
+    "bytes": 1784263,
+    "sha256": "c9aa5e052b165961f1c54eb7352eb98f284cc70c7a01aae21a6559c1ac0dad1a"
+  },
+  "derivation": {
+    "crop": null,
+    "fit": "contain",
+    "position": "centre",
+    "mirror": false,
+    "alphaCleanup": {
+      "maximumClearedAlpha": 3,
+      "clearedPixels": 70905
+    },
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-reflector-journal-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 63508,
+    "sha256": "c19601cedd49beabf63ea3017eecc050010e5c3e3ed98684eee3e156d83b7ca3",
+    "hasAlpha": true,
+    "nativeFacing": "right",
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "pageTurn": false,
+    "writing": false,
+    "lookUp": false
+  }
+}

@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AvatarAppearance } from './AvatarAppearance'
-import { avatarIds, avatarRegistry } from './avatarRegistry'
+import { avatarIds, avatarRegistry, resolveAvatar } from './avatarRegistry'
 
 class LoaderImage {
   onload: (() => void) | null = null
@@ -17,7 +17,7 @@ async function loaded() { await act(async () => { loaders.at(-1)!.onload!() }) }
 beforeEach(() => { loaders = []; vi.stubGlobal('Image', LoaderImage) })
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
+describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
   it('preloads/decode-checks the approved image while retaining a safe default', async () => {
     const view = render(<AvatarAppearance avatarId={avatarId} {...idle} />)
     expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')
@@ -83,5 +83,21 @@ describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492]] as co
     view.unmount()
     expect(loaders[1].onload).toBeNull(); expect(loaders[1].onerror).toBeNull()
     expect(appearance()).toBeNull()
+  })
+  it('orients the actual material inward without changing frame, node or loading lifecycle', async () => {
+    const view = render(<AvatarAppearance avatarId={avatarId} {...idle} faceInward />)
+    const facing = () => document.querySelector('.eden-avatar-facing')!
+    expect(facing().hasAttribute('data-mirrored')).toBe(true) // loading default
+    await loaded()
+    const image = document.querySelector('img')!
+    expect(facing().hasAttribute('data-mirrored')).toBe(resolveAvatar(avatarId).nativeFacing === 'left')
+    view.rerender(<AvatarAppearance avatarId={avatarId} {...idle} faceInward still />)
+    expect(document.querySelector('img')).toBe(image)
+    expect(loaders).toHaveLength(1)
+    fireEvent.error(image)
+    expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')
+    expect(facing().hasAttribute('data-mirrored')).toBe(true)
+    view.rerender(<AvatarAppearance avatarId={avatarId} {...idle} />)
+    expect(facing().hasAttribute('data-mirrored')).toBe(false)
   })
 })

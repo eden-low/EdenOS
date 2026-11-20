@@ -133,9 +133,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture }: { avatarId: Av
     <div ref={probe} className="eden-avatar-safe-area" aria-hidden="true" />
     <div ref={element} className="eden-avatar" aria-hidden="true" inert data-state={state} data-sheet={open || undefined}
       data-reduced={reduced || undefined} data-visible={visible} style={style}>
-      <div className="eden-avatar-facing" data-mirrored={corner === 'left' || undefined}>
-        <AvatarAppearance avatarId={avatarId} perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
-      </div>
+      <AvatarAppearance avatarId={avatarId} faceInward={corner === 'left'} perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
     </div>
   </>, document.body)
 }
