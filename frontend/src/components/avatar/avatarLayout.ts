@@ -24,12 +24,10 @@ export function avatarPlacement(view: AvatarViewport, sheet: AvatarRect | null, 
     if (x < left || y < top || sheet.top > view.top + view.height || sheet.top < view.top || obstacles.some((rect) => overlaps(result, rect))) return hidden
     return result
   }
-  // Try the corner, then a bust. Never cover an underlying control.
-  for (const mode of ['full', 'bust'] as const) {
-    const width = mode === 'full' ? 88 : 72
-    const height = mode === 'full' ? 164 : 76
-    const result: AvatarPlacement = { left: right - width, top: bottom - height, width, height, mode }
-    if (result.top >= top && !obstacles.some((rect) => overlaps(result, rect))) return result
-  }
-  return hidden
+  // Idle always uses the standing frame at its normal proportions. The bust belongs
+  // exclusively to the Capture edge; hide if standing cannot fit safely.
+  const width = 88
+  const height = 164
+  const result: AvatarPlacement = { left: right - width, top: bottom - height, width, height, mode: 'full' }
+  return result.top >= top && !obstacles.some((rect) => overlaps(result, rect)) ? result : hidden
 }

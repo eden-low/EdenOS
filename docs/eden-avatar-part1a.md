@@ -36,9 +36,10 @@ and intermediate full-size generation outputs are not shipped.
 - During Capture, animation-frame rect measurements follow CSS entrance,
   transformed desktop dialogs and changing content height. ResizeObserver,
   scroll, orientation/resize and VisualViewport events update positioning.
-- A hidden CSS probe measures all four iPhone safe-area insets. Available
-  headroom, viewport panning and control collisions determine full body, bust
-  or hidden presentation. Hands extend only three pixels over the sheet edge;
+- A hidden CSS probe measures all four iPhone safe-area insets. Idle uses only
+  the standing full body or hides if space/control collisions prevent a safe fit.
+  The bust is reserved for an open Capture; layout never selects a pose.
+  Hands extend only three pixels over the sheet edge;
   the close control and form remain clear. Other dialogs, discard confirmation,
   privacy lock and Genesis overlays suppress the companion.
 - Reduced Motion skips travel and blinks. Hidden coordinates are retained so a
@@ -69,6 +70,26 @@ Coverage includes 320/390/1440px, both available entry points, actual sheet edge
 form height changes, close/return, short landscape/keyboard viewport, privacy
 lock, Today-only lifecycle and Reduced Motion. These are Chromium synthetic
 checks, not real iPhone Safari acceptance.
+
+### iPhone scroll acceptance fix
+
+The first iPhone acceptance found that scrolling past controls sometimes changed
+the idle companion to its Capture bust. Collision layout had selected `bust`, and
+the sprite treated that layout mode as a pose even without an open Capture.
+Idle layout now returns only `full` or `hidden`; the renderer additionally gates
+the perched pose on an open Capture, including during the close/return commit.
+The existing art, travel animation, sheet-edge geometry and safe-area measurements
+are unchanged. Regression tests reproduced both the old layout fallback and the
+visible sprite switch before the fix. Browser checks now sweep all Dashboard
+sections including calendar in both scroll directions, introduce a deterministic
+idle obstruction, and check the actual sprite immediately after Capture closes.
+Fix verification: 176 test files / 1,337 tests, TypeScript, lint, production build,
+five Functions packages and synthetic browser regressions passed. The browser
+run covers 320/390/1440px, all seven Dashboard sections, both available Capture
+entries, close/reopen, landscape/keyboard viewport and Reduced Motion. Real
+iPhone Safari/PWA scroll acceptance remains an owner check on staging.
+Pre-fix rollback reference: SHA `e3856c16fbca1c80789d73b0a07819140d725c23`,
+staging deploy `6affdaa2d9d6b403036b21d6` (`ready`); no rollback performed.
 
 Local verification on 2026-11-20: 176 Vitest files / 1,336 tests passed;
 TypeScript, lint and production build passed. The existing large-chunk build

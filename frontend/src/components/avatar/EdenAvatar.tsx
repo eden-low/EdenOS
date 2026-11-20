@@ -107,7 +107,8 @@ function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
   }, [anchor])
 
   const visible = !locked && !occluded && !anchor?.suspended && placement.mode !== 'hidden'
-  const perched = state === 'perched' || (open && reduced) || (!open && placement.mode === 'bust')
+  // Layout/collisions can hide the standing avatar; only an open Capture may select its perch.
+  const perched = open && (state === 'perched' || reduced)
   const style = useMemo(() => ({ left: placement.left, top: placement.top, width: placement.width, height: placement.height }), [placement])
   return createPortal(<>
     <div ref={probe} className="eden-avatar-safe-area" aria-hidden="true" />

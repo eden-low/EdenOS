@@ -67,7 +67,7 @@ async function shot(name) {
 const audit = `(() => {
  const a=document.querySelector('.eden-avatar'), s=document.querySelector('[data-eden-capture]'), r=a.getBoundingClientRect(), t=s?.getBoundingClientRect()
  const collision=a.dataset.visible==='true'&&[...document.querySelectorAll('[data-eden-capture] button,[data-eden-capture] input,[data-eden-capture] textarea')].some(e=>{const b=e.getBoundingClientRect();return r.left<b.right&&r.right>b.left&&r.top<b.bottom&&r.bottom>b.top})
- return {state:a.dataset.state,visible:a.dataset.visible,top:r.top,bottom:r.bottom,sheetTop:t?.top,collision,pointerEvents:getComputedStyle(a).pointerEvents,overflow:document.documentElement.scrollWidth>innerWidth}
+ return {state:a.dataset.state,visible:a.dataset.visible,pose:a.querySelector('.eden-avatar-art').viewBox.baseVal.y===0?'standing':'perched',top:r.top,bottom:r.bottom,sheetTop:t?.top,collision,pointerEvents:getComputedStyle(a).pointerEvents,overflow:document.documentElement.scrollWidth>innerWidth}
 })()`
 try {
   let page
@@ -102,11 +102,35 @@ try {
     await send('Page.navigate', {url:baseUrl+'/artifacts/browser-validation/avatar/index.html'})
     await waitFor(`document.querySelector('.eden-avatar')?.dataset.visible==='true'`, 'idle avatar')
     await shot(`idle-${view.width}`)
+    // Reproduce the iPhone report: a control intersects only the standing avatar's head.
+    // The old layout chooses the smaller bust, which must never change the idle pose.
+    await evaluate(`(() => { const r=document.querySelector('.eden-avatar').getBoundingClientRect(); const b=document.createElement('button');b.id='avatar-scroll-obstacle';b.textContent='Synthetic obstruction';Object.assign(b.style,{position:'fixed',left:r.left+'px',top:(r.top+4)+'px',width:r.width+'px',height:'24px'});document.body.append(b) })()`)
+    await delay(80)
+    const obstructed = await evaluate(audit)
+    assert.equal(obstructed.state,'idle'); assert.equal(obstructed.pose,'standing'); assert.equal(obstructed.visible,'false')
+    await evaluate(`document.querySelector('#avatar-scroll-obstacle').remove()`)
+    await delay(80)
+    const sections = await evaluate(`Array.from(document.querySelectorAll('[data-dashboard-section]')).map(e=>e.dataset.dashboardSection)`)
+    assert(sections.includes('calendar'), 'the scroll regression must include the calendar')
+    await evaluate(`(() => {window.avatarScrollSamples=[];window.avatarScrollWatching=true;const sample=()=>{const a=document.querySelector('.eden-avatar');if(a)window.avatarScrollSamples.push({state:a.dataset.state,pose:a.querySelector('.eden-avatar-art').viewBox.baseVal.y===0?'standing':'perched',capture:Boolean(document.querySelector('[data-eden-capture][data-state="open"]'))});if(window.avatarScrollWatching)requestAnimationFrame(sample)};requestAnimationFrame(sample)})()`)
+    const scrollBottom = await evaluate('document.documentElement.scrollHeight-innerHeight')
+    for (const direction of [1,-1]) {
+      for (let offset = 0; offset <= scrollBottom + 160; offset += 160) {
+        await evaluate(`window.scrollTo(0,${direction===1 ? Math.min(offset,scrollBottom) : Math.max(scrollBottom-offset,0)})`)
+        await delay(35)
+      }
+    }
+    const scrollSamples = await evaluate(`(() => {window.avatarScrollWatching=false;return window.avatarScrollSamples})()`)
+    assert(scrollSamples.length>0)
+    assert(scrollSamples.every(sample=>sample.state==='idle'&&sample.pose==='standing'&&!sample.capture), 'scrolling all cards/calendar must never enter a Capture pose')
+    results.push({view,stage:'idle-scroll',sections,samples:scrollSamples.length,obstructed})
+    await shot(`idle-after-scroll-${view.width}`)
     for (const entry of view.width < 1024 ? ['Mobile Capture','Dashboard Capture'] : ['Dashboard Capture']) {
       await click(entry==='Mobile Capture' ? '[aria-label="Capture something"]' : '.dashboard-quick-capture')
       await waitFor(`document.querySelector('.eden-avatar')?.dataset.state==='perched'`, 'perched state')
       await delay(150)
       let result = await evaluate(audit)
+      assert.equal(result.pose,'perched')
       assert.equal(result.visible,'true'); assert.equal(result.collision,false); assert.equal(result.pointerEvents,'none'); assert.equal(result.overflow,false)
       assert(Math.abs(result.bottom-result.sheetTop-3)<1,'hands must follow sheet edge')
       results.push({view,entry,stage:'perched',...result})
@@ -117,6 +141,8 @@ try {
       if(result.visible==='true') assert(Math.abs(result.bottom-result.sheetTop-3)<1)
       results.push({view,entry,stage:'taller-form',...result})
       await click('[aria-label="Close dialog"]')
+      await delay(30)
+      assert.equal((await evaluate(audit)).pose,'standing','closing Capture restores standing immediately')
       await waitFor(`document.querySelector('.eden-avatar')?.dataset.state==='idle'`, 'returned home')
     }
   }
