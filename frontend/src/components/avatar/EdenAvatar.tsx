@@ -2,7 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, u
 import { createPortal } from 'react-dom'
 import type { AppPage } from '../layout/Navigation'
 import { AvatarCaptureContext, type CaptureAnchor } from './AvatarCaptureContext'
-import { AvatarSprite } from './AvatarSprite'
+import { AvatarAppearance } from './AvatarAppearance'
+import { selectAvatarForPage } from './avatarPageSelection'
+import type { AvatarId } from './avatarRegistry'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
 import { isIdleAvatarObstacle } from './avatarObstacles'
@@ -18,13 +20,14 @@ export function EdenAvatarProvider({ enabled, page = 'today', children }: { enab
   }, [page])
   // Only Today owns a perch. Other pages' Capture dialogs remain ordinary occluders.
   const anchor = page === 'today' && capture?.page === page ? capture.anchor : null
+  const avatarId = selectAvatarForPage(page)
   return <AvatarCaptureContext.Provider value={publish}>
     {children}
-    {enabled && page !== 'about' && <EdenAvatar key={`avatar:${page}`} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} />}
+    {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} />}
   </AvatarCaptureContext.Provider>
 }
 
-function EdenAvatar({ anchor, corner, reserveCapture }: { anchor: CaptureAnchor | null; corner: 'left' | 'right'; reserveCapture: boolean }) {
+function EdenAvatar({ avatarId, anchor, corner, reserveCapture }: { avatarId: AvatarId; anchor: CaptureAnchor | null; corner: 'left' | 'right'; reserveCapture: boolean }) {
   const [state, dispatch] = useReducer(avatarTransition, 'idle')
   const [reduced, setReduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const element = useRef<HTMLDivElement>(null)
@@ -131,7 +134,7 @@ function EdenAvatar({ anchor, corner, reserveCapture }: { anchor: CaptureAnchor 
     <div ref={element} className="eden-avatar" aria-hidden="true" inert data-state={state} data-sheet={open || undefined}
       data-reduced={reduced || undefined} data-visible={visible} style={style}>
       <div className="eden-avatar-facing" data-mirrored={corner === 'left' || undefined}>
-        <AvatarSprite perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
+        <AvatarAppearance avatarId={avatarId} perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
       </div>
     </div>
   </>, document.body)
