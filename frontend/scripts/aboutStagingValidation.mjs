@@ -42,7 +42,10 @@ await Promise.all(manifest.icons.map(async (icon) => assert.equal((await fetch(o
 const worker = await fetch(origin + '/sw.js'); assert.equal(worker.status, 200)
 const workerJs = await worker.text()
 for (const asset of [...art, aboutChunk]) assert(workerJs.includes(asset), 'About resources must be precached')
-assert.equal((await fetch(origin + '/' + workerJs.match(/workbox-[a-f0-9]+\.js/)[0])).status, 200)
+// Workbox's AMD loader appends .js to the extensionless module in define().
+const workerModule = workerJs.match(/workbox-[A-Za-z0-9_-]+/)?.[0]
+assert(workerModule, 'Service worker must reference its Workbox runtime')
+assert.equal((await fetch(origin + '/' + workerModule + '.js')).status, 200)
 const functions = await Promise.all(['weather', 'receipt-ocr', 'fitness-screenshot', 'batch-transactions-screenshot', 'cosmos-reading'].map(async (name) => {
   const response = await fetch(origin + '/.netlify/functions/' + name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
   assert.equal(response.status, 401, 'Missing authentication must reject before upstream API calls')
