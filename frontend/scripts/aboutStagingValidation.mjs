@@ -46,6 +46,18 @@ const watchingResponse = await fetch(origin + '/assets/' + watchingFile); assert
 const watchingBytes = Buffer.from(await watchingResponse.arrayBuffer())
 const watchingLocal = await readFile('src/components/avatar/assets/eden-watching-prone-static.webp')
 assert.equal(createHash('sha256').update(watchingBytes).digest('hex'),createHash('sha256').update(watchingLocal).digest('hex'))
+const swimFile = main.match(/eden-swim-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(swimFile, 'Swim runtime material must be referenced by the global renderer')
+const swimResponse = await fetch(origin + '/assets/' + swimFile); assert.equal(swimResponse.status,200)
+const swimBytes = Buffer.from(await swimResponse.arrayBuffer())
+const swimLocal = await readFile('src/components/avatar/assets/eden-swim-static.webp')
+assert.equal(createHash('sha256').update(swimBytes).digest('hex'),createHash('sha256').update(swimLocal).digest('hex'))
+const boxingFile = main.match(/eden-boxing-static-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(boxingFile, 'Boxing runtime material must be referenced by the global renderer')
+const boxingResponse = await fetch(origin + '/assets/' + boxingFile); assert.equal(boxingResponse.status,200)
+const boxingBytes = Buffer.from(await boxingResponse.arrayBuffer())
+const boxingLocal = await readFile('src/components/avatar/assets/eden-boxing-static.webp')
+assert.equal(createHash('sha256').update(boxingBytes).digest('hex'),createHash('sha256').update(boxingLocal).digest('hex'))
 const aboutChunk = main.match(/AboutPage-[A-Za-z0-9_-]+\.js/)?.[0]
 assert(aboutChunk, 'About must be a lazy chunk')
 const aboutResponse = await fetch(origin + '/assets/' + aboutChunk); assert.equal(aboutResponse.status, 200)
@@ -70,6 +82,7 @@ assert(workerJs.includes(treasurerFile),'Treasurer must be precached for offline
 assert(workerJs.includes(archivistFile),'Archivist must be precached for offline Records')
 assert(workerJs.includes(reflectorFile),'Reflector must be precached for offline Review')
 assert(workerJs.includes(watchingFile),'Watching must be precached for offline Anime')
+assert(workerJs.includes(swimFile)&&workerJs.includes(boxingFile),'Both Exercise forms must be precached')
 // Workbox's AMD loader appends .js to the extensionless module in define().
 const workerModule = workerJs.match(/workbox-[A-Za-z0-9_-]+/)?.[0]
 assert(workerModule, 'Service worker must reference its Workbox runtime')
@@ -106,7 +119,7 @@ try {
   assert.equal(await evaluate('Boolean(document.querySelector(".about-page"))'), false)
   await session.shot(path.join(output, 'staging-about-auth-offline.png'))
   assert.deepEqual(session.errors, [])
-  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true}, manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
+  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true},swim:{file:swimFile,bytes:swimBytes.length,hashMatched:true,precached:true},boxing:{file:boxingFile,bytes:boxingBytes.length,hashMatched:true,precached:true}, manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
   await writeFile(path.join(output, 'staging-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally { await session.close() }

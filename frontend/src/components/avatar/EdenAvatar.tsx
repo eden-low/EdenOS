@@ -4,6 +4,7 @@ import type { AppPage } from '../layout/Navigation'
 import { AvatarCaptureContext, type CaptureAnchor } from './AvatarCaptureContext'
 import { AvatarAppearance } from './AvatarAppearance'
 import { selectAvatarForPage } from './avatarPageSelection'
+import { useExerciseAvatarEntry } from './useExerciseAvatarEntry'
 import type { AvatarId } from './avatarRegistry'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
@@ -20,7 +21,8 @@ export function EdenAvatarProvider({ enabled, page = 'today', children }: { enab
   }, [page])
   // Only Today owns a perch. Other pages' Capture dialogs remain ordinary occluders.
   const anchor = page === 'today' && capture?.page === page ? capture.anchor : null
-  const avatarId = selectAvatarForPage(page)
+  const exerciseForm = useExerciseAvatarEntry(page)
+  const avatarId = page === 'exercise' && !exerciseForm ? null : selectAvatarForPage(page, exerciseForm ?? undefined)
   return <AvatarCaptureContext.Provider value={publish}>
     {children}
     {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} />}

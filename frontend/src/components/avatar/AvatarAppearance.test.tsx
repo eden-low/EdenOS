@@ -17,7 +17,7 @@ async function loaded() { await act(async () => { loaders.at(-1)!.onload!() }) }
 beforeEach(() => { loaders = []; vi.stubGlobal('Image', LoaderImage) })
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 352, 656], ['eden-watching', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
+describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 352, 656], ['eden-watching', 352, 656], ['eden-swim', 352, 656], ['eden-boxing', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
   it('preloads/decode-checks the approved image while retaining a safe default', async () => {
     const view = render(<AvatarAppearance avatarId={avatarId} {...idle} />)
     expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')
@@ -101,4 +101,20 @@ describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['ede
     view.rerender(<AvatarAppearance avatarId={avatarId} {...idle} />)
     expect(facing().hasAttribute('data-mirrored')).toBe(false)
   })
+})
+
+it('ignores a late Swim decode after Boxing has already loaded', async () => {
+  let finish!: () => void
+  const view = render(<AvatarAppearance avatarId="eden-swim" {...idle} />)
+  const swim = loaders[0]
+  swim.decode.mockReturnValueOnce(new Promise<void>((resolve) => { finish = resolve }))
+  act(() => swim.onload!())
+  view.rerender(<AvatarAppearance avatarId="eden-boxing" {...idle} />)
+  expect(swim.onload).toBeNull(); expect(swim.onerror).toBeNull()
+  await loaded()
+  const boxing = document.querySelector('img')!
+  expect(appearance().getAttribute('data-avatar-id')).toBe('eden-boxing')
+  await act(async () => finish())
+  expect(appearance().getAttribute('data-avatar-id')).toBe('eden-boxing')
+  expect(document.querySelector('img')).toBe(boxing)
 })

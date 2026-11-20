@@ -7,7 +7,7 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const origin = 'http://127.0.0.1:5181'
-const output = path.resolve('artifacts/browser-validation/avatar-part4b-watching')
+const output = path.resolve('artifacts/browser-validation/avatar-part4c-exercise')
 await mkdir(output, { recursive: true })
 let harness = await readFile('artifacts/browser-validation/about/harness.tsx', 'utf8')
 assert(harness.includes("import App from '/src/App'"))
@@ -17,9 +17,9 @@ harness = harness.replace('items:[],cloudError:null', 'items:[],cloudError:null,
   .replace('<FinancePlanningContext.Provider', "<FinanceRulesContext.Provider value={{rules:[],status:'loaded',createRule:forbidden,setRuleEnabled:forbidden,deleteRule:forbidden}}><FinancePlanningContext.Provider")
   .replace('</FinancePlanningContext.Provider>', '</FinancePlanningContext.Provider></FinanceRulesContext.Provider>')
 await writeFile(path.join(output, 'harness.tsx'), harness)
-await writeFile(path.join(output, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/artifacts/browser-validation/avatar-part4b-watching/harness.tsx"></script></body></html>')
+await writeFile(path.join(output, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/artifacts/browser-validation/avatar-part4c-exercise/harness.tsx"></script></body></html>')
 await delay(250)
-const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part4b-watching/index.html')).text()
+const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part4c-exercise/index.html')).text()
 const session = await createBrowserSession()
 const { send, evaluate, waitFor, click } = session
 const results = []
@@ -39,9 +39,14 @@ const audit = `(()=>{const a=${avatar};if(!a)return null;const r=a.getBoundingCl
 const ready = (page) => page.heading ? `document.querySelector('main h1')?.textContent.includes(${JSON.stringify(page.heading)})` : `document.querySelector('.today-dashboard')`
 const clickText = async (text) => evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)}&&b.getClientRects().length);if(!b)throw Error('Missing button: '+${JSON.stringify(text)});b.click()})()`)
 let mobile = true
+let exerciseEntries=0
+let exerciseForm=null
+const exerciseEntered=()=>{exerciseForm=++exerciseEntries%2?'eden-swim':'eden-boxing'}
 let failedOutfit = null
 const outfits = { '/expenses': {id:'eden-treasurer',width:352,height:656}, '/records': {id:'eden-archivist',width:264,height:492}, '/weekly-review': {id:'eden-reflector',width:352,height:656}, '/anime': {id:'eden-watching',width:352,height:656} }
 async function navigate(page) {
+  const previousPath=await evaluate('location.pathname')
+  if(page.path==='/exercise'&&previousPath!=='/exercise')exerciseEntered()
   if (mobile) { await click('[aria-label="Open apps"]'); await waitFor(`document.querySelector('[aria-label="App drawer"]')`, 'Apps drawer'); await clickText(page.label) }
   else await click(`.desktop-nav [aria-label="${page.label}"]`)
   await waitFor(`location.pathname===${JSON.stringify(page.path)}&&Boolean(${ready(page)})&&!document.querySelector('[role="dialog"][data-state="open"]')`, 'route ' + page.path)
@@ -94,8 +99,10 @@ try {
     for (const page of pages) {
       await navigate(page)
       if (width===390) {
+        if(page.path==='/exercise')exerciseEntered()
         await send('Page.navigate',{url:origin+page.path});await delay(100)
         await waitFor(`location.pathname===${JSON.stringify(page.path)}&&Boolean(${ready(page)})`,'direct link '+page.path)
+        if(page.path==='/exercise')exerciseEntered()
         await evaluate('window.routeReloadMarker=true');await send('Page.reload');await delay(100)
         await waitFor(`!window.routeReloadMarker&&location.pathname===${JSON.stringify(page.path)}&&Boolean(${ready(page)})`,'reload retains '+page.path)
         if (safeInsets) {await send('Emulation.setSafeAreaInsets',{insets:{top:47,bottom:34}});await evaluate(`dispatchEvent(new Event('resize'))`);await delay(80)}
@@ -106,7 +113,7 @@ try {
       assert.equal(await evaluate(`Boolean(document.querySelector('[data-global-capture]'))`), page.path==='/')
       assert.equal(await evaluate(`document.querySelectorAll('[aria-label="Capture something"]').length`), page.path==='/'?1:0)
       if (page.path==='/about') { assert.equal(await evaluate(`${avatar}===null`),true); continue }
-      const outfit=outfits[page.path]
+      const outfit=page.path==='/exercise'?{id:exerciseForm,width:352,height:656}:outfits[page.path]
       const selectedId=outfit?.id??'eden-default'
       await waitFor(`${avatar}.querySelector('.eden-avatar-appearance').dataset.avatarId===${JSON.stringify(selectedId)}`,'selected wardrobe '+page.path)
       if(outfit) {
@@ -255,7 +262,7 @@ try {
     assert.equal(await evaluate(`document.querySelectorAll('.eden-avatar-static-image').length`),0)
   }
   assert.deepEqual(session.errors,[])
-  const report={results,treasurerStaticOnlyOnExpenses:true,archivistStaticOnlyOnRecords:true,reflectorStaticOnlyOnReview:true,watchingStaticOnlyOnAnime:true,watchingPoseNeverMeansCapturePerch:true,staticAspectAndFootAnchor:true,resourceFailureFallbackAndRetry:true,wardrobeCleanupAndReducedMotion:true,allEightRoutes:true,directLinksReloadAndDrawerHighlight:true,pageshowAndLegacyHash:true,ordinaryButtonsClickableBehindAvatar:true,reflectorNativeFacingAndMirroredDefaultFallback:true,globalPlusOnlyToday:true,existingPageEntries:true,reviewInputsAndSaveProtected:true,cosmosLocalOnly:true,actualAnimePlayerSyntheticMedia:true,fullscreen:true,historyAndCaptureCleanup:true,accountAndGenesisHidden:true,shortViewportAndLandscape:true,noLiveDataOrPaidCalls:true,errors:session.errors}
+  const report={results,treasurerStaticOnlyOnExpenses:true,archivistStaticOnlyOnRecords:true,reflectorStaticOnlyOnReview:true,watchingStaticOnlyOnAnime:true,watchingPoseNeverMeansCapturePerch:true,exerciseEntryModelChecked:true,staticAspectAndFootAnchor:true,resourceFailureFallbackAndRetry:true,wardrobeCleanupAndReducedMotion:true,allEightRoutes:true,directLinksReloadAndDrawerHighlight:true,pageshowAndLegacyHash:true,ordinaryButtonsClickableBehindAvatar:true,reflectorNativeFacingAndMirroredDefaultFallback:true,globalPlusOnlyToday:true,existingPageEntries:true,reviewInputsAndSaveProtected:true,cosmosLocalOnly:true,actualAnimePlayerSyntheticMedia:true,fullscreen:true,historyAndCaptureCleanup:true,accountAndGenesisHidden:true,shortViewportAndLandscape:true,noLiveDataOrPaidCalls:true,errors:session.errors}
   await writeFile(path.join(output,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2))
-} catch(error) { console.error(JSON.stringify({page:await evaluate('document.body.innerText'),errors:session.errors}));throw error }
+} catch(error) { console.error(JSON.stringify({page:await evaluate('document.body.innerText'),avatar:await evaluate(audit),dialogs:await evaluate(`Array.from(document.querySelectorAll('[role="dialog"]')).map(d=>({state:d.dataset.state,label:d.getAttribute('aria-label')}))`),errors:session.errors}));throw error }
 finally { await session.close() }

@@ -4,12 +4,12 @@ import { selectAvatarForPage } from './avatarPageSelection'
 import type { AppPage } from '../layout/Navigation'
 
 describe('avatar wardrobe registry and page intent', () => {
-  it('registers the 13 approved IDs with only the five available appearances', () => {
+  it('registers the 13 approved IDs with seven available appearances and six planned Cosmos roles', () => {
     expect(avatarIds).toEqual(['eden-default','eden-treasurer','eden-swim','eden-boxing','eden-archivist','eden-reflector','eden-watching','eden-tarot','eden-iching','eden-bazi','eden-astrology','eden-ziwei','eden-ai-explorer'])
     expect(Object.keys(avatarRegistry)).toHaveLength(13)
     for (const id of avatarIds) {
       expect(avatarRegistry[id].id).toBe(id)
-      if (id === 'eden-default' || id === 'eden-treasurer' || id === 'eden-archivist' || id === 'eden-reflector' || id === 'eden-watching') expect(avatarRegistry[id].status).toBe('ready')
+      if (['eden-default', 'eden-treasurer', 'eden-archivist', 'eden-reflector', 'eden-watching', 'eden-swim', 'eden-boxing'].includes(id)) expect(avatarRegistry[id].status).toBe('ready')
       else {
         expect(avatarRegistry[id].status).toBe('planned')
         expect('asset' in avatarRegistry[id]).toBe(false)
@@ -39,7 +39,13 @@ describe('avatar wardrobe registry and page intent', () => {
     expect(selectAvatarForPage('anime')).toBe('eden-watching')
     expect(resolveAvatar('eden-watching')).toMatchObject({ kind: 'static-image', prototype: '4B-static', posture: 'prone', blink: false, capturePerch: false })
   })
-  it.each<AppPage>(['exercise','cosmos'])('keeps %s on the original until its assets are approved', (page) => {
+  it('selects the Exercise entry result without affecting any other page mapping', () => {
+    expect(selectAvatarForPage('exercise')).toBe('eden-swim')
+    expect(selectAvatarForPage('exercise', 'eden-boxing')).toBe('eden-boxing')
+    for (const page of ['today', 'expenses', 'records', 'review', 'anime', 'about'] as AppPage[])
+      expect(selectAvatarForPage(page, 'eden-boxing')).toBe(selectAvatarForPage(page))
+  })
+  it.each<AppPage>(['cosmos'])('keeps %s on the original until its assets are approved', (page) => {
     expect(selectAvatarForPage(page)).toBe('eden-default')
   })
   it('excludes About from the global wardrobe', () => { expect(selectAvatarForPage('about')).toBeNull() })

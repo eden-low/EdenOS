@@ -9,6 +9,8 @@ See the [Archivist handoff](eden-avatar-part4b-archivist.md),
 [Reflector handoff](eden-avatar-part4b-reflector.md) and
 [current Watching handoff](eden-avatar-part4b-watching.md) for assets,
 validation and acceptance checklists; Treasurer provenance below is retained.
+Part 4C subsequently authorizes the approved standalone Swim/Boxing sources and
+deterministic Exercise entry alternation; see [the current 4C handoff](eden-avatar-part4c-exercise.md).
 
 ## Stage boundaries
 
@@ -16,13 +18,14 @@ validation and acceptance checklists; Treasurer provenance below is retained.
 | --- | --- | --- |
 | 4A | Shared specification for 13 identities, selector architecture, approved abacus Treasurer static prototype | Yes |
 | 4B | Expenses, Records, Weekly Review and Anime outfits with basic idle | Batches 1–3: Records, Review and Anime static prototypes; all new motion pending |
-| 4C | Exercise Swim / Boxing dual form with deterministic alternation | No |
+| 4C | Exercise Swim / Boxing dual form with deterministic alternation | Static outfits and per-tab entry parity; dedicated animation frames pending |
 | 4D | Six Cosmos forms mapped directly to its internal systems | No |
 | 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | No; current batches only perform their required regression checks |
 
 Part 4A was accepted by the owner. Part 4B batches 1–3 authorize Records, Review and Anime only.
-Part 5 financial reactions are separate. Do not start further batches, 4C–4E or
-Part 5 automatically; await the owner's Watching visual acceptance.
+Part 4C static forms and parity are now authorized. Part 5 financial reactions are
+separate. Do not start further animation batches, 4D–4E or
+Part 5 automatically; await the owner's Exercise dual-form real-device acceptance.
 
 ## Shared character and material specification
 
@@ -48,8 +51,8 @@ Part 5 automatically; await the owner's Watching visual acceptance.
 | --- | --- | --- |
 | `eden-default` | Today; safe fallback everywhere | Original approved sprite/blink/perch |
 | `eden-treasurer` | Expenses, 4A/4B | Approved **static 4A prototype**, no blink or abacus idle |
-| `eden-swim` | Exercise, 4C | Planned; no resource |
-| `eden-boxing` | Exercise, 4C | Planned; no resource |
+| `eden-swim` | Exercise, 4C | Approved static Swim, no dedicated idle frames |
+| `eden-boxing` | Exercise, 4C | Approved static Boxing, no dedicated idle frames |
 | `eden-archivist` | Records, 4B batch 1 | Approved **static 4B prototype**, no blink, reading, page turn or nod |
 | `eden-reflector` | Weekly Review, 4B batch 2 | Approved **static 4B prototype**, native right-facing; no blink, page turn, writing or look-up |
 | `eden-watching` | Anime, 4B batch 3 | Static prone cutout derived from the approved board; no blink, gaze or yawn |
@@ -60,12 +63,13 @@ Part 5 automatically; await the owner's Watching visual acceptance.
 | `eden-ziwei` | Cosmos Zi Wei, 4D | Planned; no resource |
 | `eden-ai-explorer` | Cosmos Ask Cosmos, 4D | Planned; no resource |
 
-There are exactly 13 requested IDs: five available definitions (including the
-existing default) and eight explicitly planned definitions. Batch 3 adds only
-Watching artwork. No user-facing clothes picker is added: the selector
+There are exactly 13 requested IDs: seven available definitions (including the
+existing default) and six explicitly planned Cosmos definitions. Part 4C adds only
+Swim/Boxing artwork. No user-facing clothes picker is added: the selector
 is deterministic page intent. Today always selects `eden-default`; Expenses selects
 Treasurer; Records selects Archivist; Review selects Reflector;
-Anime selects Watching; Exercise/Cosmos keep default; About selects none.
+Anime selects Watching; Exercise alternates Swim/Boxing on committed page entries;
+Cosmos keeps default; About selects none.
 Account remains an existing modal that hides the global avatar.
 
 ## Approved files and deterministic derivation
@@ -107,6 +111,7 @@ preview. Source PNGs and all visual QA artifacts must stay outside public commit
 | --- | --- |
 | Role IDs, readiness, capabilities, visual dimensions/anchor/URL | `avatarRegistry.ts` |
 | Page → ID selection; no records, amounts, randomness or save events | `avatarPageSelection.ts` |
+| Per-document committed Exercise entries and session parity | `exerciseAvatarEntry.ts` and `useExerciseAvatarEntry.ts` |
 | Original sprite vs static image; preload/decode/error, actual-material facing and unload cleanup | `AvatarAppearance.tsx` |
 | Original blink/perch pixels | Existing `AvatarSprite.tsx` and original atlas, unchanged |
 | Today action sequence/timers | Existing `avatarMachine.ts`, unchanged |
@@ -132,7 +137,10 @@ Reduced Motion does not animate or recreate the static image.
 - Anime uses the static Watching prone artwork, bottom-fitted at its native ratio
   in the existing right corner. Posture metadata is independent of Capture state.
   The player/fullscreen/modal and focus safety rules remain unchanged.
-- PWA adds the Treasurer, Archivist, Reflector and Watching filename patterns to the existing precache;
+- Exercise adds two static outfits with one tab-local parity advance per committed
+  entry. Scroll, rerenders, overlays, lock state and duplicate restore events do
+  not select another form. Resource failures retain the consumed entry.
+- PWA adds only the six available static outfit filename patterns to the existing precache;
   update prompting, manifest/start URL, routing and offline security are unchanged.
 - No financial records are read by wardrobe modules; no real writes, Guest exit,
   paid APIs, Firebase/Rules, Netlify sensitive settings or Production changes.
@@ -143,9 +151,9 @@ Reduced Motion does not animate or recreate the static image.
   and the Records/Review/Anime costumes. Extend visual metadata with frame/pose
   definitions and add a renderer/controller for those real frames. Keep the
   original Today sprite path intact and retain resource-failure fallback.
-- **4C:** Exercise owns a deterministic activation index or explicit local form
-  state; a future typed selection context can choose Swim/Boxing by that index.
-  No randomness or finance data is needed. Both entries remain default until ready.
+- **4C animations:** entry parity is implemented independently of renderer and
+  data. Dedicated goggles/shoulder/punch/glove/blink frames are still absent;
+  never fake them by transforming the static art or triggering on workout saves.
 - **4D:** Cosmos owns its active tab. A future selection context maps
   `tarot/iching/bazi/astrology/ziwei/ai` directly to the six listed Cosmos IDs.
   No autonomous rotation or AI invocation belongs in the avatar renderer.
