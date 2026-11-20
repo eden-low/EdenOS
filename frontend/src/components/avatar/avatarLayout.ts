@@ -3,16 +3,17 @@ export interface AvatarViewport extends AvatarRect {
   safeTop: number; safeRight: number; safeBottom: number; safeLeft: number
 }
 export interface AvatarPlacement extends AvatarRect { mode: 'full' | 'bust' | 'hidden' }
+export interface AvatarPlacementOptions { corner?: 'left' | 'right'; reserveCapture?: boolean }
 const hidden: AvatarPlacement = { left: 0, top: 0, width: 0, height: 0, mode: 'hidden' }
 export function overlaps(a: AvatarRect, b: AvatarRect) {
   return a.left < b.left + b.width && a.left + a.width > b.left && a.top < b.top + b.height && a.top + a.height > b.top
 }
 
-export function avatarPlacement(view: AvatarViewport, sheet: AvatarRect | null, obstacles: AvatarRect[] = []): AvatarPlacement {
+export function avatarPlacement(view: AvatarViewport, sheet: AvatarRect | null, obstacles: AvatarRect[] = [], { corner = 'right', reserveCapture = true }: AvatarPlacementOptions = {}): AvatarPlacement {
   const left = view.left + view.safeLeft + 12
   const right = view.left + view.width - view.safeRight - 12
   const top = view.top + view.safeTop + 12
-  const bottom = view.top + view.height - view.safeBottom - (view.width < 1024 ? 96 : 20)
+  const bottom = view.top + view.height - view.safeBottom - (view.width < 1024 && reserveCapture ? 96 : 20)
   if (view.width < 280 || view.height < 240) return hidden
   if (sheet) {
     // The sprite's hand baseline sits on the actual edge, entirely outside the form.
@@ -28,6 +29,8 @@ export function avatarPlacement(view: AvatarViewport, sheet: AvatarRect | null, 
   // exclusively to the Capture edge; hide if standing cannot fit safely.
   const width = 88
   const height = 164
-  const result: AvatarPlacement = { left: right - width, top: bottom - height, width, height, mode: 'full' }
+  // Leave room for the existing desktop sidebar at the lower-left corner.
+  const x = corner === 'left' ? left + (view.width >= 1024 ? 100 : 0) : right - width
+  const result: AvatarPlacement = { left: x, top: bottom - height, width, height, mode: 'full' }
   return result.top >= top && !obstacles.some((rect) => overlaps(result, rect)) ? result : hidden
 }

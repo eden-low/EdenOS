@@ -1,12 +1,21 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { DesktopNavigation, MobileNavigation } from './Navigation'
+import { DesktopNavigation, MobileNavigation, type AppPage } from './Navigation'
 
 vi.mock('../capture/CaptureSheet', () => ({ CaptureSheet: ({ children }: { children: ReactNode }) => <>{children}</> }))
 vi.mock('../account/AccountDialog', () => ({ AccountDialog: ({ children }: { children: ReactNode }) => <>{children}</> }))
 
 describe('Mobile Navigation V2', () => {
+  it.each<AppPage>(['today', 'expenses', 'exercise', 'records', 'review', 'anime', 'cosmos', 'about'])('renders the global Capture and its wrapper only on Today: %s', (page) => {
+    const { container, rerender } = render(<MobileNavigation activePage="today" onNavigate={vi.fn()} />)
+    rerender(<MobileNavigation activePage={page} onNavigate={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Capture something' }) !== null).toBe(page === 'today')
+    expect(container.querySelector('[data-global-capture]') !== null).toBe(page === 'today')
+    rerender(<MobileNavigation activePage="today" onNavigate={vi.fn()} />)
+    expect(screen.getAllByRole('button', { name: 'Capture something' })).toHaveLength(1)
+  })
+
   it('keeps only Capture at the bottom and exposes the approved app drawer', async () => {
     const navigate = vi.fn()
     render(<MobileNavigation activePage="today" onNavigate={navigate} />)

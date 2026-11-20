@@ -54,12 +54,12 @@ function App() {
   }
 
   return (
-    <EdenAvatarProvider enabled={activePage === 'today'}>
+    <EdenAvatarProvider enabled={activePage !== 'about'} page={activePage}>
     <div className="min-h-[100dvh] text-[var(--text-primary)]">
-      <DesktopNavigation activePage={activePage} onNavigate={navigate} />
+      <DesktopNavigation key={`desktop:${activePage}`} activePage={activePage} onNavigate={navigate} />
 
       <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.25rem+env(safe-area-inset-top))] lg:ml-28 lg:pb-8 lg:pt-0">
-        <Suspense fallback={<div className="mx-auto max-w-[92rem] px-4 py-8 text-sm text-[var(--text-muted)]">Opening…</div>}>
+        <Suspense key={activePage} fallback={<div className="mx-auto max-w-[92rem] px-4 py-8 text-sm text-[var(--text-muted)]">Opening…</div>}>
           {activePage === 'today' ? (
             <TodayPage onNavigate={navigate} onOpenCommand={() => setCommandOpen(true)} />
           ) : activePage === 'expenses' ? (
@@ -80,7 +80,7 @@ function App() {
         </Suspense>
       </main>
 
-      <MobileNavigation activePage={activePage} onNavigate={navigate} />
+      <MobileNavigation key={`mobile:${activePage}`} activePage={activePage} onNavigate={navigate} />
       <PwaUpdatePrompt />
       {commandOpen && <Suspense fallback={null}><CommandPalette open onClose={() => setCommandOpen(false)} onNavigate={navigate} onAnimeSearch={searchAnime} /></Suspense>}
     </div>

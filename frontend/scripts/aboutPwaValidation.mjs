@@ -7,7 +7,7 @@ import { build, loadConfigFromFile, mergeConfig, preview } from 'vite'
 import { createBrowserSession, delay } from './browserSession.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/about-2-2')
+const output = path.resolve('artifacts/browser-validation/avatar-part3-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
@@ -56,8 +56,21 @@ try {
   await session.shot(path.join(output, 'offline-signed-in-wave.png'))
   await waitFor(`document.querySelector('.about-avatar-stage').dataset.action==='idle'`, 'offline wave returns idle')
   assert.equal(await evaluate('Boolean(document.querySelector(".eden-avatar"))'), false)
+  for (const [label, heading, capture] of [['Records','Records','Capture'],['Exercise','Exercise','Capture workout']]) {
+    await session.click('[aria-label="Open apps"]')
+    await waitFor(`document.querySelector('[aria-label="App drawer"]')`, 'offline Apps drawer')
+    await evaluate(`Array.from(document.querySelectorAll('[aria-label="App drawer"] button')).find(b=>b.textContent.trim()===${JSON.stringify(label)}).click()`)
+    await waitFor(`document.querySelector('main h1')?.textContent===${JSON.stringify(heading)}&&!document.querySelector('[role="dialog"][data-state="open"]')`, 'offline '+label)
+    assert.equal(await evaluate(`Boolean(document.querySelector('[data-global-capture]'))`),false)
+    await waitFor(`document.querySelector('.eden-avatar')?.dataset.state==='idle'`, 'offline standing avatar')
+    await evaluate(`Array.from(document.querySelectorAll('main button')).find(b=>b.textContent.trim()===${JSON.stringify(capture)}).click()`)
+    await waitFor(`document.querySelector('[data-eden-capture]')&&document.querySelector('.eden-avatar').dataset.visible==='false'`, 'offline non-Today Capture hides avatar')
+    assert.equal(await evaluate(`document.querySelector('.eden-avatar').dataset.state`),'idle')
+    await session.click('[aria-label="Close dialog"]')
+    await waitFor(`!document.querySelector('[data-eden-capture]')&&document.body.style.pointerEvents!=='none'`, 'offline Capture cleanup')
+  }
   assert.deepEqual(session.errors, [])
-  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, cache: cached, errors: session.errors }
+  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, cache: cached, errors: session.errors }
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

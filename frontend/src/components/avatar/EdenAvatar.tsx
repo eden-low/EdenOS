@@ -1,26 +1,29 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import type { AppPage } from '../layout/Navigation'
 import { AvatarCaptureContext, type CaptureAnchor } from './AvatarCaptureContext'
 import { AvatarSprite } from './AvatarSprite'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
 import './avatar.css'
 
-const controlSelector = 'button, a, input, select, textarea, [role="button"], [role="alert"], [role="status"]'
+const controlSelector = 'button, a, input, select, textarea, summary, [role="button"], [role="link"], [role="tab"], [role="slider"], [role="checkbox"], [role="switch"], [role="combobox"], [role="spinbutton"], [role="menuitem"], [contenteditable="true"], video[controls], audio[controls]'
 function rectOf(element: Element): AvatarRect { return element.getBoundingClientRect() }
 
-export function EdenAvatarProvider({ enabled, children }: { enabled: boolean; children: ReactNode }) {
-  const [anchor, setAnchor] = useState<CaptureAnchor | null>(null)
+export function EdenAvatarProvider({ enabled, page = 'today', children }: { enabled: boolean; page?: AppPage; children: ReactNode }) {
+  const [capture, setCapture] = useState<{ page: AppPage; anchor: CaptureAnchor } | null>(null)
   const publish = useCallback((next: CaptureAnchor | null, owner: symbol) => {
-    setAnchor((current) => next ?? (current?.owner === owner ? null : current))
-  }, [])
+    setCapture((current) => next ? { page, anchor: next } : current?.anchor.owner === owner ? null : current)
+  }, [page])
+  // Only Today owns a perch. Other pages' Capture dialogs remain ordinary occluders.
+  const anchor = page === 'today' && capture?.page === page ? capture.anchor : null
   return <AvatarCaptureContext.Provider value={publish}>
     {children}
-    {enabled && <EdenAvatar anchor={anchor} />}
+    {enabled && page !== 'about' && <EdenAvatar key={`avatar:${page}`} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} />}
   </AvatarCaptureContext.Provider>
 }
 
-function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
+function EdenAvatar({ anchor, corner, reserveCapture }: { anchor: CaptureAnchor | null; corner: 'left' | 'right'; reserveCapture: boolean }) {
   const [state, dispatch] = useReducer(avatarTransition, 'idle')
   const [reduced, setReduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const element = useRef<HTMLDivElement>(null)
@@ -49,6 +52,7 @@ function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
     let disposed = false
     let dirty = true
     let controls: Element[] = []
+    let nativeMediaFullscreen = false
     const invalidate = () => { dirty = true; if (!frame) frame = requestAnimationFrame(measure) }
     function measure() {
       frame = 0
@@ -67,14 +71,14 @@ function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
       }
       const anotherDialog = Array.from(document.querySelectorAll('[role="dialog"][data-state="open"], [role="alertdialog"]'))
         .some((dialog) => dialog !== anchor?.sheet)
-      setOccluded(anotherDialog || Boolean(document.querySelector('.genesis-boot-screen')))
+      setOccluded(anotherDialog || Boolean(document.querySelector('.genesis-boot-screen')) || Boolean(document.fullscreenElement) || nativeMediaFullscreen)
       const obstacles = controls.filter((control) => {
         if (anchor && !anchor.sheet.contains(control)) return false
         // Capture's top controls are measured too; feet/hands must never cover them.
         const styles = getComputedStyle(control)
         return styles.visibility !== 'hidden' && styles.display !== 'none' && control.getClientRects().length > 0
       }).map(rectOf)
-      const next = avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, obstacles)
+      const next = avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, obstacles, { corner, reserveCapture })
       setPlacement((current) => {
         // Preserve the last safe coordinates while hidden, so a later return never flies from (0, 0).
         if (next.mode === 'hidden') return current.mode === 'hidden' ? current : { ...current, mode: 'hidden' }
@@ -90,6 +94,11 @@ function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
     if (anchor) resize?.observe(anchor.sheet)
     window.addEventListener('resize', invalidate)
     window.addEventListener('scroll', invalidate, true)
+    const enterMedia = () => { nativeMediaFullscreen = true; invalidate() }
+    const exitMedia = () => { nativeMediaFullscreen = false; invalidate() }
+    document.addEventListener('fullscreenchange', invalidate)
+    document.addEventListener('webkitbeginfullscreen', enterMedia, true)
+    document.addEventListener('webkitendfullscreen', exitMedia, true)
     window.visualViewport?.addEventListener('resize', invalidate)
     window.visualViewport?.addEventListener('scroll', invalidate)
     invalidate()
@@ -99,10 +108,13 @@ function EdenAvatar({ anchor }: { anchor: CaptureAnchor | null }) {
       observer.disconnect(); resize?.disconnect()
       window.removeEventListener('resize', invalidate)
       window.removeEventListener('scroll', invalidate, true)
+      document.removeEventListener('fullscreenchange', invalidate)
+      document.removeEventListener('webkitbeginfullscreen', enterMedia, true)
+      document.removeEventListener('webkitendfullscreen', exitMedia, true)
       window.visualViewport?.removeEventListener('resize', invalidate)
       window.visualViewport?.removeEventListener('scroll', invalidate)
     }
-  }, [anchor])
+  }, [anchor, corner, reserveCapture])
 
   const visible = !occluded && !anchor?.suspended && placement.mode !== 'hidden'
   // Layout/collisions can hide the standing avatar; only an open Capture may select its perch.

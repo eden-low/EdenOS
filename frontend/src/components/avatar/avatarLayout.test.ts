@@ -4,6 +4,21 @@ import { avatarPlacement, overlaps, type AvatarViewport } from './avatarLayout'
 const iphone: AvatarViewport = { left: 0, top: 0, width: 390, height: 844, safeTop: 47, safeBottom: 34, safeLeft: 0, safeRight: 0 }
 const sheet = { left: 0, top: 420, width: 390, height: 424 }
 describe('Avatar safe placement', () => {
+  it('anchors Review at lower-left inside safe areas and beside the desktop sidebar', () => {
+    const mobile = avatarPlacement({ ...iphone, left: 20, safeLeft: 47 }, null, [], { corner: 'left' })
+    expect(mobile.left).toBe(20 + 47 + 12)
+    expect(mobile.top).toBe(avatarPlacement(iphone, null).top)
+    const desktop = avatarPlacement({ ...iphone, width: 1440, height: 1000 }, null, [], { corner: 'left' })
+    expect(desktop.left).toBe(112)
+    expect(avatarPlacement(iphone, null, [mobile], { corner: 'left' }).mode).not.toBe('bust')
+  })
+  it('reserves the mobile + space on Today only, retaining the home indicator inset elsewhere', () => {
+    const today = avatarPlacement(iphone, null)
+    const otherPage = avatarPlacement(iphone, null, [], { reserveCapture: false })
+    expect(otherPage.top - today.top).toBe(76)
+    expect(otherPage.top + otherPage.height).toBe(iphone.height - iphone.safeBottom - 20)
+  })
+
   it('rests above mobile + and the home indicator, inside safe horizontal edges', () => {
     const avatar = avatarPlacement(iphone, null)
     expect(avatar.mode).toBe('full')
