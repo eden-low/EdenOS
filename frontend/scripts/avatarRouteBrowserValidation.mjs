@@ -7,7 +7,7 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const origin = 'http://127.0.0.1:5181'
-const output = path.resolve('artifacts/browser-validation/avatar-part4a')
+const output = path.resolve('artifacts/browser-validation/avatar-part4b-archivist')
 await mkdir(output, { recursive: true })
 let harness = await readFile('artifacts/browser-validation/about/harness.tsx', 'utf8')
 assert(harness.includes("import App from '/src/App'"))
@@ -17,9 +17,9 @@ harness = harness.replace('items:[],cloudError:null', 'items:[],cloudError:null,
   .replace('<FinancePlanningContext.Provider', "<FinanceRulesContext.Provider value={{rules:[],status:'loaded',createRule:forbidden,setRuleEnabled:forbidden,deleteRule:forbidden}}><FinancePlanningContext.Provider")
   .replace('</FinancePlanningContext.Provider>', '</FinancePlanningContext.Provider></FinanceRulesContext.Provider>')
 await writeFile(path.join(output, 'harness.tsx'), harness)
-await writeFile(path.join(output, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/artifacts/browser-validation/avatar-part4a/harness.tsx"></script></body></html>')
+await writeFile(path.join(output, 'index.html'), '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/artifacts/browser-validation/avatar-part4b-archivist/harness.tsx"></script></body></html>')
 await delay(250)
-const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part4a/index.html')).text()
+const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part4b-archivist/index.html')).text()
 const session = await createBrowserSession()
 const { send, evaluate, waitFor, click } = session
 const results = []
@@ -39,7 +39,8 @@ const audit = `(()=>{const a=${avatar};if(!a)return null;const r=a.getBoundingCl
 const ready = (page) => page.heading ? `document.querySelector('main h1')?.textContent.includes(${JSON.stringify(page.heading)})` : `document.querySelector('.today-dashboard')`
 const clickText = async (text) => evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)}&&b.getClientRects().length);if(!b)throw Error('Missing button: '+${JSON.stringify(text)});b.click()})()`)
 let mobile = true
-let failTreasurer = false
+let failedOutfit = null
+const outfits = { '/expenses': {id:'eden-treasurer',width:352,height:656}, '/records': {id:'eden-archivist',width:264,height:492} }
 async function navigate(page) {
   if (mobile) { await click('[aria-label="Open apps"]'); await waitFor(`document.querySelector('[aria-label="App drawer"]')`, 'Apps drawer'); await clickText(page.label) }
   else await click(`.desktop-nav [aria-label="${page.label}"]`)
@@ -54,8 +55,9 @@ async function closeDialog() {
 try {
   session.onIntercept = async ({ requestId, request, resourceType }) => {
     const url = new URL(request.url)
-    if(resourceType==='Image'&&url.pathname.includes('eden-treasurer-abacus-static')) {
-      await send(failTreasurer?'Fetch.failRequest':'Fetch.continueRequest',failTreasurer?{requestId,errorReason:'Failed'}:{requestId})
+    if(resourceType==='Image'&&/eden-(treasurer-abacus|archivist-clipboard)-static/.test(url.pathname)) {
+      const failed=failedOutfit&&url.pathname.includes(failedOutfit)
+      await send(failed?'Fetch.failRequest':'Fetch.continueRequest',failed?{requestId,errorReason:'Failed'}:{requestId})
       return
     }
     let body, mime = 'application/javascript'
@@ -68,6 +70,7 @@ try {
     ...pages.map(p=>({urlPattern:origin+(p.path==='/'?'/':p.path+'*'),resourceType:'Document'})),
     ...['firestoreAnimeRepository','firestoreWeeklyReviewRepository','animeDetailService','useGoalAllocations'].map(name=>({urlPattern:'*src/*/'+name+'.ts*'})),
     {urlPattern:'*eden-treasurer-abacus-static.webp*',resourceType:'Image'},
+    {urlPattern:'*eden-archivist-clipboard-static.webp*',resourceType:'Image'},
   ] })
   await send('Emulation.setFocusEmulationEnabled', {enabled:true})
   // Chrome headless denies fullscreen by default. Grant only this fresh test
@@ -101,10 +104,11 @@ try {
       assert.equal(await evaluate(`Boolean(document.querySelector('[data-global-capture]'))`), page.path==='/')
       assert.equal(await evaluate(`document.querySelectorAll('[aria-label="Capture something"]').length`), page.path==='/'?1:0)
       if (page.path==='/about') { assert.equal(await evaluate(`${avatar}===null`),true); continue }
-      const selectedId=page.path==='/expenses'?'eden-treasurer':'eden-default'
+      const outfit=outfits[page.path]
+      const selectedId=outfit?.id??'eden-default'
       await waitFor(`${avatar}.querySelector('.eden-avatar-appearance').dataset.avatarId===${JSON.stringify(selectedId)}`,'selected wardrobe '+page.path)
-      if(page.path==='/expenses') {
-        assert.deepEqual(await evaluate(`(()=>{const i=${avatar}.querySelector('img'),s=getComputedStyle(i),r=i.getBoundingClientRect();return {natural:[i.naturalWidth,i.naturalHeight],size:[r.width,r.height],fit:s.objectFit,anchor:s.objectPosition,animation:s.animationName,blink:!!${avatar}.querySelector('.eden-avatar-eyes-closed')}})()`),{natural:[352,656],size:[88,164],fit:'contain',anchor:'50% 100%',animation:'none',blink:false})
+      if(outfit) {
+        assert.deepEqual(await evaluate(`(()=>{const i=${avatar}.querySelector('img'),s=getComputedStyle(i),r=i.getBoundingClientRect();return {natural:[i.naturalWidth,i.naturalHeight],size:[r.width,r.height],fit:s.objectFit,anchor:s.objectPosition,animation:s.animationName,blink:!!${avatar}.querySelector('.eden-avatar-eyes-closed')}})()`),{natural:[outfit.width,outfit.height],size:[88,164],fit:'contain',anchor:'50% 100%',animation:'none',blink:false})
       }
       let visibleSamples = 0
       const positions = []
@@ -141,7 +145,7 @@ try {
         await evaluate(`window.aboutHarness.setLocked(${locked})`); await delay(60)
         assert(await evaluate(`window.avatarBeforeLock===${avatar}`))
         assert.equal((await evaluate(audit)).state,'idle')
-        if(page.path==='/expenses') { assert.equal((await evaluate(audit)).avatarId,'eden-treasurer');assert(await evaluate(`window.outfitBeforeLock===${avatar}.querySelector('img')`)) }
+        if(outfit) { assert.equal((await evaluate(audit)).avatarId,selectedId);assert(await evaluate(`window.outfitBeforeLock===${avatar}.querySelector('img')`)) }
       }
       results.push({width,page:page.path,visibleSamples,fixedCorner:true,noIdlePerch:true})
       if (width===390) await session.shot(path.join(output,page.label.replaceAll(' ','-')+'.png'))
@@ -225,23 +229,26 @@ try {
   assert.equal((await evaluate(audit)).collision,false);assert.equal((await evaluate(audit)).overflow,false)
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true})
   await send('Network.setCacheDisabled',{cacheDisabled:true})
-  failTreasurer=true
-  await send('Page.navigate',{url:origin+'/expenses'});await delay(100)
-  await waitFor(`${ready(pages[1])}&&${avatar}.querySelector('.eden-avatar-appearance')?.dataset.assetState==='error'`,'network failure falls back without a broken character')
-  assert.equal((await evaluate(audit)).avatarId,'eden-default')
-  assert.equal((await evaluate(audit)).pose,'standing')
-  failTreasurer=false
-  await send('Page.navigate',{url:origin+'/expenses'});await delay(100)
-  await waitFor(`${ready(pages[1])}&&${avatar}?.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-treasurer'`,'fresh route retries the approved material')
-  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]})
-  await waitFor(`${avatar}.dataset.reduced==='true'`,'Treasurer Reduced Motion')
-  assert.equal((await evaluate(audit)).mode,'static-prototype')
-  await session.shot(path.join(output,'Treasurer-390-reduced.png'))
-  await send('Page.navigate',{url:origin+'/'});await delay(100)
-  await waitFor(`${avatar}?.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-default'`,'leaving Expenses restores original')
-  assert.equal(await evaluate(`document.querySelectorAll('.eden-avatar-static-image').length`),0)
+  for(const [route,outfit] of Object.entries(outfits)) {
+    const page=pages.find(p=>p.path===route)
+    failedOutfit=outfit.id
+    await send('Page.navigate',{url:origin+route});await delay(100)
+    await waitFor(`${ready(page)}&&${avatar}.querySelector('.eden-avatar-appearance')?.dataset.assetState==='error'`,'failed outfit falls back '+route)
+    assert.equal((await evaluate(audit)).avatarId,'eden-default')
+    assert.equal((await evaluate(audit)).pose,'standing')
+    failedOutfit=null
+    await send('Page.navigate',{url:origin+route});await delay(100)
+    await waitFor(`${ready(page)}&&${avatar}?.querySelector('.eden-avatar-appearance')?.dataset.avatarId===${JSON.stringify(outfit.id)}`,'fresh route retries '+route)
+    await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]})
+    await waitFor(`${avatar}.dataset.reduced==='true'`,'static outfit Reduced Motion')
+    assert.equal((await evaluate(audit)).mode,'static-prototype')
+    await session.shot(path.join(output,outfit.id+'-390-reduced.png'))
+    await send('Page.navigate',{url:origin+'/'});await delay(100)
+    await waitFor(`${avatar}?.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-default'`,'leaving outfit restores original')
+    assert.equal(await evaluate(`document.querySelectorAll('.eden-avatar-static-image').length`),0)
+  }
   assert.deepEqual(session.errors,[])
-  const report={results,treasurerStaticOnlyOnExpenses:true,staticAspectAndFootAnchor:true,resourceFailureFallbackAndRetry:true,wardrobeCleanupAndReducedMotion:true,allEightRoutes:true,directLinksReloadAndDrawerHighlight:true,pageshowAndLegacyHash:true,ordinaryButtonsClickableBehindAvatar:true,reviewOnlyMirror:true,globalPlusOnlyToday:true,existingPageEntries:true,reviewInputsAndSaveProtected:true,cosmosLocalOnly:true,actualAnimePlayerSyntheticMedia:true,fullscreen:true,historyAndCaptureCleanup:true,accountAndGenesisHidden:true,shortViewportAndLandscape:true,noLiveDataOrPaidCalls:true,errors:session.errors}
+  const report={results,treasurerStaticOnlyOnExpenses:true,archivistStaticOnlyOnRecords:true,staticAspectAndFootAnchor:true,resourceFailureFallbackAndRetry:true,wardrobeCleanupAndReducedMotion:true,allEightRoutes:true,directLinksReloadAndDrawerHighlight:true,pageshowAndLegacyHash:true,ordinaryButtonsClickableBehindAvatar:true,reviewOnlyMirror:true,globalPlusOnlyToday:true,existingPageEntries:true,reviewInputsAndSaveProtected:true,cosmosLocalOnly:true,actualAnimePlayerSyntheticMedia:true,fullscreen:true,historyAndCaptureCleanup:true,accountAndGenesisHidden:true,shortViewportAndLandscape:true,noLiveDataOrPaidCalls:true,errors:session.errors}
   await writeFile(path.join(output,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2))
 } catch(error) { console.error(JSON.stringify({page:await evaluate('document.body.innerText'),errors:session.errors}));throw error }
 finally { await session.close() }

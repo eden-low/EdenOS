@@ -8,12 +8,12 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/avatar-part4a-pwa')
+const output = path.resolve('artifacts/browser-validation/avatar-part4b-archivist-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
 await mkdir(root, { recursive: true })
-let harness = await readFile('artifacts/browser-validation/avatar-part4a/harness.tsx', 'utf8')
+let harness = await readFile('artifacts/browser-validation/avatar-part4b-archivist/harness.tsx', 'utf8')
 const oldImport = "import {PwaContext} from '/src/pwa/pwaContextDefinition'"
 const oldProvider = '<PwaContext.Provider value={{updateAvailable:false,applyUpdate:forbidden,dismissUpdate:forbidden}}>'
 assert(harness.includes(oldImport) && harness.includes(oldProvider) && harness.includes('isAnonymous:false'))
@@ -39,11 +39,11 @@ try {
   await waitFor(ready, 'synthetic signed-in production About')
   let cached
   for (let i = 0; i < 60; i++) {
-    cached = await evaluate(`(async()=>{const regs=await navigator.serviceWorker.getRegistrations();const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:regs.some(r=>r.active?.state==='activated'),wave:urls.some(url=>url.includes('eden-about-wave-v2-')),treasurer:urls.some(url=>url.includes('eden-treasurer-abacus-static-')),entries:urls.length}})()`)
-    if (cached.active && cached.wave && cached.treasurer) break
+    cached = await evaluate(`(async()=>{const regs=await navigator.serviceWorker.getRegistrations();const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:regs.some(r=>r.active?.state==='activated'),wave:urls.some(url=>url.includes('eden-about-wave-v2-')),treasurer:urls.some(url=>url.includes('eden-treasurer-abacus-static-')),archivist:urls.some(url=>url.includes('eden-archivist-clipboard-static-')),entries:urls.length}})()`)
+    if (cached.active && cached.wave && cached.treasurer && cached.archivist) break
     await delay(1000)
   }
-  assert(cached.active && cached.wave && cached.treasurer)
+  assert(cached.active && cached.wave && cached.treasurer && cached.archivist)
   await evaluate('window.pwaReloadMarker=true'); await send('Page.reload')
   await waitFor('!window.pwaReloadMarker', 'new controlled document')
   await waitFor(ready, 'synthetic session persists through reload')
@@ -86,6 +86,10 @@ try {
       await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-treasurer'&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===352`,'offline Treasurer decoded from precache')
       assert.equal(await evaluate(`document.querySelector('.eden-avatar-appearance').dataset.avatarMode`),'static-prototype')
     }
+    if(route==='/records') {
+      await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-archivist'&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===264`,'offline Archivist decoded from precache')
+      assert.equal(await evaluate(`document.querySelector('.eden-avatar-appearance').dataset.avatarMode`),'static-prototype')
+    }
     await session.click('[aria-label="Open apps"]')
     await waitFor(`document.querySelector('[aria-label="App drawer"]')`,'offline current page')
     assert.equal(await evaluate(`document.querySelector('[aria-label="App drawer"] [aria-current="page"]')?.textContent.trim()`),label)
@@ -93,7 +97,7 @@ try {
     await waitFor(`!document.querySelector('[role="dialog"][data-state="open"]')`,'offline drawer close')
   }
   assert.deepEqual(session.errors, [])
-  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
+  const report = { syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedAndOfflineDecoded:true,offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

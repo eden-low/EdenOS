@@ -17,22 +17,22 @@ async function loaded() { await act(async () => { loaders.at(-1)!.onload!() }) }
 beforeEach(() => { loaders = []; vi.stubGlobal('Image', LoaderImage) })
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-describe('wardrobe rendering independent of layout and motion', () => {
+describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
   it('preloads/decode-checks the approved image while retaining a safe default', async () => {
-    const view = render(<AvatarAppearance avatarId="eden-treasurer" {...idle} />)
+    const view = render(<AvatarAppearance avatarId={avatarId} {...idle} />)
     expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')
     expect(appearance().getAttribute('data-asset-state')).toBe('loading')
     expect(loaders).toHaveLength(1)
     await loaded()
     expect(loaders[0].decode).toHaveBeenCalledOnce()
-    expect(appearance().getAttribute('data-avatar-id')).toBe('eden-treasurer')
+    expect(appearance().getAttribute('data-avatar-id')).toBe(avatarId)
     expect(appearance().getAttribute('data-avatar-mode')).toBe('static-prototype')
     const image = document.querySelector('img')!
-    expect(image.width).toBe(352); expect(image.height).toBe(656)
+    expect(image.width).toBe(width); expect(image.height).toBe(height)
     expect(image.style.objectPosition).toBe('50% 100%')
     expect(image.alt).toBe(''); expect(image.draggable).toBe(false)
     expect(document.querySelector('.eden-avatar-eyes-closed')).toBeNull()
-    view.rerender(<AvatarAppearance avatarId="eden-treasurer" {...idle} still />)
+    view.rerender(<AvatarAppearance avatarId={avatarId} {...idle} still />)
     expect(document.querySelector('img')).toBe(image)
     expect(loaders).toHaveLength(1)
   })
@@ -40,7 +40,7 @@ describe('wardrobe rendering independent of layout and motion', () => {
     const view = render(<AvatarAppearance avatarId="eden-default" {...idle} />)
     expect(loaders).toHaveLength(0)
     expect(document.querySelector('.eden-avatar-art')?.getAttribute('viewBox')).toBe('144 0 256 512')
-    view.rerender(<AvatarAppearance avatarId="eden-treasurer" {...idle} perched />)
+    view.rerender(<AvatarAppearance avatarId={avatarId} {...idle} perched />)
     expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')
     expect(document.querySelector('.eden-avatar-art')?.getAttribute('viewBox')).toBe('0 512 512 512')
     expect(loaders).toHaveLength(0)
@@ -54,7 +54,7 @@ describe('wardrobe rendering independent of layout and motion', () => {
     expect(loaders).toHaveLength(0)
   })
   it.each(['network','decode','display'])('falls back safely on %s failure', async (failure) => {
-    render(<AvatarAppearance avatarId="eden-treasurer" {...idle} />)
+    render(<AvatarAppearance avatarId={avatarId} {...idle} />)
     if (failure === 'network') act(() => loaders[0].onerror!())
     else if (failure === 'decode') {
       loaders[0].decode.mockRejectedValueOnce(new Error('Invalid image'))
@@ -67,7 +67,7 @@ describe('wardrobe rendering independent of layout and motion', () => {
   })
   it('cleans pending loads on page change and ignores a stale decode completion', async () => {
     let finish!: () => void
-    const view = render(<AvatarAppearance avatarId="eden-treasurer" {...idle} />)
+    const view = render(<AvatarAppearance avatarId={avatarId} {...idle} />)
     const image = loaders[0]
     image.decode.mockReturnValueOnce(new Promise<void>((resolve) => { finish = resolve }))
     act(() => image.onload!())
@@ -76,10 +76,10 @@ describe('wardrobe rendering independent of layout and motion', () => {
     await act(async () => finish())
     expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')
     expect(document.querySelector('img')).toBeNull()
-    view.rerender(<AvatarAppearance avatarId="eden-treasurer" {...idle} />)
+    view.rerender(<AvatarAppearance avatarId={avatarId} {...idle} />)
     expect(loaders).toHaveLength(2)
     await loaded()
-    expect(appearance().getAttribute('data-avatar-id')).toBe('eden-treasurer')
+    expect(appearance().getAttribute('data-avatar-id')).toBe(avatarId)
     view.unmount()
     expect(loaders[1].onload).toBeNull(); expect(loaders[1].onerror).toBeNull()
     expect(appearance()).toBeNull()

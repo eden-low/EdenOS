@@ -1,4 +1,5 @@
 import treasurerArt from './assets/eden-treasurer-abacus-static.webp'
+import archivistArt from './assets/eden-archivist-clipboard-static.webp'
 
 export const avatarIds = [
   'eden-default', 'eden-treasurer', 'eden-swim', 'eden-boxing', 'eden-archivist',
@@ -14,7 +15,7 @@ interface LegacyAvatar extends AvatarIdentity {
 }
 export interface StaticAvatar extends AvatarIdentity {
   status: 'ready'; kind: 'static-image'; blink: false; capturePerch: false
-  prototype: '4A-static'
+  prototype: '4A-static' | '4B-static'
   asset: {
     src: string; width: number; height: number
     cssFrame: { width: number; height: number }
@@ -33,7 +34,10 @@ export const avatarRegistry: Readonly<Record<AvatarId, AvatarDefinition>> = {
   },
   'eden-swim': { id: 'eden-swim', label: 'Swim Eden', status: 'planned' },
   'eden-boxing': { id: 'eden-boxing', label: 'Boxing Eden', status: 'planned' },
-  'eden-archivist': { id: 'eden-archivist', label: 'Archivist Eden', status: 'planned' },
+  'eden-archivist': {
+    id: 'eden-archivist', label: 'Archivist Eden', status: 'ready', kind: 'static-image', prototype: '4B-static', blink: false, capturePerch: false,
+    asset: { src: archivistArt, width: 264, height: 492, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
+  },
   'eden-reflector': { id: 'eden-reflector', label: 'Reflector Eden', status: 'planned' },
   'eden-watching': { id: 'eden-watching', label: 'Watching Eden', status: 'planned' },
   'eden-tarot': { id: 'eden-tarot', label: 'Tarot Eden', status: 'planned' },

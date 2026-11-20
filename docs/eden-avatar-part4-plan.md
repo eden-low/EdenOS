@@ -1,21 +1,25 @@
-# Eden Avatar Part 4 — confirmed plan v1.0 and Part 4A handoff
+# Eden Avatar Part 4 — confirmed plan v1.0 and current handoff
 
 This records the owner's 21 November 2026 confirmation in the EdenOS Project.
 The current Part 4A instructions and the three approved PNGs are the implementation
-authority; no separate repository copy of the earlier Project plan was supplied.
+authority for 4A; no separate repository copy of the earlier Project plan was supplied.
+The owner subsequently accepted 4A and approved Records / Archivist for 4B batch 1.
+See [the current batch handoff](eden-avatar-part4b-archivist.md) for its assets,
+validation and acceptance checklist; Treasurer provenance below is retained.
 
 ## Stage boundaries
 
 | Stage | Confirmed scope | Implemented here |
 | --- | --- | --- |
 | 4A | Shared specification for 13 identities, selector architecture, approved abacus Treasurer static prototype | Yes |
-| 4B | Expenses, Records, Weekly Review and Anime outfits with basic idle | No; further art/frames and approval required |
+| 4B | Expenses, Records, Weekly Review and Anime outfits with basic idle | Batch 1: approved Records static prototype only; other outfits and all new motion pending |
 | 4C | Exercise Swim / Boxing dual form with deterministic alternation | No |
 | 4D | Six Cosmos forms mapped directly to its internal systems | No |
-| 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | No; this release only performs the minimum checks needed for 4A |
+| 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | No; current batches only perform their required regression checks |
 
-Part 5 financial reactions are separate. Do not start 4B–4E or Part 5 automatically
-after staging promotion; wait for the owner's iPhone visual acceptance of Treasurer.
+Part 4A was accepted by the owner. Part 4B batch 1 authorizes Records only.
+Part 5 financial reactions are separate. Do not start further batches, 4C–4E or
+Part 5 automatically; await the owner's Archivist visual acceptance.
 
 ## Shared character and material specification
 
@@ -43,7 +47,7 @@ after staging promotion; wait for the owner's iPhone visual acceptance of Treasu
 | `eden-treasurer` | Expenses, 4A/4B | Approved **static 4A prototype**, no blink or abacus idle |
 | `eden-swim` | Exercise, 4C | Planned; no resource |
 | `eden-boxing` | Exercise, 4C | Planned; no resource |
-| `eden-archivist` | Records, 4B | Planned; no resource |
+| `eden-archivist` | Records, 4B batch 1 | Approved **static 4B prototype**, no blink, reading, page turn or nod |
 | `eden-reflector` | Weekly Review, 4B | Planned; no resource |
 | `eden-watching` | Anime, 4B | Planned; no resource |
 | `eden-tarot` | Cosmos Tarot, 4D | Planned; no resource |
@@ -53,11 +57,11 @@ after staging promotion; wait for the owner's iPhone visual acceptance of Treasu
 | `eden-ziwei` | Cosmos Zi Wei, 4D | Planned; no resource |
 | `eden-ai-explorer` | Cosmos Ask Cosmos, 4D | Planned; no resource |
 
-There are exactly 13 requested IDs: two available definitions (including the
-existing default) and eleven explicitly planned definitions. Only Treasurer adds
-new artwork in this release. No user-facing clothes picker is added: the selector
+There are exactly 13 requested IDs: three available definitions (including the
+existing default) and ten explicitly planned definitions. This batch adds only
+Archivist artwork. No user-facing clothes picker is added: the selector
 is deterministic page intent. Today always selects `eden-default`; Expenses selects
-Treasurer; Exercise/Records/Review/Anime/Cosmos keep default; About selects none.
+Treasurer; Records selects Archivist; Exercise/Review/Anime/Cosmos keep default; About selects none.
 Account remains an existing modal that hides the global avatar.
 
 ## Approved files and deterministic derivation
@@ -118,8 +122,9 @@ Reduced Motion does not animate or recreate the static image.
   scrolling behavior. Finance Locked/Unlocked does not select, reload or hide art.
 - Existing modals/PIN, Account, Genesis, fullscreen, focused controls, keyboard,
   landscape and insufficient viewport space keep their safety behavior.
-- Other pages remain original. Review stays lower-left and mirrored inward.
-- PWA only adds the approved Treasurer filename pattern to the existing precache;
+- Records now uses the approved static Archivist. Other pages remain original.
+  Review stays lower-left and mirrored inward.
+- PWA adds the approved Treasurer and Archivist filename patterns to the existing precache;
   update prompting, manifest/start URL, routing and offline security are unchanged.
 - No financial records are read by wardrobe modules; no real writes, Guest exit,
   paid APIs, Firebase/Rules, Netlify sensitive settings or Production changes.
@@ -144,7 +149,7 @@ Reduced Motion does not animate or recreate the static image.
   failed requests and amount visibility must not trigger it. The domain/page owns
   success; the renderer owns motion playback. No event bus or listener is installed.
 
-## Verification, release and owner acceptance
+## Part 4A verification and historical release reference
 
 Local checks: full Vitest **187 files / 1,430 tests**, TypeScript, lint, build;
 actual-component browser regressions with synthetic providers; image failure and

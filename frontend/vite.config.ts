@@ -56,7 +56,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{html,js,css}', 'assets/eden-base-v1-*.webp', 'assets/eden-about-*.webp', 'assets/eden-treasurer-*.webp'],
+        globPatterns: ['**/*.{html,js,css}', 'assets/eden-base-v1-*.webp', 'assets/eden-about-*.webp', 'assets/eden-treasurer-*.webp', 'assets/eden-archivist-*.webp'],
         // HLS playback already requires an online media source. Keep its large,
         // dynamically imported runtime out of the app-shell precache.
         globIgnores: ['assets/hls-*.js'],
