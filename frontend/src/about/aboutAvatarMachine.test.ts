@@ -34,4 +34,14 @@ describe('About gesture lifecycle', () => {
     expect(aboutAvatarReducer(wave, { type: 'finish', run: smile.run })).toBe(wave)
     expect(aboutAvatarReducer(wave, { type: 'finish', run: wave.run }).action).toBe('idle')
   })
+  it('raises, makes three small wave cycles, lowers, then restores idle', () => {
+    expect(aboutAvatarSequences.wave.map((frame) => frame.phase)).toEqual([
+      'raise', 'raise', 'raise', 'raise', 'wave', 'wave', 'wave', 'wave', 'wave', 'wave', 'lower', 'lower', 'lower',
+    ])
+    expect(aboutAvatarSequences.wave.filter((frame) => frame.phase === 'wave').map((frame) => frame.cell)).toEqual([4, 5, 4, 5, 4, 5])
+  })
+  it('retains the accepted Smile and Think frames and durations', () => {
+    expect(aboutAvatarSequences.smile).toEqual([{ cell: 1, ms: 450 }, { cell: 4, ms: 450 }, { cell: 1, ms: 450 }])
+    expect(aboutAvatarSequences.think).toEqual([{ cell: 2, ms: 650 }, { cell: 5, ms: 650 }, { cell: 2, ms: 650 }])
+  })
 })

@@ -16,7 +16,7 @@ export function AboutPage() {
     if (target) document.getElementById(target.id)?.scrollIntoView({ block: 'start' })
     return () => { document.title = previousTitle }
   }, [])
-  return <div className="about-page core-page">
+  return <div className="about-page core-page" lang="zh-CN">
     <div className="about-stars" aria-hidden="true" />
     <AboutHero />
     <nav className="about-section-nav" aria-label={copy.sectionNavLabel}>

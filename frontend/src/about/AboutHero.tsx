@@ -6,7 +6,7 @@ export function AboutHero() {
   return <header className="about-hero about-glass">
     <div className="about-hero-copy">
       <p className="about-eyebrow"><Sparkles aria-hidden="true" size={15} />{aboutContent.eyebrow}</p>
-      <h1>{aboutContent.title}</h1>
+      <h1 lang="en">{aboutContent.title}</h1>
       <p className="about-subtitle">{aboutContent.subtitle}</p>
       <p className="about-introduction">{aboutContent.introduction}</p>
       <a id="about-meet-eden-link" className="about-jump" href="#interactive-eden">{aboutContent.jumpLabel}<ArrowDown aria-hidden="true" size={17} /></a>

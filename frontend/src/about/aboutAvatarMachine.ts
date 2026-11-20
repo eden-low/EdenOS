@@ -1,12 +1,33 @@
 export type AboutAvatarAction = 'smile' | 'think' | 'wave'
 export type AboutAvatarState = { action: AboutAvatarAction | 'idle'; frame: number; run: number }
-type Frame = { cell: number; ms: number }
+export type AboutAvatarPhase = 'idle' | 'raise' | 'wave' | 'lower' | 'smile' | 'think'
+type Frame = { cell: number; ms: number; source?: 'wave'; phase?: AboutAvatarPhase }
 
-// Each cell is a purpose-made illustration, including three different waving arm poses.
+// Smile/Think retain their accepted art and timing. Wave uses a separate atlas.
 export const aboutAvatarSequences: Record<AboutAvatarAction, readonly Frame[]> = {
   smile: [{ cell: 1, ms: 450 }, { cell: 4, ms: 450 }, { cell: 1, ms: 450 }],
   think: [{ cell: 2, ms: 650 }, { cell: 5, ms: 650 }, { cell: 2, ms: 650 }],
-  wave: [{ cell: 3, ms: 180 }, { cell: 6, ms: 180 }, { cell: 7, ms: 180 }, { cell: 6, ms: 180 }, { cell: 3, ms: 180 }],
+  wave: [
+    { cell: 0, ms: 100, phase: 'raise' },
+    { cell: 1, ms: 120, source: 'wave', phase: 'raise' },
+    { cell: 2, ms: 140, source: 'wave', phase: 'raise' },
+    { cell: 3, ms: 160, source: 'wave', phase: 'raise' },
+    { cell: 4, ms: 160, source: 'wave', phase: 'wave' },
+    { cell: 5, ms: 160, source: 'wave', phase: 'wave' },
+    { cell: 4, ms: 160, source: 'wave', phase: 'wave' },
+    { cell: 5, ms: 160, source: 'wave', phase: 'wave' },
+    { cell: 4, ms: 160, source: 'wave', phase: 'wave' },
+    { cell: 5, ms: 160, source: 'wave', phase: 'wave' },
+    { cell: 3, ms: 100, source: 'wave', phase: 'lower' },
+    { cell: 6, ms: 160, source: 'wave', phase: 'lower' },
+    { cell: 7, ms: 140, source: 'wave', phase: 'lower' },
+  ],
+}
+// Reduced Motion skips the entire raise/wave/lower sequence, showing one still.
+export const aboutAvatarReducedFrames: Record<AboutAvatarAction, Frame> = {
+  smile: aboutAvatarSequences.smile[0],
+  think: aboutAvatarSequences.think[0],
+  wave: { cell: 3, ms: 1000, source: 'wave', phase: 'wave' },
 }
 export const aboutAvatarInitialState: AboutAvatarState = { action: 'idle', frame: 0, run: 0 }
 export type AboutAvatarEvent = { type: 'trigger'; action: AboutAvatarAction } | { type: 'advance'; run: number } | { type: 'finish'; run: number } | { type: 'reset' }

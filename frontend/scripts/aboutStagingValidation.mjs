@@ -27,7 +27,7 @@ assert(aboutChunk, 'About must be a lazy chunk')
 const aboutResponse = await fetch(origin + '/assets/' + aboutChunk); assert.equal(aboutResponse.status, 200)
 const aboutJs = await aboutResponse.text()
 assert(aboutJs.includes('About Eden'))
-const art = await Promise.all(['hero', 'gestures'].map(async (name) => {
+const art = await Promise.all(['hero', 'gestures', 'wave-v2'].map(async (name) => {
   const file = aboutJs.match(new RegExp(`eden-about-${name}-[A-Za-z0-9_-]+\\.webp`))?.[0]
   assert(file, `${name} must be loaded by About rather than Today`)
   assert(!main.includes(file), 'About images must stay out of the Today entry')
@@ -62,11 +62,11 @@ try {
   assert.equal(await evaluate('Boolean(document.querySelector(".eden-avatar"))'), false)
   let pwa
   for (let i = 0; i < 55; i++) {
-    pwa = await evaluate(`(async()=>{const r=await navigator.serviceWorker.getRegistrations(), names=await caches.keys();const requests=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:r.some(r=>r.active?.state==='activated'),aboutChunk:requests.some(url=>url.includes('AboutPage-')&&url.includes('.js')),hero:requests.some(url=>url.includes('eden-about-hero-')),gestures:requests.some(url=>url.includes('eden-about-gestures-')),entries:requests.length}})()`)
-    if (pwa.active && pwa.aboutChunk && pwa.hero && pwa.gestures) break
+    pwa = await evaluate(`(async()=>{const r=await navigator.serviceWorker.getRegistrations(), names=await caches.keys();const requests=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:r.some(r=>r.active?.state==='activated'),aboutChunk:requests.some(url=>url.includes('AboutPage-')&&url.includes('.js')),hero:requests.some(url=>url.includes('eden-about-hero-')),gestures:requests.some(url=>url.includes('eden-about-gestures-')),wave:requests.some(url=>url.includes('eden-about-wave-v2-')),entries:requests.length}})()`)
+    if (pwa.active && pwa.aboutChunk && pwa.hero && pwa.gestures && pwa.wave) break
     await delay(1000)
   }
-  assert(pwa.active && pwa.aboutChunk && pwa.hero && pwa.gestures)
+  assert(pwa.active && pwa.aboutChunk && pwa.hero && pwa.gestures && pwa.wave)
   await evaluate('window.aboutSmokeMarker=true'); await send('Page.reload')
   await waitFor('!window.aboutSmokeMarker', 'new controlled document')
   await waitFor(`document.body.innerText.includes('Open your workspace')`, 'auth after reload')
