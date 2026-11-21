@@ -28,6 +28,14 @@ const treasurerResponse = await fetch(origin + '/assets/' + treasurerFile); asse
 const treasurerBytes = Buffer.from(await treasurerResponse.arrayBuffer())
 const treasurerLocal = await readFile('src/components/avatar/assets/eden-treasurer-abacus-static.webp')
 assert.equal(createHash('sha256').update(treasurerBytes).digest('hex'),createHash('sha256').update(treasurerLocal).digest('hex'))
+const motionFile = main.match(/eden-treasurer-abacus-motion-v1-[A-Za-z0-9_-]+\.webp/)?.[0]
+const motionChunk = main.match(/AvatarMotionLayer-[A-Za-z0-9_-]+\.js/)?.[0]
+assert(motionFile && motionChunk, 'Treasurer motion art and lazy renderer must be referenced')
+const motionResponse = await fetch(origin + '/assets/' + motionFile);assert.equal(motionResponse.status,200)
+const motionBytes = Buffer.from(await motionResponse.arrayBuffer())
+const motionLocal = await readFile('src/components/avatar/assets/eden-treasurer-abacus-motion-v1.webp')
+assert.equal(createHash('sha256').update(motionBytes).digest('hex'),createHash('sha256').update(motionLocal).digest('hex'))
+assert.equal((await fetch(origin + '/assets/' + motionChunk)).status,200)
 const archivistFile = main.match(/eden-archivist-clipboard-static-[A-Za-z0-9_-]+\.webp/)?.[0]
 assert(archivistFile, 'Archivist runtime material must be referenced by the global renderer')
 const archivistResponse = await fetch(origin + '/assets/' + archivistFile); assert.equal(archivistResponse.status,200)
@@ -116,6 +124,7 @@ const worker = await fetch(origin + '/sw.js'); assert.equal(worker.status, 200)
 const workerJs = await worker.text()
 for (const asset of [...art, aboutChunk]) assert(workerJs.includes(asset), 'About resources must be precached')
 assert(workerJs.includes(treasurerFile),'Treasurer must be precached for offline Expenses')
+assert(workerJs.includes(motionFile)&&workerJs.includes(motionChunk),'Motion art and lazy renderer must work offline')
 assert(workerJs.includes(archivistFile),'Archivist must be precached for offline Records')
 assert(workerJs.includes(reflectorFile),'Reflector must be precached for offline Review')
 assert(workerJs.includes(watchingFile),'Watching must be precached for offline Anime')
@@ -157,7 +166,7 @@ try {
   assert.equal(await evaluate('Boolean(document.querySelector(".about-page"))'), false)
   await session.shot(path.join(output, 'staging-about-auth-offline.png'))
   assert.deepEqual(session.errors, [])
-  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true},swim:{file:swimFile,bytes:swimBytes.length,hashMatched:true,precached:true},boxing:{file:boxingFile,bytes:boxingBytes.length,hashMatched:true,precached:true},cosmos:[{file:tarotFile,bytes:tarotBytes.length,hashMatched:true,precached:true},{file:ichingFile,bytes:ichingBytes.length,hashMatched:true,precached:true},{file:baziFile,bytes:baziBytes.length,hashMatched:true,precached:true},{file:astrologyFile,bytes:astrologyBytes.length,hashMatched:true,precached:true},{file:ziweiFile,bytes:ziweiBytes.length,hashMatched:true,precached:true},{file:aiExplorerFile,bytes:aiExplorerBytes.length,hashMatched:true,precached:true}], manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
+  const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurerMotion:{file:motionFile,bytes:motionBytes.length,hashMatched:true,precached:true,lazyChunk:motionChunk},treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true},swim:{file:swimFile,bytes:swimBytes.length,hashMatched:true,precached:true},boxing:{file:boxingFile,bytes:boxingBytes.length,hashMatched:true,precached:true},cosmos:[{file:tarotFile,bytes:tarotBytes.length,hashMatched:true,precached:true},{file:ichingFile,bytes:ichingBytes.length,hashMatched:true,precached:true},{file:baziFile,bytes:baziBytes.length,hashMatched:true,precached:true},{file:astrologyFile,bytes:astrologyBytes.length,hashMatched:true,precached:true},{file:ziweiFile,bytes:ziweiBytes.length,hashMatched:true,precached:true},{file:aiExplorerFile,bytes:aiExplorerBytes.length,hashMatched:true,precached:true}], manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
   await writeFile(path.join(output, 'staging-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally { await session.close() }

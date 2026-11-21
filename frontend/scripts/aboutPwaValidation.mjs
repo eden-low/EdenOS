@@ -8,7 +8,7 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/avatar-part4f-pwa')
+const output = path.resolve('artifacts/browser-validation/avatar-part4g-a-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
@@ -45,11 +45,12 @@ try {
   await waitFor(ready, 'synthetic signed-in production About')
   let cached
   for (let i = 0; i < 60; i++) {
-    cached = await evaluate(`(async()=>{const regs=await navigator.serviceWorker.getRegistrations();const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:regs.some(r=>r.active?.state==='activated'),wave:urls.some(url=>url.includes('eden-about-wave-v2-')),treasurer:urls.some(url=>url.includes('eden-treasurer-abacus-static-')),archivist:urls.some(url=>url.includes('eden-archivist-clipboard-static-')),reflector:urls.some(url=>url.includes('eden-reflector-journal-static-')),watching:urls.some(url=>url.includes('eden-watching-prone-static-')),swim:urls.some(url=>url.includes('eden-swim-static-')),boxing:urls.some(url=>url.includes('eden-boxing-static-')),cosmos:['tarot','iching','bazi','astrology','ziwei','ai-explorer'].every(id=>urls.some(url=>url.includes('eden-'+id+'-static-'))),entries:urls.length}})()`)
-    if (cached.active && cached.wave && cached.treasurer && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos) break
+    cached = await evaluate(`(async()=>{const regs=await navigator.serviceWorker.getRegistrations();const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return {active:regs.some(r=>r.active?.state==='activated'),wave:urls.some(url=>url.includes('eden-about-wave-v2-')),treasurer:urls.some(url=>url.includes('eden-treasurer-abacus-static-')),treasurerMotion:urls.some(url=>url.includes('eden-treasurer-abacus-motion-v1-')),motionChunk:urls.some(url=>url.includes('AvatarMotionLayer-')),archivist:urls.some(url=>url.includes('eden-archivist-clipboard-static-')),reflector:urls.some(url=>url.includes('eden-reflector-journal-static-')),watching:urls.some(url=>url.includes('eden-watching-prone-static-')),swim:urls.some(url=>url.includes('eden-swim-static-')),boxing:urls.some(url=>url.includes('eden-boxing-static-')),cosmos:['tarot','iching','bazi','astrology','ziwei','ai-explorer'].every(id=>urls.some(url=>url.includes('eden-'+id+'-static-'))),entries:urls.length}})()`)
+    if (cached.active && cached.wave && cached.treasurer && cached.treasurerMotion && cached.motionChunk && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos) break
     await delay(1000)
   }
-  assert(cached.active && cached.wave && cached.treasurer && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos)
+  assert(cached.active && cached.wave && cached.treasurer && cached.treasurerMotion && cached.motionChunk && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos)
+  assert.equal(await evaluate(`window.pwaAvatarDecodes.filter(url=>url.includes('abacus-motion-v1-')).length`),0,'Precache must not decode Expenses animation on About')
   await evaluate('window.pwaReloadMarker=true'); await send('Page.reload')
   await waitFor('!window.pwaReloadMarker', 'new controlled document')
   await waitFor(ready, 'synthetic session persists through reload')
@@ -71,6 +72,7 @@ try {
     await waitFor(`document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar===${JSON.stringify(id)}&&document.querySelector('.about-wardrobe-preview')?.dataset.assetState==='ready'`,'offline wardrobe '+id)
     wardrobeOffline.push(id)
   }
+  assert.equal(await evaluate(`Boolean(document.querySelector('.eden-avatar-motion-layer'))`),false,'Wardrobe remains static even with cached motion')
   assert.equal(await evaluate(`document.querySelector('.about-avatar-stage').dataset.action`),'idle','Wardrobe does not trigger the gesture laboratory')
   const offlineExerciseForms=[]
   for(const form of ['eden-swim','eden-boxing','eden-swim','eden-boxing']) {
@@ -106,7 +108,8 @@ try {
     await waitFor(`!window.routeReloadMarker&&${routeReady}`,'offline reload '+route)
     if(route==='/expenses') {
       await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-treasurer'&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===352`,'offline Treasurer decoded from precache')
-      assert.equal(await evaluate(`document.querySelector('.eden-avatar-appearance').dataset.avatarMode`),'static-prototype')
+      await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'offline Treasurer motion decoded from precache')
+      assert.equal(await evaluate(`document.querySelector('.eden-avatar-appearance').dataset.avatarMode`),'motion-prototype')
     }
     if(route==='/records') {
       await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-archivist'&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===264`,'offline Archivist decoded from precache')
@@ -187,6 +190,7 @@ try {
   assert(removedUrls.some(url=>/\/assets\/.*\.js/.test(url)),'Obsolete revisioned JavaScript must be removed on activation')
   assert.equal(newUrls.length,oldUrls.length,'Update must not accumulate obsolete precache entries')
   assert(['tarot','iching','bazi','astrology','ziwei','ai-explorer'].every(id=>newUrls.some(url=>url.includes('eden-'+id+'-static-'))))
+  assert(newUrls.some(url=>url.includes('eden-treasurer-abacus-motion-v1-'))&&newUrls.some(url=>url.includes('AvatarMotionLayer-')))
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0})
   await send('Page.reload')
   await waitFor(`window.__pwaQaRevision===2&&document.querySelector('#cosmos-ai-tab')&&document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-tarot'`,'updated build survives offline cold reload')
@@ -200,8 +204,11 @@ try {
     await session.click('[data-wardrobe-choice="'+id+'"]')
     await waitFor(`document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar===${JSON.stringify(id)}&&document.querySelector('.about-wardrobe-preview')?.dataset.assetState==='ready'`,'post-update offline wardrobe '+id)
   }
+  await send('Page.navigate',{url:'http://127.0.0.1:5182/expenses'})
+  await waitFor(`window.__pwaQaRevision===2&&document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'updated offline atlas and lazy motion controller')
+  await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionAction==='blink'`,'real offline blink after explicit update')
   assert.deepEqual(session.errors, [])
-  const report = { wardrobeOffline,all13WardrobeOfflineAfterUpdate:true,noNewImageOrCacheConfiguration:true,offlineExerciseForms, productionCapture, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,allSixCosmosOfflineDecoded:true,precacheDoesNotDecodeUnselectedCosmos:true,update:{realWaitingWorkerPrompt:true,noAutomaticReload:true,explicitApplyNewBuild:true,oldEntries:oldUrls.length,newEntries:newUrls.length,obsoleteRemoved:removedUrls,offlineSixFormsAfterUpdate:true},offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
+  const report = { wardrobeOffline,all13WardrobeOfflineAfterUpdate:true,existingCacheConfigurationReused:true,treasurerMotionOfflineAndAfterUpdate:true,atlasNotDecodedOnAbout:true,wardrobeStillStatic:true,offlineExerciseForms, productionCapture, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,allSixCosmosOfflineDecoded:true,precacheDoesNotDecodeUnselectedCosmos:true,update:{realWaitingWorkerPrompt:true,noAutomaticReload:true,explicitApplyNewBuild:true,oldEntries:oldUrls.length,newEntries:newUrls.length,obsoleteRemoved:removedUrls,offlineSixFormsAfterUpdate:true},offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

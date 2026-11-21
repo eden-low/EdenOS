@@ -21,6 +21,10 @@
 .eden-avatar-facing { width: 100%; height: 100%; }
 .eden-avatar-appearance { width: 100%; height: 100%; }
 .eden-avatar-static-image { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; }
+.eden-avatar-appearance[data-motion-capable] { position: relative; }
+.eden-avatar-motion-layer { position: absolute; inset: 0; pointer-events: none; }
+.eden-avatar-motion-art { display: block; width: 100%; height: 100%; overflow: hidden; }
+.eden-avatar-motion-layer[data-motion-active="true"] + .eden-avatar-static-image { visibility: hidden; }
 /* This static orientation survives Reduced Motion; blink/pose timing stays inside. */
 .eden-avatar-facing[data-mirrored] { transform: scaleX(-1); }
 .eden-avatar-art[data-attentive] { transform: rotate(-4deg) translateY(-3px); }

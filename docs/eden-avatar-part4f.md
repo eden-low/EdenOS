@@ -2,12 +2,12 @@
 
 ## Delivery and acceptance boundary
 
-**Local technical verification passed. Staging owner acceptance: Pending.**
+**Owner accepted the Part 4F wardrobe gallery in the Part 4G-A authorization.**
 
 The owner explicitly accepted Part 4E's static wardrobe system and authorized
 this About-only gallery on 21 November 2026. This does not complete the twelve
-new characters' dedicated blink/prop/idle animation. Part 4F is not Accepted until
-the owner confirms its staging iPhone Safari, installed PWA and desktop results.
+new characters' dedicated blink/prop/idle animation. The owner's subsequent
+confirmation accepts the gallery; it is not a claim of our own iPhone testing.
 
 Fresh baseline: staging `bc46d9e9481a7048545701c1ba5d96b91b406fcc`, successful
 CI 44841719318 and Ready Netlify deployment `6b00e0e2879fb38200f5b645`.
@@ -203,7 +203,7 @@ frames. Today's original blink/Capture and About's existing three-action machine
 remain separate owners. Do not bind Gallery browsing to real financial/workout
 events, Cosmos calculations or paid AI. No 4G/Part 5/6/7 work starts automatically.
 
-## Owner acceptance checklist — Pending
+## Owner acceptance checklist — retained for regression
 
 At https://staging--edenos.netlify.app/about#eden-wardrobe, owner checks:
 
@@ -221,6 +221,6 @@ At https://staging--edenos.netlify.app/about#eden-wardrobe, owner checks:
 7. Desktop keyboard/mouse and existing pages; repeat the known Anime Player close
    → Today Capture path, including rapid reopen and page switching.
 
-Stop after staging technical delivery. Part 4F remains Pending, not Accepted,
-until the owner's explicit confirmation. No Production release or automatic
-rollback follows these checks.
+The owner subsequently confirmed satisfaction with the staging wardrobe and
+authorized Treasurer-only Part 4G-A. This checklist remains useful for regression.
+No Production release or automatic rollback follows that confirmation.

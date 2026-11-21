@@ -14,13 +14,24 @@ describe('avatar wardrobe registry and page intent', () => {
     }
     expect(resolveAvatar('unavailable-id' as AvatarId).id).toBe('eden-default')
   })
-  it('keeps Today original and selects only the static abacus prototype on Expenses', () => {
+  it('keeps Today original and the approved static base on Expenses', () => {
     expect(selectAvatarForPage('today')).toBe('eden-default')
     expect(selectAvatarForPage('expenses')).toBe('eden-treasurer')
     const treasurer = resolveAvatar('eden-treasurer')
     expect(treasurer.kind).toBe('static-image')
     expect(treasurer.blink).toBe(false)
     expect(treasurer.capturePerch).toBe(false)
+  })
+  it('registers optional true-frame motion for Treasurer alone without changing static wardrobe assets', () => {
+    for (const id of avatarIds) {
+      const visual = resolveAvatar(id)
+      if (visual.kind !== 'static-image') continue
+      expect(Boolean(visual.motion)).toBe(id === 'eden-treasurer')
+      if (id === 'eden-treasurer') {
+        expect(visual.motion).toMatchObject({ prototype: '4G-A', capabilities: { blink: true, abacus: true } })
+        expect(visual.asset.src).toContain('eden-treasurer-abacus-static')
+      }
+    }
   })
   it('selects the static Archivist only on Records', () => {
     expect(selectAvatarForPage('records')).toBe('eden-archivist')

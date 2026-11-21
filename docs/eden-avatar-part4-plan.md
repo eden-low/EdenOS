@@ -27,14 +27,16 @@ authorization. See [the 4E evidence](eden-avatar-part4e.md) and
 | 4C | Exercise Swim / Boxing dual form with deterministic alternation | Static outfits and per-tab entry parity; dedicated animation frames pending |
 | 4D | Six Cosmos forms mapped directly to its internal systems | Six static outfits and shared selection; dedicated action frames pending |
 | 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | Static system **Accepted by owner** in 4F authorization; known Capture observation remains documented |
-| 4F | About-only thirteen-look wardrobe gallery | Local technical verification passed; owner staging acceptance Pending |
+| 4F | About-only thirteen-look wardrobe gallery | Accepted by owner in 4G-A authorization; remains static |
+| 4G-A | Treasurer blink and small abacus idle on Expenses only | Candidate motion prototype; owner device acceptance Pending |
 
 Part 4A was accepted by the owner. Part 4B batches 1–3 authorize Records, Review and Anime only.
 Part 4C static forms and parity are now authorized. Part 5 financial reactions are
 separate. Part 4E adds evidence/coverage without changing the accepted art or
 runtime architecture. Part 4F adds only an About-local gallery using existing art.
-Do not start 4G, further animation batches or Part 5/6/7; await explicit owner
-iPhone Safari, installed PWA and desktop acceptance of 4F.
+The owner accepted 4F and explicitly authorized only Treasurer Part 4G-A;
+see [its candidate-motion handoff](eden-avatar-part4g-a.md). Do not start other
+animation batches, 4G-B/C/D, or Part 5/6/7. Await 4G-A owner device acceptance.
 
 ## Shared character and material specification
 

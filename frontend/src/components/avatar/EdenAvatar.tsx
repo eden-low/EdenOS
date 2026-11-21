@@ -32,11 +32,11 @@ function AvatarScene({ enabled, page, children }: { enabled: boolean; page: AppP
   const avatarId = page === 'exercise' && !exerciseForm ? null : selectAvatarForPage(page, exerciseForm ?? undefined, cosmosExperience)
   return <AvatarCaptureContext.Provider value={publish}>
     {children}
-    {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} />}
+    {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} motionEnabled={page === 'expenses'} />}
   </AvatarCaptureContext.Provider>
 }
 
-function EdenAvatar({ avatarId, anchor, corner, reserveCapture }: { avatarId: AvatarId; anchor: CaptureAnchor | null; corner: 'left' | 'right'; reserveCapture: boolean }) {
+function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }: { avatarId: AvatarId; anchor: CaptureAnchor | null; corner: 'left' | 'right'; reserveCapture: boolean; motionEnabled: boolean }) {
   const [state, dispatch] = useReducer(avatarTransition, 'idle')
   const [reduced, setReduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const element = useRef<HTMLDivElement>(null)
@@ -142,7 +142,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture }: { avatarId: Av
     <div ref={probe} className="eden-avatar-safe-area" aria-hidden="true" />
     <div ref={element} className="eden-avatar" aria-hidden="true" inert data-state={state} data-sheet={open || undefined}
       data-reduced={reduced || undefined} data-visible={visible} style={style}>
-      <AvatarAppearance avatarId={avatarId} faceInward={corner === 'left'} perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
+      <AvatarAppearance avatarId={avatarId} motionEnabled={motionEnabled} faceInward={corner === 'left'} perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
     </div>
   </>, document.body)
 }

@@ -10,6 +10,8 @@ import baziArt from './assets/eden-bazi-static.webp'
 import astrologyArt from './assets/eden-astrology-static.webp'
 import ziweiArt from './assets/eden-ziwei-static.webp'
 import aiExplorerArt from './assets/eden-ai-explorer-static.webp'
+import { treasurerMotion } from './treasurerMotion'
+import type { AvatarMotionDefinition } from './avatarMotion'
 
 export const avatarIds = [
   'eden-default', 'eden-treasurer', 'eden-swim', 'eden-boxing', 'eden-archivist',
@@ -35,6 +37,8 @@ export interface StaticAvatar extends AvatarIdentity {
     footAnchor: { x: number; y: number }
   }
   posture?: 'standing' | 'prone'
+  // Static base stays available to the About wardrobe and Reduced Motion.
+  motion?: AvatarMotionDefinition
 }
 export type RenderableAvatar = LegacyAvatar | StaticAvatar
 export type AvatarDefinition = PlannedAvatar | RenderableAvatar
@@ -46,6 +50,7 @@ export const avatarRegistry: Readonly<Record<AvatarId, AvatarDefinition>> = {
     id: 'eden-treasurer', label: 'Treasurer Eden · Abacus', status: 'ready', kind: 'static-image', prototype: '4A-static', blink: false, capturePerch: false,
     nativeFacing: 'left',
     asset: { src: treasurerArt, width: 352, height: 656, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
+    motion: treasurerMotion,
   },
   'eden-swim': {
     id: 'eden-swim', label: 'Swim Eden', status: 'ready', kind: 'static-image', prototype: '4C-static', nativeFacing: 'right', blink: false, capturePerch: false,
