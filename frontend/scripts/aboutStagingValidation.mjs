@@ -99,6 +99,7 @@ assert(aboutChunk, 'About must be a lazy chunk')
 const aboutResponse = await fetch(origin + '/assets/' + aboutChunk); assert.equal(aboutResponse.status, 200)
 const aboutJs = await aboutResponse.text()
 assert(aboutJs.includes('About Eden'))
+assert(aboutJs.includes('eden-wardrobe')&&aboutJs.includes('我的 13 种小宇宙')&&aboutJs.includes('查看下一套服装'),'Deployed lazy About includes the wardrobe')
 const art = await Promise.all(['hero', 'gestures', 'wave-v2'].map(async (name) => {
   const file = aboutJs.match(new RegExp(`eden-about-${name}-[A-Za-z0-9_-]+\\.webp`))?.[0]
   assert(file, `${name} must be loaded by About rather than Today`)
@@ -133,7 +134,7 @@ const session = await createBrowserSession()
 const { send, evaluate, waitFor } = session
 try {
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true })
-  await send('Page.navigate', { url: origin + '/about#interactive-eden' })
+  await send('Page.navigate', { url: origin + '/about#eden-wardrobe' })
   await waitFor(`document.body.innerText.includes('Open your workspace')`, 'About auth boundary')
   assert.equal(await evaluate('Boolean(document.querySelector(".about-page"))'), false)
   assert.equal(await evaluate('Boolean(document.querySelector(".genesis-boot-screen"))'), false)

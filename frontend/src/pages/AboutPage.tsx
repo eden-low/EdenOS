@@ -2,25 +2,32 @@ import { BrainCircuit, Code2, Gamepad2, Leaf, PenTool, Waves } from 'lucide-reac
 import { useEffect } from 'react'
 import { AboutHero } from '../about/AboutHero'
 import { AboutInteractiveAvatar } from '../about/AboutInteractiveAvatar'
+import { AboutWardrobeGallery } from '../about/AboutWardrobeGallery'
+import { wardrobeContent } from '../about/aboutWardrobeContent'
 import { aboutContent as copy } from '../about/aboutContent'
 import '../about/about.css'
 
 const interestIcons = { development: Code2, ai: BrainCircuit, design: PenTool, swimming: Waves, games: Gamepad2, life: Leaf }
+const sections = [copy.who, copy.story, copy.interests, copy.interactive, { id: wardrobeContent.id, title: wardrobeContent.navLabel }]
 
 export function AboutPage() {
   useEffect(() => {
     const previousTitle = document.title
     document.title = `${copy.title} · EdenOS`
-    const sections = [copy.who, copy.story, copy.interests, copy.interactive]
-    const target = sections.find((section) => `#${section.id}` === window.location.hash)
-    if (target) document.getElementById(target.id)?.scrollIntoView({ block: 'start' })
-    return () => { document.title = previousTitle }
+    const scrollToSection = () => {
+      const target = sections.find((section) => `#${section.id}` === window.location.hash)
+      if (target) document.getElementById(target.id)?.scrollIntoView({ block: 'start' })
+    }
+    scrollToSection()
+    const events = ['hashchange', 'popstate', 'pageshow']
+    events.forEach(event => window.addEventListener(event, scrollToSection))
+    return () => { document.title = previousTitle; events.forEach(event => window.removeEventListener(event, scrollToSection)) }
   }, [])
   return <div className="about-page core-page" lang="zh-CN">
     <div className="about-stars" aria-hidden="true" />
     <AboutHero />
     <nav className="about-section-nav" aria-label={copy.sectionNavLabel}>
-      {[copy.who, copy.story, copy.interests, copy.interactive].map((section) =>
+      {sections.map((section) =>
         <a key={section.id} id={`about-jump-${section.id}`} href={`#${section.id}`}>{section.title}</a>)}
     </nav>
     <div className="about-story-grid">
@@ -46,6 +53,7 @@ export function AboutPage() {
       <p className="about-eyebrow">{copy.interactive.eyebrow}</p><h2 id="about-interactive-heading">{copy.interactive.title}</h2>
       <AboutInteractiveAvatar />
     </section>
+    <AboutWardrobeGallery />
     <footer className="about-footer">{copy.footer}</footer>
   </div>
 }

@@ -14,7 +14,9 @@ deterministic Exercise entry alternation; see [the current 4C handoff](eden-avat
 Part 4D now authorizes six visually verified final sources and shared Cosmos
 selection; see [the 4D static handoff](eden-avatar-part4d-cosmos.md).
 Part 4E is now explicitly authorized for static-system validation and measured
-optimization only; see [the 4E evidence and pending acceptance](eden-avatar-part4e.md).
+optimization only; the owner subsequently accepted its static system in the 4F
+authorization. See [the 4E evidence](eden-avatar-part4e.md) and
+[4F wardrobe handoff](eden-avatar-part4f.md).
 
 ## Stage boundaries
 
@@ -24,13 +26,15 @@ optimization only; see [the 4E evidence and pending acceptance](eden-avatar-part
 | 4B | Expenses, Records, Weekly Review and Anime outfits with basic idle | Batches 1–3: Records, Review and Anime static prototypes; all new motion pending |
 | 4C | Exercise Swim / Boxing dual form with deterministic alternation | Static outfits and per-tab entry parity; dedicated animation frames pending |
 | 4D | Six Cosmos forms mapped directly to its internal systems | Six static outfits and shared selection; dedicated action frames pending |
-| 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | Automated technical delivery; real-device acceptance pending, **not Accepted**; intermittent development Capture observation remains documented |
+| 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | Static system **Accepted by owner** in 4F authorization; known Capture observation remains documented |
+| 4F | About-only thirteen-look wardrobe gallery | Local technical verification passed; owner staging acceptance Pending |
 
 Part 4A was accepted by the owner. Part 4B batches 1–3 authorize Records, Review and Anime only.
 Part 4C static forms and parity are now authorized. Part 5 financial reactions are
 separate. Part 4E adds evidence/coverage without changing the accepted art or
-runtime architecture. Do not start 4F, further animation batches or Part 5/6/7;
-await explicit owner iPhone Safari, installed PWA and desktop acceptance.
+runtime architecture. Part 4F adds only an About-local gallery using existing art.
+Do not start 4G, further animation batches or Part 5/6/7; await explicit owner
+iPhone Safari, installed PWA and desktop acceptance of 4F.
 
 ## Shared character and material specification
 

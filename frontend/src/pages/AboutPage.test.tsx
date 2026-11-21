@@ -4,7 +4,7 @@ import { AboutPage } from './AboutPage'
 
 afterEach(cleanup)
 describe('About Eden content', () => {
-  it('includes the five requested areas and explicit personal-information placeholders', () => {
+  it('preserves the original five areas and inserts the wardrobe before the footer', () => {
     render(<AboutPage />)
     for (const heading of ['About Eden', '关于我', 'EdenOS 的故事', '我的兴趣', 'Interactive Eden · 互动小 Eden']) {
       expect(screen.getByRole('heading', { name: heading })).toBeTruthy()
@@ -16,7 +16,12 @@ describe('About Eden content', () => {
     expect(screen.getByRole('button', { name: '思考' })).toBeTruthy()
     expect(screen.getByRole('button', { name: '挥手' })).toBeTruthy()
     expect(screen.getByRole('img', { name: '可互动的 Q 版 Eden 人物' })).toBeTruthy()
-    expect(screen.getAllByRole('button')).toHaveLength(3)
+    expect(document.querySelectorAll('.about-gesture-button')).toHaveLength(3)
+    expect(screen.getByRole('heading', { name: '我的 13 种小宇宙' })).toBeTruthy()
+    const wardrobe = document.querySelector('#eden-wardrobe')!
+    expect(wardrobe.previousElementSibling?.id).toBe('interactive-eden')
+    expect(wardrobe.nextElementSibling?.tagName).toBe('FOOTER')
+    expect(screen.getByRole('link', { name: '小 Eden 的衣橱' }).getAttribute('href')).toBe('#eden-wardrobe')
     expect(document.querySelector('.eden-avatar')).toBeNull()
     expect(document.querySelector('a[href^="https://"]')).toBeNull()
   })

@@ -8,7 +8,7 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/avatar-part4e-pwa')
+const output = path.resolve('artifacts/browser-validation/avatar-part4f-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
@@ -64,6 +64,14 @@ try {
   await session.shot(path.join(output, 'offline-signed-in-wave.png'))
   await waitFor(`document.querySelector('.about-avatar-stage').dataset.action==='idle'`, 'offline wave returns idle')
   assert.equal(await evaluate('Boolean(document.querySelector(".eden-avatar"))'), false)
+  const wardrobeIds=['eden-default','eden-treasurer','eden-archivist','eden-reflector','eden-watching','eden-swim','eden-boxing','eden-tarot','eden-iching','eden-bazi','eden-astrology','eden-ziwei','eden-ai-explorer']
+  const wardrobeOffline=[]
+  for(const id of wardrobeIds) {
+    await session.click('[data-wardrobe-choice="'+id+'"]')
+    await waitFor(`document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar===${JSON.stringify(id)}&&document.querySelector('.about-wardrobe-preview')?.dataset.assetState==='ready'`,'offline wardrobe '+id)
+    wardrobeOffline.push(id)
+  }
+  assert.equal(await evaluate(`document.querySelector('.about-avatar-stage').dataset.action`),'idle','Wardrobe does not trigger the gesture laboratory')
   const offlineExerciseForms=[]
   for(const form of ['eden-swim','eden-boxing','eden-swim','eden-boxing']) {
     if(!offlineExerciseForms.length) await send('Page.navigate',{url:'http://127.0.0.1:5182/exercise'})
@@ -186,8 +194,14 @@ try {
     await session.click('#cosmos-'+system+'-tab')
     await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId===${JSON.stringify(id)}`,'post-update offline '+system)
   }
+  await send('Page.navigate',{url:'http://127.0.0.1:5182/about#eden-wardrobe'})
+  await waitFor(`window.__pwaQaRevision===2&&document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar==='eden-default'`,'updated offline wardrobe deep link')
+  for(const id of wardrobeIds) {
+    await session.click('[data-wardrobe-choice="'+id+'"]')
+    await waitFor(`document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar===${JSON.stringify(id)}&&document.querySelector('.about-wardrobe-preview')?.dataset.assetState==='ready'`,'post-update offline wardrobe '+id)
+  }
   assert.deepEqual(session.errors, [])
-  const report = { offlineExerciseForms, productionCapture, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,allSixCosmosOfflineDecoded:true,precacheDoesNotDecodeUnselectedCosmos:true,update:{realWaitingWorkerPrompt:true,noAutomaticReload:true,explicitApplyNewBuild:true,oldEntries:oldUrls.length,newEntries:newUrls.length,obsoleteRemoved:removedUrls,offlineSixFormsAfterUpdate:true},offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
+  const report = { wardrobeOffline,all13WardrobeOfflineAfterUpdate:true,noNewImageOrCacheConfiguration:true,offlineExerciseForms, productionCapture, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,allSixCosmosOfflineDecoded:true,precacheDoesNotDecodeUnselectedCosmos:true,update:{realWaitingWorkerPrompt:true,noAutomaticReload:true,explicitApplyNewBuild:true,oldEntries:oldUrls.length,newEntries:newUrls.length,obsoleteRemoved:removedUrls,offlineSixFormsAfterUpdate:true},offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

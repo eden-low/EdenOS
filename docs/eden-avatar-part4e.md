@@ -2,7 +2,10 @@
 
 ## Status and boundaries
 
-**Automated technical delivery ready; owner acceptance pending. Not Accepted.**
+**Owner accepted the Part 4E static system on 21 November 2026**, explicitly in
+the Part 4F authorization. This confirms static-system acceptance only; the
+original Part 4 animation work remains incomplete. The checklist below is
+retained for subsequent regression, not claimed as our own real-device testing.
 An intermittent development Capture observation remains an open acceptance risk;
 see the investigation below. This is not a claim that all original Part 4 work
 or real-device acceptance is complete.
@@ -213,10 +216,11 @@ No still image is stretched, rotated or repeatedly flashed to imitate those
 actions. Today's original sprite/blink/Capture and About's existing gestures are
 separate accepted features; their existence does not complete these twelve sets.
 
-## Owner acceptance — pending
+## Owner acceptance — confirmed for the static system
 
-The owner must explicitly confirm before changing this phase to **Accepted**.
-At https://staging--edenos.netlify.app, test iPhone Safari, installed PWA and desktop:
+The owner explicitly confirmed acceptance when authorizing Part 4F. The known
+Capture observation above is retained by that instruction. For subsequent
+regression at https://staging--edenos.netlify.app, check Safari, PWA and desktop:
 
 1. All thirteen identities, approved proportions/padding, face/glasses/wing and
    small props; Watching prone and native right-facing Review without double mirror.
