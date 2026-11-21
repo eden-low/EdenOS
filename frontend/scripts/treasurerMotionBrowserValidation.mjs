@@ -7,7 +7,13 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const origin = 'http://127.0.0.1:5181'
-const output = path.resolve('artifacts/browser-validation/avatar-part4g-a')
+// --records runs the same real lifecycle/failure audit for Archivist without
+// forking a competing fixture or injecting faster application timings.
+const archivist=process.argv.includes('--records')
+const role=archivist?'archivist':'treasurer',pagePath=archivist?'/records':'/expenses'
+const id='eden-'+role,action=archivist?'pageTurn':'abacus',baseWidth=archivist?264:352
+const atlasToken=archivist?'clipboard-motion-v1.webp':'abacus-motion-v1.webp'
+const output = path.resolve('artifacts/browser-validation/'+(archivist?'avatar-part4g-b':'avatar-part4g-a'))
 await mkdir(output, { recursive: true })
 const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part4d-cosmos/index.html')).text()
 assert(html.includes('avatar-part4d-cosmos/harness.tsx'))
@@ -19,11 +25,11 @@ const avatar = `document.querySelector('.eden-avatar')`
 const current = `(()=>{const a=${avatar},m=${layer},i=document.querySelector('.eden-avatar-static-image'),r=a?.getBoundingClientRect();return {id:document.querySelector('.eden-avatar-appearance')?.dataset.avatarId,visible:a?.dataset.visible,state:a?.dataset.state,active:m?.dataset.motionActive,asset:m?.dataset.motionAsset,action:m?.dataset.motionAction,frame:m?.dataset.motionFrame,viewBox:document.querySelector('.eden-avatar-motion-art')?.getAttribute('viewBox'),baseVisibility:i&&getComputedStyle(i).visibility,baseSize:i&&[i.naturalWidth,i.naturalHeight],rect:r&&[r.x,r.y,r.width,r.height],pointer:a&&getComputedStyle(a).pointerEvents,inert:a?.inert,hidden:a?.getAttribute('aria-hidden')}})()`
 let failAtlas = false
 const imageRequests = [], results = []
-async function fresh(route = '/expenses') {
+async function fresh(route = pagePath) {
   await evaluate('window.motionDocumentMarker=true')
   await send('Page.navigate', { url: origin + route })
   await waitFor(`!window.motionDocumentMarker&&location.pathname===${JSON.stringify(new URL(origin+route).pathname)}&&document.querySelector('main')`, 'fresh document '+route)
-  if (route === '/expenses') await waitFor(`document.querySelector('.eden-avatar-static-image')?.naturalWidth===352&&${avatar}?.dataset.visible==='true'`, 'approved base ready')
+  if (route === pagePath) await waitFor(`document.querySelector('.eden-avatar-static-image')?.naturalWidth===${baseWidth}&&${avatar}?.dataset.visible==='true'`, 'approved base ready')
 }
 async function active() { await waitFor(`${layer}?.dataset.motionActive==='true'`, 'real atlas active') }
 async function waitAction(action, ms = 30000) {
@@ -48,37 +54,37 @@ try {
     assert(body, 'Only explicit synthetic repositories may be intercepted')
     await send('Fetch.fulfillRequest',{requestId,responseCode:200,responseHeaders:[{name:'Content-Type',value:document?'text/html':'application/javascript'}],body:Buffer.from(body).toString('base64')})
   }
-  await send('Fetch.enable',{patterns:[{urlPattern:origin+'/*',resourceType:'Document'},...['firestoreAnimeRepository','firestoreWeeklyReviewRepository','animeDetailService','useGoalAllocations'].map(name=>({urlPattern:'*src/*/'+name+'.ts*'})),{urlPattern:'*eden-treasurer-abacus-motion-v1.webp*',resourceType:'Image'}]})
+  await send('Fetch.enable',{patterns:[{urlPattern:origin+'/*',resourceType:'Document'},...['firestoreAnimeRepository','firestoreWeeklyReviewRepository','animeDetailService','useGoalAllocations'].map(name=>({urlPattern:'*src/*/'+name+'.ts*'})),{urlPattern:'*'+atlasToken+'*',resourceType:'Image'}]})
   await send('Network.setCacheDisabled',{cacheDisabled:true})
   await send('Page.addScriptToEvaluateOnNewDocument',{source:`(()=>{const decode=HTMLImageElement.prototype.decode;window.motionDecodes=[];HTMLImageElement.prototype.decode=function(){window.motionDecodes.push(this.src);return decode.call(this)}})()`})
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true})
   await send('Emulation.setFocusEmulationEnabled',{enabled:true})
   await fresh(); await active(); await trace()
   const initial = await evaluate(current)
-  assert.equal(initial.id,'eden-treasurer');assert.equal(initial.state,'idle')
+  assert.equal(initial.id,id);assert.equal(initial.state,'idle')
   assert.deepEqual(initial.rect.slice(2),[88,164]);assert.equal(initial.pointer,'none')
   assert.equal(initial.inert,true);assert.equal(initial.hidden,'true')
-  assert.equal(initial.baseVisibility,'hidden');assert.deepEqual(initial.baseSize,[352,656])
+  assert.equal(initial.baseVisibility,'hidden');assert.deepEqual(initial.baseSize,[baseWidth,archivist?492:656])
   await evaluate('window.aboutHarness.setLocked(true)')
   await delay(100)
   assert.equal((await evaluate(current)).active,'true')
   await waitAction('blink',8500)
   await waitFor(`${layer}.dataset.motionFrame==='3'`,'closed blink frame')
-  await session.shot(path.join(output,'expenses-390-blink-closed.png'))
+  await session.shot(path.join(output,role+'-390-blink-closed.png'))
   await waitFor(`${layer}.dataset.motionAction==='idle'`,'blink done')
-  await waitAction('abacus',25000)
+  await waitAction(action,25000)
   await waitFor(`${layer}.dataset.motionFrame==='5'`,'actual abacus touch frame')
-  await session.shot(path.join(output,'expenses-390-abacus-touch.png'))
+  await session.shot(path.join(output,role+'-390-secondary-action.png'))
   await waitFor(`${layer}.dataset.motionAction==='idle'`,'abacus returns idle')
   const frames = await evaluate('window.motionTrace')
-  const firstBlink = frames.findIndex(e=>e.action==='blink'), firstAbacus = frames.findIndex(e=>e.action==='abacus')
+  const firstBlink = frames.findIndex(e=>e.action==='blink'), firstAbacus = frames.findIndex(e=>e.action===action)
   assert.deepEqual(frames.slice(firstBlink,firstBlink+5).map(e=>[e.action,e.frame]),[['blink',1],['blink',2],['blink',3],['blink',2],['blink',1]])
-  assert.deepEqual(frames.slice(firstAbacus,firstAbacus+5).map(e=>[e.action,e.frame]),[['abacus',1],['abacus',4],['abacus',5],['abacus',6],['abacus',1]])
+  assert.deepEqual(frames.slice(firstAbacus,firstAbacus+5).map(e=>[e.action,e.frame]),[[action,1],[action,4],[action,5],[action,6],[action,1]])
   const duration = index => Math.round(frames[index+5].time-frames[index].time)
   assert(duration(firstBlink)>=350&&duration(firstBlink)<700)
-  assert(duration(firstAbacus)>=1550&&duration(firstAbacus)<2200)
+  assert(duration(firstAbacus)>=(archivist?1650:1550)&&duration(firstAbacus)<2200)
   assert.equal(await evaluate(`window.motionDecodes.filter(u=>u.includes('motion-v1.webp')).length`),1)
-  results.push({realWallClockSequences:frames,blinkMs:duration(firstBlink),abacusMs:duration(firstAbacus),singleAtlasDecode:true,lockedMotionContinues:true})
+  results.push({realWallClockSequences:frames,blinkMs:duration(firstBlink),secondaryAction:action,secondaryMs:duration(firstAbacus),singleAtlasDecode:true,lockedMotionContinues:true})
 
   // Scroll does not restart or move the idle character.
   await evaluate('window.scrollTo(0,document.body.scrollHeight)');await delay(150)
@@ -124,17 +130,17 @@ try {
   failAtlas=true;await fresh()
   await waitFor(`${layer}?.dataset.motionAsset==='error'`,'atlas deliberately fails')
   let failed=await evaluate(current)
-  assert.equal(failed.id,'eden-treasurer');assert.equal(failed.active,'false');assert.equal(failed.baseVisibility,'visible')
+  assert.equal(failed.id,id);assert.equal(failed.active,'false');assert.equal(failed.baseVisibility,'visible')
   const failedRequests=imageRequests.length
   await delay(1200);assert.equal(imageRequests.length,failedRequests,'No polling retry loop')
   failAtlas=false;await evaluate(`dispatchEvent(new Event('online'))`);await active()
-  assert.equal((await evaluate(current)).id,'eden-treasurer')
+  assert.equal((await evaluate(current)).id,id)
   // SVG delivery errors use the same static fallback and bounded recovery path.
   await evaluate(`document.querySelector('.eden-avatar-motion-art image').dispatchEvent(new Event('error'))`)
   await waitFor(`${layer}.dataset.motionAsset==='error'`,'display error fallback')
   assert.equal((await evaluate(current)).baseVisibility,'visible')
   await evaluate(`dispatchEvent(new Event('online'))`);await active()
-  results.push({atlasFailureKeepsApprovedStaticTreasurer:true,noPollingRetries:true,onlineRecovery:true,displayFailureRecovery:true})
+  results.push({atlasFailureKeepsApprovedStaticRole:id,noPollingRetries:true,onlineRecovery:true,displayFailureRecovery:true})
 
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]})
   const beforeReduced=imageRequests.length
@@ -147,15 +153,15 @@ try {
   const beforeAbout=imageRequests.length
   await fresh('/about#eden-wardrobe')
   await waitFor(`document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar==='eden-default'`,'independent wardrobe')
-  await click('[data-wardrobe-choice="eden-treasurer"]')
-  await waitFor(`document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar==='eden-treasurer'&&document.querySelector('.about-wardrobe-preview')?.dataset.assetState==='ready'`,'static wardrobe Treasurer')
+  await click('[data-wardrobe-choice="'+id+'"]')
+  await waitFor(`document.querySelector('.about-wardrobe-preview')?.dataset.previewAvatar===${JSON.stringify(id)}&&document.querySelector('.about-wardrobe-preview')?.dataset.assetState==='ready'`,'static wardrobe role')
   assert.equal(await evaluate(`Boolean(document.querySelector('.eden-avatar-motion-layer')||document.querySelector('.eden-avatar'))`),false)
   assert.equal(imageRequests.length,beforeAbout)
   await fresh();await active();await delay(400)
   assert.equal((await evaluate(current)).frame,'1')
   results.push({coldReducedMotionNoAtlasRequest:true,wardrobeStaticAndNoGlobalAvatar:true,reentryStartsIdle:true,strictModeFixture:html.includes('harness.tsx')})
   assert.deepEqual(session.errors,[])
-  const report={syntheticIdentity:true,noDataWrites:true,noPaidCalls:true,realIphoneTest:false,results,atlasRequests:imageRequests.length,errors:session.errors}
+  const report={role:id,syntheticIdentity:true,noDataWrites:true,noPaidCalls:true,realIphoneTest:false,results,atlasRequests:imageRequests.length,errors:session.errors}
   await writeFile(path.join(output,'motion-results.json'),JSON.stringify(report,null,2))
   console.log(JSON.stringify(report,null,2))
 } finally {await session.close()}

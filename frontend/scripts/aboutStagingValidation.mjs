@@ -42,6 +42,11 @@ const archivistResponse = await fetch(origin + '/assets/' + archivistFile); asse
 const archivistBytes = Buffer.from(await archivistResponse.arrayBuffer())
 const archivistLocal = await readFile('src/components/avatar/assets/eden-archivist-clipboard-static.webp')
 assert.equal(createHash('sha256').update(archivistBytes).digest('hex'),createHash('sha256').update(archivistLocal).digest('hex'))
+const archivistMotionFile=main.match(/eden-archivist-clipboard-motion-v1-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(archivistMotionFile,'Archivist motion must be referenced')
+const archivistMotionResponse=await fetch(origin+'/assets/'+archivistMotionFile);assert.equal(archivistMotionResponse.status,200)
+const archivistMotionBytes=Buffer.from(await archivistMotionResponse.arrayBuffer())
+assert.equal(createHash('sha256').update(archivistMotionBytes).digest('hex'),createHash('sha256').update(await readFile('src/components/avatar/assets/eden-archivist-clipboard-motion-v1.webp')).digest('hex'))
 const reflectorFile = main.match(/eden-reflector-journal-static-[A-Za-z0-9_-]+\.webp/)?.[0]
 assert(reflectorFile, 'Reflector runtime material must be referenced by the global renderer')
 const reflectorResponse = await fetch(origin + '/assets/' + reflectorFile); assert.equal(reflectorResponse.status,200)
@@ -126,6 +131,7 @@ for (const asset of [...art, aboutChunk]) assert(workerJs.includes(asset), 'Abou
 assert(workerJs.includes(treasurerFile),'Treasurer must be precached for offline Expenses')
 assert(workerJs.includes(motionFile)&&workerJs.includes(motionChunk),'Motion art and lazy renderer must work offline')
 assert(workerJs.includes(archivistFile),'Archivist must be precached for offline Records')
+assert(workerJs.includes(archivistMotionFile),'Archivist motion must be precached for offline Records')
 assert(workerJs.includes(reflectorFile),'Reflector must be precached for offline Review')
 assert(workerJs.includes(watchingFile),'Watching must be precached for offline Anime')
 assert(workerJs.includes(swimFile)&&workerJs.includes(boxingFile),'Both Exercise forms must be precached')
@@ -167,6 +173,7 @@ try {
   await session.shot(path.join(output, 'staging-about-auth-offline.png'))
   assert.deepEqual(session.errors, [])
   const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurerMotion:{file:motionFile,bytes:motionBytes.length,hashMatched:true,precached:true,lazyChunk:motionChunk},treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true},swim:{file:swimFile,bytes:swimBytes.length,hashMatched:true,precached:true},boxing:{file:boxingFile,bytes:boxingBytes.length,hashMatched:true,precached:true},cosmos:[{file:tarotFile,bytes:tarotBytes.length,hashMatched:true,precached:true},{file:ichingFile,bytes:ichingBytes.length,hashMatched:true,precached:true},{file:baziFile,bytes:baziBytes.length,hashMatched:true,precached:true},{file:astrologyFile,bytes:astrologyBytes.length,hashMatched:true,precached:true},{file:ziweiFile,bytes:ziweiBytes.length,hashMatched:true,precached:true},{file:aiExplorerFile,bytes:aiExplorerBytes.length,hashMatched:true,precached:true}], manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
+  report.archivistMotion={file:archivistMotionFile,bytes:archivistMotionBytes.length,hashMatched:true,precached:true}
   await writeFile(path.join(output, 'staging-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally { await session.close() }

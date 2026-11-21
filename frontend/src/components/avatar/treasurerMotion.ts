@@ -2,7 +2,7 @@ import atlas from './assets/eden-treasurer-abacus-motion-v1.webp'
 import type { AvatarMotionDefinition } from './avatarMotion'
 
 export const treasurerMotion = {
-  prototype:'4G-A',capabilities:{blink:true,abacus:true},
+  prototype:'4G-A',secondaryAction:'abacus',capabilities:{blink:true,abacus:true},
   atlas:{src:atlas,width:792,height:984,cellWidth:264,cellHeight:492,columns:3},
   waitMs:{blink:6200,abacus:22000},
   sequences:{

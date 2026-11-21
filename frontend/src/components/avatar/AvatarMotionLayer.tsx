@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { createAvatarMotion, type AvatarMotionDefinition } from './avatarMotion'
 
-// No page/data ownership here. The caller grants motion only to Expenses and
+// No page/data ownership here. The caller grants motion to Expenses/Records and
 // supplies its existing reduced-motion / occlusion / viewport pause signal.
 export default function AvatarMotionLayer({ definition, paused }: { definition: AvatarMotionDefinition; paused: boolean }) {
   const controller = useMemo(() => createAvatarMotion(definition), [definition])

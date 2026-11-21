@@ -8,7 +8,7 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/avatar-part4g-a-pwa')
+const output = path.resolve('artifacts/browser-validation/avatar-part4g-b-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
@@ -50,7 +50,10 @@ try {
     await delay(1000)
   }
   assert(cached.active && cached.wave && cached.treasurer && cached.treasurerMotion && cached.motionChunk && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos)
+  cached.archivistMotion=await evaluate(`(async()=>{const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return urls.some(url=>url.includes('eden-archivist-clipboard-motion-v1-'))})()`)
+  assert(cached.archivistMotion,'Archivist atlas must be precached by the existing rule')
   assert.equal(await evaluate(`window.pwaAvatarDecodes.filter(url=>url.includes('abacus-motion-v1-')).length`),0,'Precache must not decode Expenses animation on About')
+  assert.equal(await evaluate(`window.pwaAvatarDecodes.filter(url=>url.includes('clipboard-motion-v1-')).length`),0,'Precache must not decode Records animation on About')
   await evaluate('window.pwaReloadMarker=true'); await send('Page.reload')
   await waitFor('!window.pwaReloadMarker', 'new controlled document')
   await waitFor(ready, 'synthetic session persists through reload')
@@ -113,7 +116,8 @@ try {
     }
     if(route==='/records') {
       await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-archivist'&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===264`,'offline Archivist decoded from precache')
-      assert.equal(await evaluate(`document.querySelector('.eden-avatar-appearance').dataset.avatarMode`),'static-prototype')
+      await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'offline Archivist motion decoded from precache')
+      assert.equal(await evaluate(`document.querySelector('.eden-avatar-appearance').dataset.avatarMode`),'motion-prototype')
     }
     if(route==='/weekly-review') {
       await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-reflector'&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===352`,'offline Reflector decoded from precache')
@@ -191,6 +195,7 @@ try {
   assert.equal(newUrls.length,oldUrls.length,'Update must not accumulate obsolete precache entries')
   assert(['tarot','iching','bazi','astrology','ziwei','ai-explorer'].every(id=>newUrls.some(url=>url.includes('eden-'+id+'-static-'))))
   assert(newUrls.some(url=>url.includes('eden-treasurer-abacus-motion-v1-'))&&newUrls.some(url=>url.includes('AvatarMotionLayer-')))
+  assert(newUrls.some(url=>url.includes('eden-archivist-clipboard-motion-v1-')))
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0})
   await send('Page.reload')
   await waitFor(`window.__pwaQaRevision===2&&document.querySelector('#cosmos-ai-tab')&&document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-tarot'`,'updated build survives offline cold reload')
@@ -207,8 +212,12 @@ try {
   await send('Page.navigate',{url:'http://127.0.0.1:5182/expenses'})
   await waitFor(`window.__pwaQaRevision===2&&document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'updated offline atlas and lazy motion controller')
   await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionAction==='blink'`,'real offline blink after explicit update')
+  await send('Page.navigate',{url:'http://127.0.0.1:5182/records'})
+  await waitFor(`window.__pwaQaRevision===2&&document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-archivist'&&document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'updated offline Archivist atlas')
+  await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionAction==='blink'`,'offline Archivist blink after update')
   assert.deepEqual(session.errors, [])
   const report = { wardrobeOffline,all13WardrobeOfflineAfterUpdate:true,existingCacheConfigurationReused:true,treasurerMotionOfflineAndAfterUpdate:true,atlasNotDecodedOnAbout:true,wardrobeStillStatic:true,offlineExerciseForms, productionCapture, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,allSixCosmosOfflineDecoded:true,precacheDoesNotDecodeUnselectedCosmos:true,update:{realWaitingWorkerPrompt:true,noAutomaticReload:true,explicitApplyNewBuild:true,oldEntries:oldUrls.length,newEntries:newUrls.length,obsoleteRemoved:removedUrls,offlineSixFormsAfterUpdate:true},offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
+  report.archivistMotionOfflineAndAfterUpdate=true
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

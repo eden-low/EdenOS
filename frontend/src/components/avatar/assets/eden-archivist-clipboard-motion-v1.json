@@ -1,0 +1,331 @@
+{
+  "id": "eden-archivist",
+  "version": "4G-B-prototype-v1",
+  "ownerAnimationAcceptance": "Pending",
+  "source": {
+    "width": 962,
+    "height": 1635,
+    "hasAlpha": true,
+    "ordering": "By verified visual pose; downloaded -3 is page-turn, -5 is blink-closed",
+    "approvedStillSourceSha256": "ac632b474484cbdc7e2180530d5d7c681f109e7611fda83e122ceb999ccda47d"
+  },
+  "derivation": {
+    "crop": {
+      "left": 150,
+      "top": 0,
+      "width": 750,
+      "height": 1644
+    },
+    "cell": {
+      "width": 264,
+      "height": 492
+    },
+    "fit": "contain",
+    "uniformScale": true,
+    "registration": "Integer pixel translation to approved first-frame shoe center and shared shoe baseline before uniform downsampling; no deformation, rotation or CSS pose animation",
+    "footCenter": 526,
+    "footBaseline": 1632,
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "frames": [
+    {
+      "index": 1,
+      "file": "ChatGPT 图像 2026年11月21日 21_01_55-1.png",
+      "approvedName": "伊登档案员全身立绘.png",
+      "pose": "idle-open",
+      "sourceSha256": "4fb00c74ecbaf2afe1faabdd12434bf8ee1ce748b4571a25951d06377968827e",
+      "sourceBytes": 1313066,
+      "sourceBounds": {
+        "minX": 191,
+        "minY": 16,
+        "maxX": 866,
+        "maxY": 1626,
+        "zero": 858491,
+        "edge": 0
+      },
+      "sourceFeet": {
+        "minX": 325,
+        "minY": 1440,
+        "maxX": 727,
+        "maxY": 1626,
+        "zero": 121371,
+        "edge": 0
+      },
+      "registration": {
+        "x": 0,
+        "y": 6
+      },
+      "nearInvisibleAlphaCleared": 15057,
+      "runtimeCellRawSha256": "f2a258bd82bbf9e27628abca355072e5a8e58ec448f24e21c86ad92e573c5850",
+      "runtimeBounds": {
+        "minX": 32,
+        "minY": 6,
+        "maxX": 234,
+        "maxY": 488,
+        "zero": 64985,
+        "edge": 0
+      },
+      "runtimeFeet": {
+        "minX": 72,
+        "minY": 430,
+        "maxX": 193,
+        "maxY": 488,
+        "zero": 10035,
+        "edge": 0
+      }
+    },
+    {
+      "index": 2,
+      "file": "ChatGPT 图像 2026年11月21日 21_01_57-2.png",
+      "approvedName": "档案员伊登的温柔半眨眼.png",
+      "pose": "blink-half",
+      "sourceSha256": "c2a3a00899bd22cb1c2b31125c771695ea028d7d18bb9432366ad1425eb8708a",
+      "sourceBytes": 1341954,
+      "sourceBounds": {
+        "minX": 188,
+        "minY": 11,
+        "maxX": 866,
+        "maxY": 1627,
+        "zero": 852153,
+        "edge": 0
+      },
+      "sourceFeet": {
+        "minX": 327,
+        "minY": 1440,
+        "maxX": 737,
+        "maxY": 1627,
+        "zero": 120900,
+        "edge": 0
+      },
+      "registration": {
+        "x": -6,
+        "y": 5
+      },
+      "nearInvisibleAlphaCleared": 15195,
+      "runtimeCellRawSha256": "b70fcb1b51f0f94c402736809845212b190dace8c8ad9b761141a5d017bf5da5",
+      "runtimeBounds": {
+        "minX": 29,
+        "minY": 5,
+        "maxX": 232,
+        "maxY": 488,
+        "zero": 64460,
+        "edge": 0
+      },
+      "runtimeFeet": {
+        "minX": 71,
+        "minY": 430,
+        "maxX": 195,
+        "maxY": 488,
+        "zero": 10008,
+        "edge": 0
+      }
+    },
+    {
+      "index": 3,
+      "file": "ChatGPT 图像 2026年11月21日 21_02_05-5.png",
+      "approvedName": "闭眼微笑的档案员伊登.png",
+      "pose": "blink-closed",
+      "sourceSha256": "4564c0c5c5dae81f3df31a07e7cc39b08e7f82bfc1c8d85b6340cbdc878e6104",
+      "sourceBytes": 1326025,
+      "sourceBounds": {
+        "minX": 187,
+        "minY": 15,
+        "maxX": 863,
+        "maxY": 1627,
+        "zero": 855108,
+        "edge": 0
+      },
+      "sourceFeet": {
+        "minX": 324,
+        "minY": 1440,
+        "maxX": 738,
+        "maxY": 1627,
+        "zero": 119188,
+        "edge": 0
+      },
+      "registration": {
+        "x": -5,
+        "y": 5
+      },
+      "nearInvisibleAlphaCleared": 14084,
+      "runtimeCellRawSha256": "8c0e7fedc489296b8ff6f2081ffb60d721c0f89d7efa617023c2ef02572af558",
+      "runtimeBounds": {
+        "minX": 29,
+        "minY": 6,
+        "maxX": 231,
+        "maxY": 488,
+        "zero": 64693,
+        "edge": 0
+      },
+      "runtimeFeet": {
+        "minX": 70,
+        "minY": 430,
+        "maxX": 194,
+        "maxY": 488,
+        "zero": 9847,
+        "edge": 0
+      }
+    },
+    {
+      "index": 4,
+      "file": "ChatGPT 图像 2026年11月21日 21_02_02-4.png",
+      "approvedName": "专注阅读的档案员伊登.png",
+      "pose": "clipboard-read",
+      "sourceSha256": "8c7f40d1ceb9d04af2f878a9f4a96a4738dd819b3abadfd55261548867558228",
+      "sourceBytes": 1307354,
+      "sourceBounds": {
+        "minX": 187,
+        "minY": 17,
+        "maxX": 850,
+        "maxY": 1599,
+        "zero": 882038,
+        "edge": 0
+      },
+      "sourceFeet": {
+        "minX": 331,
+        "minY": 1440,
+        "maxX": 742,
+        "maxY": 1599,
+        "zero": 130419,
+        "edge": 0
+      },
+      "registration": {
+        "x": -10,
+        "y": 33
+      },
+      "nearInvisibleAlphaCleared": 10810,
+      "runtimeCellRawSha256": "60fd552c242a7670019ff98c2d7280958d03596e4a89eb852b79a44ba9332ac1",
+      "runtimeBounds": {
+        "minX": 27,
+        "minY": 15,
+        "maxX": 226,
+        "maxY": 488,
+        "zero": 66812,
+        "edge": 0
+      },
+      "runtimeFeet": {
+        "minX": 71,
+        "minY": 430,
+        "maxX": 194,
+        "maxY": 488,
+        "zero": 9904,
+        "edge": 0
+      }
+    },
+    {
+      "index": 5,
+      "file": "ChatGPT 图像 2026年11月21日 21_02_00-3.png",
+      "approvedName": "档案管理员伊甸翻页记录.png",
+      "pose": "page-turn",
+      "sourceSha256": "b11fb11324b83482f9ba8372f286e42f2d9e68bf05da1cde4928a47509b79e5f",
+      "sourceBytes": 1383415,
+      "sourceBounds": {
+        "minX": 179,
+        "minY": 16,
+        "maxX": 864,
+        "maxY": 1632,
+        "zero": 828615,
+        "edge": 0
+      },
+      "sourceFeet": {
+        "minX": 318,
+        "minY": 1440,
+        "maxX": 739,
+        "maxY": 1632,
+        "zero": 117218,
+        "edge": 0
+      },
+      "registration": {
+        "x": -2,
+        "y": 0
+      },
+      "nearInvisibleAlphaCleared": 14443,
+      "runtimeCellRawSha256": "e0848bb380033da4637a06f031a8fb6714fdf5c7e709975df1dc1d14483366c8",
+      "runtimeBounds": {
+        "minX": 28,
+        "minY": 4,
+        "maxX": 232,
+        "maxY": 488,
+        "zero": 62300,
+        "edge": 0
+      },
+      "runtimeFeet": {
+        "minX": 69,
+        "minY": 430,
+        "maxX": 195,
+        "maxY": 488,
+        "zero": 9813,
+        "edge": 0
+      }
+    },
+    {
+      "index": 6,
+      "file": "ChatGPT 图像 2026年11月21日 21_02_07-6.png",
+      "approvedName": "档案员伊登_翻页后温和回归.png",
+      "pose": "recover-open",
+      "sourceSha256": "642df324a54cbf5abb9e043f64a526a48f55680770fbf9660a2298ea8f0ecfc6",
+      "sourceBytes": 1322837,
+      "sourceBounds": {
+        "minX": 194,
+        "minY": 17,
+        "maxX": 866,
+        "maxY": 1628,
+        "zero": 858710,
+        "edge": 0
+      },
+      "sourceFeet": {
+        "minX": 332,
+        "minY": 1440,
+        "maxX": 746,
+        "maxY": 1628,
+        "zero": 118666,
+        "edge": 0
+      },
+      "registration": {
+        "x": -13,
+        "y": 4
+      },
+      "nearInvisibleAlphaCleared": 13178,
+      "runtimeCellRawSha256": "71ab68144561b79f46af8cc097c67e5bacb4b32aa358a89daddafecee6b6f6e3",
+      "runtimeBounds": {
+        "minX": 29,
+        "minY": 6,
+        "maxX": 230,
+        "maxY": 488,
+        "zero": 64857,
+        "edge": 0
+      },
+      "runtimeFeet": {
+        "minX": 70,
+        "minY": 430,
+        "maxX": 195,
+        "maxY": 488,
+        "zero": 9801,
+        "edge": 0
+      }
+    }
+  ],
+  "runtime": {
+    "file": "eden-archivist-clipboard-motion-v1.webp",
+    "width": 792,
+    "height": 984,
+    "columns": 3,
+    "rows": 2,
+    "cell": {
+      "width": 264,
+      "height": 492
+    },
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "bytes": 251196,
+    "sha256": "44ec07f5377cc7487e2fdc0706e35d0be03e569ff62b44821d0b9b5e625efb3f"
+  },
+  "fallback": "eden-archivist-clipboard-static.webp"
+}
