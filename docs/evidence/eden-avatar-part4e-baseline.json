@@ -1,0 +1,277 @@
+{
+  "sourceSha": "46bd88f58abef978e8a0cdddc0a86cd4495786d8",
+  "browser": "Chrome/157.0.8103.79",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "identities": [
+    "eden-tarot",
+    "eden-iching",
+    "eden-bazi",
+    "eden-astrology",
+    "eden-ziwei",
+    "eden-ai-explorer",
+    "eden-default",
+    "eden-treasurer",
+    "eden-archivist",
+    "eden-reflector",
+    "eden-watching",
+    "eden-swim",
+    "eden-boxing"
+  ],
+  "initial": {
+    "imageRequests": [
+      "/src/components/avatar/assets/eden-base-v1.webp",
+      "/src/components/avatar/assets/eden-tarot-static.webp"
+    ],
+    "explicitSuccessfulStaticDecodeCalls": 1,
+    "renderedStaticImages": 1
+  },
+  "rapid": {
+    "switches": 60,
+    "observedDecodeCalls": 66,
+    "requestsByPhase": {
+      "initial": 2,
+      "warm six systems": 5,
+      "rapid switching": 5
+    },
+    "wrongSystemPixels": false
+  },
+  "memory": [
+    {
+      "label": "first Cosmos, Tarot only",
+      "Documents": 4,
+      "Nodes": 242,
+      "LayoutCount": 7,
+      "RecalcStyleCount": 7,
+      "TaskDuration": 0.493804,
+      "JSHeapUsedSize": 23636468,
+      "JSHeapTotalSize": 26771456,
+      "dom": {
+        "documents": 4,
+        "nodes": 242,
+        "jsEventListeners": 410
+      }
+    },
+    {
+      "label": "six systems warmed once",
+      "Documents": 1,
+      "Nodes": 634,
+      "LayoutCount": 17,
+      "RecalcStyleCount": 19,
+      "TaskDuration": 0.70655,
+      "JSHeapUsedSize": 28003284,
+      "JSHeapTotalSize": 39415808,
+      "dom": {
+        "documents": 1,
+        "nodes": 634,
+        "jsEventListeners": 366
+      }
+    },
+    {
+      "label": "after 60 rapid switches",
+      "Documents": 5,
+      "Nodes": 14798,
+      "LayoutCount": 91,
+      "RecalcStyleCount": 93,
+      "TaskDuration": 1.792843,
+      "JSHeapUsedSize": 36050800,
+      "JSHeapTotalSize": 48328704,
+      "dom": {
+        "documents": 5,
+        "nodes": 14798,
+        "jsEventListeners": 1790
+      }
+    },
+    {
+      "label": "after all routes and lifecycle restores",
+      "Documents": 6,
+      "Nodes": 829,
+      "LayoutCount": 7,
+      "RecalcStyleCount": 15,
+      "TaskDuration": 0.10472,
+      "JSHeapUsedSize": 35808656,
+      "JSHeapTotalSize": 68251648,
+      "dom": {
+        "documents": 6,
+        "nodes": 829,
+        "jsEventListeners": 589
+      }
+    },
+    {
+      "label": "same document after explicit diagnostic GC",
+      "Documents": 5,
+      "Nodes": 308,
+      "LayoutCount": 7,
+      "RecalcStyleCount": 15,
+      "TaskDuration": 0.151322,
+      "JSHeapUsedSize": 30432872,
+      "JSHeapTotalSize": 31813632,
+      "dom": {
+        "documents": 5,
+        "nodes": 308,
+        "jsEventListeners": 363
+      }
+    }
+  ],
+  "scroll": {
+    "samples": 109,
+    "maxFrameGapMs": 18,
+    "stableCorner": true
+  },
+  "routes": [
+    {
+      "route": "/",
+      "elapsedIncludingDrawerCloseMs": 346.09999990463257,
+      "scroll6000Fixed": true,
+      "text200": {
+        "overflow": false,
+        "frame": [
+          88,
+          164
+        ],
+        "visible": "true",
+        "inert": true,
+        "hidden": "true",
+        "pointer": "none"
+      }
+    },
+    {
+      "route": "/expenses",
+      "elapsedIncludingDrawerCloseMs": 222.5,
+      "scroll6000Fixed": true,
+      "text200": {
+        "overflow": false,
+        "frame": [
+          88,
+          164
+        ],
+        "visible": "true",
+        "inert": true,
+        "hidden": "true",
+        "pointer": "none"
+      }
+    },
+    {
+      "route": "/records",
+      "elapsedIncludingDrawerCloseMs": 210.20000004768372,
+      "scroll6000Fixed": true,
+      "text200": {
+        "overflow": false,
+        "frame": [
+          88,
+          164
+        ],
+        "visible": "true",
+        "inert": true,
+        "hidden": "true",
+        "pointer": "none"
+      }
+    },
+    {
+      "route": "/weekly-review",
+      "elapsedIncludingDrawerCloseMs": 175.29999995231628,
+      "scroll6000Fixed": true,
+      "text200": {
+        "overflow": false,
+        "frame": [
+          88,
+          164
+        ],
+        "visible": "true",
+        "inert": true,
+        "hidden": "true",
+        "pointer": "none"
+      }
+    },
+    {
+      "route": "/anime",
+      "elapsedIncludingDrawerCloseMs": 200.80000019073486,
+      "scroll6000Fixed": true,
+      "text200": {
+        "overflow": false,
+        "frame": [
+          88,
+          164
+        ],
+        "visible": "true",
+        "inert": true,
+        "hidden": "true",
+        "pointer": "none"
+      }
+    },
+    {
+      "route": "/exercise",
+      "elapsedIncludingDrawerCloseMs": 183.10000014305115,
+      "scroll6000Fixed": true,
+      "text200": {
+        "overflow": false,
+        "frame": [
+          88,
+          164
+        ],
+        "visible": "true",
+        "inert": true,
+        "hidden": "true",
+        "pointer": "none"
+      }
+    },
+    {
+      "route": "/cosmos",
+      "elapsedIncludingDrawerCloseMs": 195.70000004768372,
+      "scroll6000Fixed": true,
+      "text200": {
+        "overflow": false,
+        "frame": [
+          88,
+          164
+        ],
+        "visible": "true",
+        "inert": true,
+        "hidden": "true",
+        "pointer": "none"
+      }
+    }
+  ],
+  "layoutShiftsByPhase": {
+    "intentional scroll spacer and text resize": 19
+  },
+  "avatarSourceLayoutShifts": 0,
+  "lifecycle": {
+    "frozenResumeExerciseInvariant": true,
+    "actualHistoryReturn": {
+      "bfcacheRestored": true,
+      "documentId": "0.jle93xryy38",
+      "pageshow": [
+        {
+          "persisted": false,
+          "time": 673.6000001430511
+        },
+        {
+          "persisted": true,
+          "time": 9337.900000095367
+        },
+        {
+          "persisted": true,
+          "time": 9362.900000095367
+        }
+      ],
+      "storage": "{\"version\":1,\"owner\":\"1795219508322\",\"next\":\"eden-swim\"}",
+      "id": "eden-boxing"
+    },
+    "cosmosFreezeStable": true
+  },
+  "precache": {
+    "entries": 49,
+    "bytes": 4236411
+  },
+  "webpBytes": 1084838,
+  "aboutWebpBytes": 660314,
+  "limitations": [
+    "Disposable headless Chromium with mobile viewport, not real iPhone Safari/PWA.",
+    "decode() counts are observed application decode calls, not internal decoder cache executions.",
+    "JS heap/DOM are browser-observed; decoded image/GPU/native resident memory is not exposed by these APIs.",
+    "Frame timing includes DevTools instrumentation and full-page work, not isolated Avatar CPU."
+  ]
+}

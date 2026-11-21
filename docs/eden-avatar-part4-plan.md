@@ -13,6 +13,8 @@ Part 4C subsequently authorizes the approved standalone Swim/Boxing sources and
 deterministic Exercise entry alternation; see [the current 4C handoff](eden-avatar-part4c-exercise.md).
 Part 4D now authorizes six visually verified final sources and shared Cosmos
 selection; see [the 4D static handoff](eden-avatar-part4d-cosmos.md).
+Part 4E is now explicitly authorized for static-system validation and measured
+optimization only; see [the 4E evidence and pending acceptance](eden-avatar-part4e.md).
 
 ## Stage boundaries
 
@@ -22,12 +24,13 @@ selection; see [the 4D static handoff](eden-avatar-part4d-cosmos.md).
 | 4B | Expenses, Records, Weekly Review and Anime outfits with basic idle | Batches 1–3: Records, Review and Anime static prototypes; all new motion pending |
 | 4C | Exercise Swim / Boxing dual form with deterministic alternation | Static outfits and per-tab entry parity; dedicated animation frames pending |
 | 4D | Six Cosmos forms mapped directly to its internal systems | Six static outfits and shared selection; dedicated action frames pending |
-| 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | No; current batches only perform their required regression checks |
+| 4E | Overall performance, PWA, accessibility and real-device acceptance optimization | Automated technical delivery; real-device acceptance pending, **not Accepted**; intermittent development Capture observation remains documented |
 
 Part 4A was accepted by the owner. Part 4B batches 1–3 authorize Records, Review and Anime only.
 Part 4C static forms and parity are now authorized. Part 5 financial reactions are
-separate. Do not start further animation batches, 4E or
-Part 5 automatically; await the owner's Cosmos six-form real-device acceptance.
+separate. Part 4E adds evidence/coverage without changing the accepted art or
+runtime architecture. Do not start 4F, further animation batches or Part 5/6/7;
+await explicit owner iPhone Safari, installed PWA and desktop acceptance.
 
 ## Shared character and material specification
 
@@ -164,9 +167,12 @@ Reduced Motion does not animate or recreate the static image.
 - **4D animations:** shared selection and all six static forms are implemented.
   Card/coin/scroll/star-chart/hologram actions and new blink frames still require
   dedicated approved art. No autonomous rotation or AI invocation belongs in the renderer.
-- **4E:** measure all-role decoded memory, preload/cache budgets, route transitions,
-  Reduced Motion, accessibility, keyboard/safe-area behavior and actual Safari/PWA.
-  Current single-resource tests are not a claim that the whole 4E phase is complete.
+- **4E:** all-role selection/decode-call/JS-heap/cache evidence and lifecycle,
+  Reduced Motion, accessibility, keyboard/safe-area/PWA checks are recorded in its
+  handoff. Native decoded/GPU resident memory is not exposed by the browser APIs
+  used. Chromium emulation does not complete actual iPhone Safari/PWA acceptance.
+  Twelve static prototypes still lack dedicated idle/action frames; the original
+  Part 4 animation requirements remain pending even if static acceptance succeeds.
 - **Part 5:** only a successful authoritative income/expense save may later emit a
   small semantic outcome to an animation controller. Draft edits, attempted saves,
   failed requests and amount visibility must not trigger it. The domain/page owns

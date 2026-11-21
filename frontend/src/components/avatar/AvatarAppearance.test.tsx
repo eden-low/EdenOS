@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { StrictMode } from 'react'
 import { AvatarAppearance } from './AvatarAppearance'
 import { resolveAvatar, type AvatarId } from './avatarRegistry'
 
@@ -15,7 +16,7 @@ const idle = { perched: false, attentive: false, still: false }
 const appearance = () => document.querySelector('.eden-avatar-appearance')!
 async function loaded() { await act(async () => { loaders.at(-1)!.onload!() }) }
 beforeEach(() => { loaders = []; vi.stubGlobal('Image', LoaderImage) })
-afterEach(() => { cleanup(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 352, 656], ['eden-watching', 352, 656], ['eden-swim', 352, 656], ['eden-boxing', 352, 656], ['eden-tarot', 352, 656], ['eden-iching', 352, 656], ['eden-bazi', 352, 656], ['eden-astrology', 352, 656], ['eden-ziwei', 352, 656], ['eden-ai-explorer', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
   it('preloads/decode-checks the approved image while retaining a safe default', async () => {
@@ -108,6 +109,19 @@ describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['ede
     act(() => window.dispatchEvent(new Event('online')))
     expect(loaders).toHaveLength(2)
   })
+  it('cleans the failed-resource online listener and Strict Mode loaders on unmount', () => {
+    const add = vi.spyOn(window, 'addEventListener'), remove = vi.spyOn(window, 'removeEventListener')
+    const view = render(<StrictMode><AvatarAppearance avatarId={avatarId} {...idle} /></StrictMode>)
+    expect(loaders).toHaveLength(2)
+    expect(loaders[0].onload).toBeNull(); expect(loaders[0].onerror).toBeNull()
+    act(() => loaders[1].onerror!())
+    const listener = add.mock.calls.find(([type]) => type === 'online')![1]
+    view.unmount()
+    expect(remove).toHaveBeenCalledWith('online', listener)
+    expect(loaders[1].onload).toBeNull(); expect(loaders[1].onerror).toBeNull()
+    act(() => window.dispatchEvent(new Event('online')))
+    expect(loaders).toHaveLength(2)
+  })
 })
 
 it('never invents a loader for an unknown runtime ID', () => {
@@ -130,4 +144,18 @@ it('ignores a late Swim decode after Boxing has already loaded', async () => {
   await act(async () => finish())
   expect(appearance().getAttribute('data-avatar-id')).toBe('eden-boxing')
   expect(document.querySelector('img')).toBe(boxing)
+})
+
+it('ignores an old rejected decode after a different Cosmos material is already ready', async () => {
+  let reject!: (error: Error) => void
+  const view = render(<AvatarAppearance avatarId="eden-tarot" {...idle} />)
+  loaders[0].decode.mockReturnValueOnce(new Promise<void>((_, failed) => { reject = failed }))
+  act(() => loaders[0].onload!())
+  view.rerender(<AvatarAppearance avatarId="eden-ai-explorer" {...idle} />)
+  await loaded()
+  const current = document.querySelector('img')
+  await act(async () => reject(new Error('Late obsolete decode failure')))
+  expect(appearance().getAttribute('data-avatar-id')).toBe('eden-ai-explorer')
+  expect(appearance().getAttribute('data-asset-state')).toBe('ready')
+  expect(document.querySelector('img')).toBe(current)
 })
