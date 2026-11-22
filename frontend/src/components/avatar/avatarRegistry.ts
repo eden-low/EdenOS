@@ -12,6 +12,7 @@ import ziweiArt from './assets/eden-ziwei-static.webp'
 import aiExplorerArt from './assets/eden-ai-explorer-static.webp'
 import { treasurerMotion } from './treasurerMotion'
 import { archivistMotion } from './archivistMotion'
+import { reflectorMotion } from './reflectorMotion'
 import type { AvatarMotionDefinition } from './avatarMotion'
 
 export const avatarIds = [
@@ -70,6 +71,7 @@ export const avatarRegistry: Readonly<Record<AvatarId, AvatarDefinition>> = {
   'eden-reflector': {
     id: 'eden-reflector', label: 'Reflector Eden', status: 'ready', kind: 'static-image', prototype: '4B-static', nativeFacing: 'right', blink: false, capturePerch: false,
     asset: { src: reflectorArt, width: 352, height: 656, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
+    motion: reflectorMotion,
   },
   'eden-watching': {
     id: 'eden-watching', label: 'Watching Eden', status: 'ready', kind: 'static-image', prototype: '4B-static', nativeFacing: 'left', posture: 'prone', blink: false, capturePerch: false,

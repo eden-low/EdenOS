@@ -36,4 +36,9 @@ describe('application routes', () => {
     window.history.replaceState(null, '', '/not-an-edenos-page')
     expect(appPageFromLocation()).toBe('today')
   })
+  it.each(['/review','/review/','/review#/','/#/review'])('resolves the B2 review alias without changing canonical navigation: %s', path => {
+    window.history.replaceState(null, '', path)
+    expect(appPageFromLocation()).toBe('review')
+    expect(appPagePath('review')).toBe('/weekly-review')
+  })
 })

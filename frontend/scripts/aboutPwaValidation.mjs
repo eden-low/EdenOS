@@ -8,7 +8,7 @@ import { createBrowserSession, delay } from './browserSession.mjs'
 import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 
 const frontend = process.cwd()
-const output = path.resolve('artifacts/browser-validation/avatar-part4g-b-pwa')
+const output = path.resolve('artifacts/browser-validation/avatar-part4g-b2-pwa')
 const root = path.join(output, 'pwa-source')
 const outDir = path.join(output, 'pwa-dist-' + Date.now())
 assert(outDir.startsWith(path.join(frontend, 'artifacts/browser-validation') + path.sep))
@@ -52,8 +52,11 @@ try {
   assert(cached.active && cached.wave && cached.treasurer && cached.treasurerMotion && cached.motionChunk && cached.archivist && cached.reflector && cached.watching && cached.swim && cached.boxing && cached.cosmos)
   cached.archivistMotion=await evaluate(`(async()=>{const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return urls.some(url=>url.includes('eden-archivist-clipboard-motion-v1-'))})()`)
   assert(cached.archivistMotion,'Archivist atlas must be precached by the existing rule')
+  cached.reflectorMotion=await evaluate(`(async()=>{const names=await caches.keys();const urls=(await Promise.all(names.map(async name=>(await (await caches.open(name)).keys()).map(r=>r.url)))).flat();return urls.some(url=>url.includes('eden-reflector-journal-motion-v1-'))})()`)
+  assert(cached.reflectorMotion,'Reflector candidate must be precached by the existing rule')
   assert.equal(await evaluate(`window.pwaAvatarDecodes.filter(url=>url.includes('abacus-motion-v1-')).length`),0,'Precache must not decode Expenses animation on About')
   assert.equal(await evaluate(`window.pwaAvatarDecodes.filter(url=>url.includes('clipboard-motion-v1-')).length`),0,'Precache must not decode Records animation on About')
+  assert.equal(await evaluate(`window.pwaAvatarDecodes.filter(url=>url.includes('journal-motion-v1-')).length`),0,'Wardrobe must keep the accepted static Reflector')
   await evaluate('window.pwaReloadMarker=true'); await send('Page.reload')
   await waitFor('!window.pwaReloadMarker', 'new controlled document')
   await waitFor(ready, 'synthetic session persists through reload')
@@ -100,7 +103,7 @@ try {
   }
   const routes = [
     ['/expenses','Finance','Expenses'],['/exercise','Exercise','Exercise'],['/records','Records','Records'],
-    ['/weekly-review','Weekly Review','Review'],['/anime','Anime','Anime'],['/cosmos','Cosmos','Cosmos'],['/about','About Eden','About Eden'],
+    ['/weekly-review','Weekly Review','Review'],['/review','Weekly Review','Review'],['/anime','Anime','Anime'],['/cosmos','Cosmos','Cosmos'],['/about','About Eden','About Eden'],
   ]
   for (const [route,heading,label] of routes) {
     // A new offline document exercises cold deep-link entry, then an actual reload.
@@ -119,8 +122,9 @@ try {
       await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'offline Archivist motion decoded from precache')
       assert.equal(await evaluate(`document.querySelector('.eden-avatar-appearance').dataset.avatarMode`),'motion-prototype')
     }
-    if(route==='/weekly-review') {
+    if(route==='/weekly-review'||route==='/review') {
       await waitFor(`document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-reflector'&&document.querySelector('.eden-avatar-static-image')?.naturalWidth===352`,'offline Reflector decoded from precache')
+      await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'offline Reflector candidate decoded from precache')
       assert.equal(await evaluate(`document.querySelector('.eden-avatar-facing').hasAttribute('data-mirrored')`),false)
       assert.equal(await evaluate(`getComputedStyle(document.querySelector('.eden-avatar-facing')).transform`),'none')
     }
@@ -196,6 +200,7 @@ try {
   assert(['tarot','iching','bazi','astrology','ziwei','ai-explorer'].every(id=>newUrls.some(url=>url.includes('eden-'+id+'-static-'))))
   assert(newUrls.some(url=>url.includes('eden-treasurer-abacus-motion-v1-'))&&newUrls.some(url=>url.includes('AvatarMotionLayer-')))
   assert(newUrls.some(url=>url.includes('eden-archivist-clipboard-motion-v1-')))
+  assert(newUrls.some(url=>url.includes('eden-reflector-journal-motion-v1-')))
   await send('Network.emulateNetworkConditions',{offline:true,latency:0,downloadThroughput:0,uploadThroughput:0})
   await send('Page.reload')
   await waitFor(`window.__pwaQaRevision===2&&document.querySelector('#cosmos-ai-tab')&&document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-tarot'`,'updated build survives offline cold reload')
@@ -215,9 +220,15 @@ try {
   await send('Page.navigate',{url:'http://127.0.0.1:5182/records'})
   await waitFor(`window.__pwaQaRevision===2&&document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-archivist'&&document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'updated offline Archivist atlas')
   await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionAction==='blink'`,'offline Archivist blink after update')
+  await send('Page.navigate',{url:'http://127.0.0.1:5182/review'})
+  await waitFor(`window.__pwaQaRevision===2&&document.querySelector('.eden-avatar-appearance')?.dataset.avatarId==='eden-reflector'&&document.querySelector('.eden-avatar-motion-layer')?.dataset.motionActive==='true'`,'updated offline Reflector atlas at acceptance alias')
+  assert.equal(await evaluate(`getComputedStyle(document.querySelector('.eden-avatar-facing')).transform`),'none')
+  assert(await evaluate(`document.querySelector('.eden-avatar').getBoundingClientRect().left<innerWidth/2`))
+  await waitFor(`document.querySelector('.eden-avatar-motion-layer')?.dataset.motionAction==='blink'`,'offline Reflector blink after update')
   assert.deepEqual(session.errors, [])
   const report = { wardrobeOffline,all13WardrobeOfflineAfterUpdate:true,existingCacheConfigurationReused:true,treasurerMotionOfflineAndAfterUpdate:true,atlasNotDecodedOnAbout:true,wardrobeStillStatic:true,offlineExerciseForms, productionCapture, syntheticSignedInContext: true, realAuthNotInvoked: true, productionPwaBuild: true, treasurerPrecachedAndOfflineDecoded:true,archivistPrecachedOfflineDecoded:true,reflectorPrecachedOfflineDecodedAndNotMirrored:true,watchingPrecachedOfflineDecodedStaticProne:true,allSixCosmosOfflineDecoded:true,precacheDoesNotDecodeUnselectedCosmos:true,update:{realWaitingWorkerPrompt:true,noAutomaticReload:true,explicitApplyNewBuild:true,oldEntries:oldUrls.length,newEntries:newUrls.length,obsoleteRemoved:removedUrls,offlineSixFormsAfterUpdate:true},offlineReloadChineseAbout: true, offlineLockedWaveRaiseWaveLower: true, offlineRecordsAndExerciseAvatarsAndCapture: true, offlineColdDeepLinksReloadAndHighlights: routes.map(([route])=>route), cache: cached, errors: session.errors }
   report.archivistMotionOfflineAndAfterUpdate=true
+  report.reflectorMotionOfflineAfterUpdateLeftFacingRight=true
   await writeFile(path.join(output, 'pwa-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally {

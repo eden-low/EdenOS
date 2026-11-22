@@ -32,7 +32,7 @@ function AvatarScene({ enabled, page, children }: { enabled: boolean; page: AppP
   const avatarId = page === 'exercise' && !exerciseForm ? null : selectAvatarForPage(page, exerciseForm ?? undefined, cosmosExperience)
   return <AvatarCaptureContext.Provider value={publish}>
     {children}
-    {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} motionEnabled={page === 'expenses' || page === 'records'} />}
+    {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} motionEnabled={page === 'expenses' || page === 'records' || page === 'review'} />}
   </AvatarCaptureContext.Provider>
 }
 

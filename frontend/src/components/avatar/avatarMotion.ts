@@ -6,7 +6,7 @@ interface MotionBase {
 export type AvatarMotionDefinition = MotionBase & (
   { prototype: '4G-A'; secondaryAction: 'abacus'; capabilities: { blink: true; abacus: true }
     waitMs: Readonly<Record<'blink' | 'abacus', number>>; sequences: Readonly<Record<'blink' | 'abacus', readonly AvatarMotionFrame[]>> } |
-  { prototype: '4G-B'; secondaryAction: 'pageTurn'; capabilities: { blink: true; pageTurn: true }
+  { prototype: '4G-B' | '4G-B2'; secondaryAction: 'pageTurn'; capabilities: { blink: true; pageTurn: true; journalWrite?: true }
     waitMs: Readonly<Record<'blink' | 'pageTurn', number>>; sequences: Readonly<Record<'blink' | 'pageTurn', readonly AvatarMotionFrame[]>> }
 )
 export interface AvatarMotionSnapshot { readonly active: boolean; readonly action: AvatarMotionAction | 'idle'; readonly step: number; readonly frame: number }

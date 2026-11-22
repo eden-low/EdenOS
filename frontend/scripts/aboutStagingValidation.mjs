@@ -11,7 +11,7 @@ const output = path.resolve('artifacts/browser-validation/about')
 await mkdir(output, { recursive: true })
 const metadata = await (await fetch(origin + '/staging-build.json', { cache: 'no-store' })).json()
 assert.equal(metadata.sha, expectedSha)
-const routes = await Promise.all(['/', '/about', '/expenses', '/exercise', '/records', '/weekly-review', '/anime', '/cosmos'].map(async (route) => {
+const routes = await Promise.all(['/', '/about', '/expenses', '/exercise', '/records', '/weekly-review', '/review', '/anime', '/cosmos'].map(async (route) => {
   const response = await fetch(origin + route); assert.equal(response.status, 200)
   const html = await response.text(); assert(html.includes('id="root"'))
   return { route, status: response.status, html }
@@ -53,6 +53,11 @@ const reflectorResponse = await fetch(origin + '/assets/' + reflectorFile); asse
 const reflectorBytes = Buffer.from(await reflectorResponse.arrayBuffer())
 const reflectorLocal = await readFile('src/components/avatar/assets/eden-reflector-journal-static.webp')
 assert.equal(createHash('sha256').update(reflectorBytes).digest('hex'),createHash('sha256').update(reflectorLocal).digest('hex'))
+const reflectorMotionFile=main.match(/eden-reflector-journal-motion-v1-[A-Za-z0-9_-]+\.webp/)?.[0]
+assert(reflectorMotionFile,'Reflector candidate motion must be referenced')
+const reflectorMotionResponse=await fetch(origin+'/assets/'+reflectorMotionFile);assert.equal(reflectorMotionResponse.status,200)
+const reflectorMotionBytes=Buffer.from(await reflectorMotionResponse.arrayBuffer())
+assert.equal(createHash('sha256').update(reflectorMotionBytes).digest('hex'),createHash('sha256').update(await readFile('src/components/avatar/assets/eden-reflector-journal-motion-v1.webp')).digest('hex'))
 const watchingFile = main.match(/eden-watching-prone-static-[A-Za-z0-9_-]+\.webp/)?.[0]
 assert(watchingFile, 'Watching runtime material must be referenced by the global renderer')
 const watchingResponse = await fetch(origin + '/assets/' + watchingFile); assert.equal(watchingResponse.status,200)
@@ -133,6 +138,7 @@ assert(workerJs.includes(motionFile)&&workerJs.includes(motionChunk),'Motion art
 assert(workerJs.includes(archivistFile),'Archivist must be precached for offline Records')
 assert(workerJs.includes(archivistMotionFile),'Archivist motion must be precached for offline Records')
 assert(workerJs.includes(reflectorFile),'Reflector must be precached for offline Review')
+assert(workerJs.includes(reflectorMotionFile),'Reflector candidate must be precached alongside the accepted still')
 assert(workerJs.includes(watchingFile),'Watching must be precached for offline Anime')
 assert(workerJs.includes(swimFile)&&workerJs.includes(boxingFile),'Both Exercise forms must be precached')
 for(const file of [tarotFile,ichingFile,baziFile,astrologyFile,ziweiFile,aiExplorerFile])assert(workerJs.includes(file),'All six Cosmos forms must be precached')
@@ -174,6 +180,7 @@ try {
   assert.deepEqual(session.errors, [])
   const report = { sha: expectedSha, routes: routes.map(({ route, status }) => ({ route, status })), entryAssets: entryAssets.length, aboutChunk, art,treasurerMotion:{file:motionFile,bytes:motionBytes.length,hashMatched:true,precached:true,lazyChunk:motionChunk},treasurer:{file:treasurerFile,bytes:treasurerBytes.length,hashMatched:true,precached:true},archivist:{file:archivistFile,bytes:archivistBytes.length,hashMatched:true,precached:true},reflector:{file:reflectorFile,bytes:reflectorBytes.length,hashMatched:true,precached:true},watching:{file:watchingFile,bytes:watchingBytes.length,hashMatched:true,precached:true},swim:{file:swimFile,bytes:swimBytes.length,hashMatched:true,precached:true},boxing:{file:boxingFile,bytes:boxingBytes.length,hashMatched:true,precached:true},cosmos:[{file:tarotFile,bytes:tarotBytes.length,hashMatched:true,precached:true},{file:ichingFile,bytes:ichingBytes.length,hashMatched:true,precached:true},{file:baziFile,bytes:baziBytes.length,hashMatched:true,precached:true},{file:astrologyFile,bytes:astrologyBytes.length,hashMatched:true,precached:true},{file:ziweiFile,bytes:ziweiBytes.length,hashMatched:true,precached:true},{file:aiExplorerFile,bytes:aiExplorerBytes.length,hashMatched:true,precached:true}], manifestIcons: manifest.icons.length, functions, pwa, offlineAboutShellProtected: true, liveAuthenticationNotPerformed: true, errors: session.errors }
   report.archivistMotion={file:archivistMotionFile,bytes:archivistMotionBytes.length,hashMatched:true,precached:true}
+  report.reflectorMotion={file:reflectorMotionFile,bytes:reflectorMotionBytes.length,hashMatched:true,precached:true}
   await writeFile(path.join(output, 'staging-results.json'), JSON.stringify(report, null, 2))
   console.log(JSON.stringify(report, null, 2))
 } finally { await session.close() }

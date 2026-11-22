@@ -9,11 +9,11 @@ import { syntheticRepositorySource } from './avatarSyntheticRepositories.mjs'
 const origin = 'http://127.0.0.1:5181'
 // --records runs the same real lifecycle/failure audit for Archivist without
 // forking a competing fixture or injecting faster application timings.
-const archivist=process.argv.includes('--records')
-const role=archivist?'archivist':'treasurer',pagePath=archivist?'/records':'/expenses'
-const id='eden-'+role,action=archivist?'pageTurn':'abacus',baseWidth=archivist?264:352
-const atlasToken=archivist?'clipboard-motion-v1.webp':'abacus-motion-v1.webp'
-const output = path.resolve('artifacts/browser-validation/'+(archivist?'avatar-part4g-b':'avatar-part4g-a'))
+const archivist=process.argv.includes('--records'),reflector=process.argv.includes('--review')
+const role=reflector?'reflector':archivist?'archivist':'treasurer',pagePath=reflector?'/review':archivist?'/records':'/expenses'
+const id='eden-'+role,action=archivist||reflector?'pageTurn':'abacus',baseWidth=archivist?264:352
+const atlasToken=reflector?'journal-motion-v1.webp':archivist?'clipboard-motion-v1.webp':'abacus-motion-v1.webp'
+const output = path.resolve('artifacts/browser-validation/'+(reflector?'avatar-part4g-b2':archivist?'avatar-part4g-b':'avatar-part4g-a'))
 await mkdir(output, { recursive: true })
 const html = await (await fetch(origin + '/artifacts/browser-validation/avatar-part4d-cosmos/index.html')).text()
 assert(html.includes('avatar-part4d-cosmos/harness.tsx'))
@@ -65,6 +65,7 @@ try {
   assert.deepEqual(initial.rect.slice(2),[88,164]);assert.equal(initial.pointer,'none')
   assert.equal(initial.inert,true);assert.equal(initial.hidden,'true')
   assert.equal(initial.baseVisibility,'hidden');assert.deepEqual(initial.baseSize,[baseWidth,archivist?492:656])
+  if(reflector){assert(initial.rect[0]<390/2,'Review stays on left');assert.equal(await evaluate(`getComputedStyle(document.querySelector('.eden-avatar-facing')).transform`),'none')}
   await evaluate('window.aboutHarness.setLocked(true)')
   await delay(100)
   assert.equal((await evaluate(current)).active,'true')
@@ -73,6 +74,7 @@ try {
   await session.shot(path.join(output,role+'-390-blink-closed.png'))
   await waitFor(`${layer}.dataset.motionAction==='idle'`,'blink done')
   await waitAction(action,25000)
+  if(reflector){await waitFor(`${layer}.dataset.motionFrame==='4'`,'actual journal writing pose');await session.shot(path.join(output,'reflector-390-journal-write.png'))}
   await waitFor(`${layer}.dataset.motionFrame==='5'`,'actual abacus touch frame')
   await session.shot(path.join(output,role+'-390-secondary-action.png'))
   await waitFor(`${layer}.dataset.motionAction==='idle'`,'abacus returns idle')
@@ -82,7 +84,7 @@ try {
   assert.deepEqual(frames.slice(firstAbacus,firstAbacus+5).map(e=>[e.action,e.frame]),[[action,1],[action,4],[action,5],[action,6],[action,1]])
   const duration = index => Math.round(frames[index+5].time-frames[index].time)
   assert(duration(firstBlink)>=350&&duration(firstBlink)<700)
-  assert(duration(firstAbacus)>=(archivist?1650:1550)&&duration(firstAbacus)<2200)
+  assert(duration(firstAbacus)>=(reflector?1750:archivist?1650:1550)&&duration(firstAbacus)<2200)
   assert.equal(await evaluate(`window.motionDecodes.filter(u=>u.includes('motion-v1.webp')).length`),1)
   results.push({realWallClockSequences:frames,blinkMs:duration(firstBlink),secondaryAction:action,secondaryMs:duration(firstAbacus),singleAtlasDecode:true,lockedMotionContinues:true})
 
@@ -90,6 +92,22 @@ try {
   await evaluate('window.scrollTo(0,document.body.scrollHeight)');await delay(150)
   const scrolled=await evaluate(current)
   assert.deepEqual(scrolled.rect,initial.rect);assert.equal(scrolled.active,'true')
+  if(reflector){
+    assert(await evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Save reflection');b.scrollIntoView({block:'center'});const r=b.getBoundingClientRect();return b.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})()`),'Save stays hit-testable without saving')
+    await evaluate(`document.querySelector('textarea').focus()`)
+    await delay(100)
+    assert(await evaluate(`(()=>{const a=${avatar},r=a.getBoundingClientRect(),b=document.activeElement.getBoundingClientRect();return a.dataset.visible==='false'||!(r.left<b.right&&r.right>b.left&&r.top<b.bottom&&r.bottom>b.top)})()`),'Focused Review input keeps collision priority')
+    await send('Emulation.setDeviceMetricsOverride',{width:390,height:235,deviceScaleFactor:1,mobile:true})
+    await waitFor(`${avatar}.dataset.visible==='false'&&${layer}.dataset.motionActive==='false'`,'Review keyboard-sized viewport pauses')
+    await evaluate(`document.activeElement.blur();window.scrollTo(0,0)`)
+    await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});await active()
+    await click('[aria-label="Open apps"]');await waitFor(`document.querySelector('[aria-label="App drawer"]')`,'Review history drawer')
+    await evaluate(`Array.from(document.querySelectorAll('[aria-label="App drawer"] button')).find(b=>b.textContent.trim()==='Records').click()`)
+    await waitFor(`location.pathname==='/records'&&!document.querySelector('[role="dialog"][data-state="open"]')&&document.body.style.pointerEvents!=='none'`,'leave Review for real history entry')
+    await evaluate('history.back()');await waitFor(`location.pathname==='/review'&&document.querySelector('main h1')?.textContent==='Weekly Review'`,'alias history return')
+    await active();await evaluate('window.reviewReloadMarker=true');await send('Page.reload');await waitFor(`!window.reviewReloadMarker&&location.pathname==='/review'&&document.querySelector('main h1')?.textContent==='Weekly Review'`,'review alias reload');await active()
+    results.push({reviewLeftCorner:true,nativeRightNoMirror:true,saveHitTestNoWrite:true,focusedInputSafeAndKeyboardPauses:true,aliasHistoryAndReload:true})
+  }
   await click('[aria-label="Open apps"]')
   await waitFor(`${avatar}.dataset.visible==='false'&&${layer}.dataset.motionActive==='false'`,'real drawer pauses motion')
   await delay(450)
@@ -131,6 +149,7 @@ try {
   await waitFor(`${layer}?.dataset.motionAsset==='error'`,'atlas deliberately fails')
   let failed=await evaluate(current)
   assert.equal(failed.id,id);assert.equal(failed.active,'false');assert.equal(failed.baseVisibility,'visible')
+  if(reflector)assert.equal(await evaluate(`getComputedStyle(document.querySelector('.eden-avatar-facing')).transform`),'none','Failed atlas retains native right-facing Reflector')
   const failedRequests=imageRequests.length
   await delay(1200);assert.equal(imageRequests.length,failedRequests,'No polling retry loop')
   failAtlas=false;await evaluate(`dispatchEvent(new Event('online'))`);await active()
@@ -139,6 +158,7 @@ try {
   await evaluate(`document.querySelector('.eden-avatar-motion-art image').dispatchEvent(new Event('error'))`)
   await waitFor(`${layer}.dataset.motionAsset==='error'`,'display error fallback')
   assert.equal((await evaluate(current)).baseVisibility,'visible')
+  if(reflector)assert.equal(await evaluate(`getComputedStyle(document.querySelector('.eden-avatar-facing')).transform`),'none')
   await evaluate(`dispatchEvent(new Event('online'))`);await active()
   results.push({atlasFailureKeepsApprovedStaticRole:id,noPollingRetries:true,onlineRecovery:true,displayFailureRecovery:true})
 

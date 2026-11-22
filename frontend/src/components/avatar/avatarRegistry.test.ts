@@ -22,11 +22,11 @@ describe('avatar wardrobe registry and page intent', () => {
     expect(treasurer.blink).toBe(false)
     expect(treasurer.capturePerch).toBe(false)
   })
-  it('registers optional true-frame motion only for Treasurer and Archivist without changing static wardrobe assets', () => {
+  it('registers optional true-frame motion only for the three authorized roles without changing static wardrobe assets', () => {
     for (const id of avatarIds) {
       const visual = resolveAvatar(id)
       if (visual.kind !== 'static-image') continue
-      expect(Boolean(visual.motion)).toBe(id === 'eden-treasurer' || id === 'eden-archivist')
+      expect(Boolean(visual.motion)).toBe(['eden-treasurer','eden-archivist','eden-reflector'].includes(id))
       if (id === 'eden-treasurer') {
         expect(visual.motion).toMatchObject({ prototype: '4G-A', capabilities: { blink: true, abacus: true } })
         expect(visual.asset.src).toContain('eden-treasurer-abacus-static')
@@ -34,6 +34,11 @@ describe('avatar wardrobe registry and page intent', () => {
       if (id === 'eden-archivist') {
         expect(visual.motion).toMatchObject({ prototype: '4G-B', secondaryAction: 'pageTurn', capabilities: { blink: true, pageTurn: true } })
         expect(visual.asset.src).toContain('eden-archivist-clipboard-static')
+      }
+      if (id === 'eden-reflector') {
+        expect(visual.motion).toMatchObject({ prototype: '4G-B2', secondaryAction: 'pageTurn', capabilities: { blink: true, journalWrite: true, pageTurn: true } })
+        expect(visual.asset.src).toContain('eden-reflector-journal-static')
+        expect(visual.nativeFacing).toBe('right')
       }
     }
   })

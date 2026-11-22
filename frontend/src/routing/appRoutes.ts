@@ -12,6 +12,8 @@ const pagePaths: Record<AppPage, string> = {
 }
 
 const pathPages = new Map(Object.entries(pagePaths).map(([page, path]) => [path, page as AppPage]))
+// Owner-facing B2 acceptance URL; retain /weekly-review as the canonical nav path.
+pathPages.set('/review', 'review')
 
 function normalizePath(value: string): string {
   const withLeadingSlash = value.startsWith('/') ? value : `/${value}`
