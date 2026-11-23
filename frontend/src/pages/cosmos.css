@@ -4,6 +4,11 @@
   --accent-wash: rgba(194, 151, 80, .16);
   --accent-shadow: 0 10px 30px rgba(0, 0, 0, .24);
   --focus: #f2d390;
+  --text-primary: #f5efe2;
+  --text-secondary: #c5bbaa;
+  --text-muted: #aca28e;
+  --text-on-accent: #17140f;
+  --text-on-accent-soft: #17140f;
   --surface-primary: #171611;
   color: #f5efe2;
   background: radial-gradient(circle at 68% 8%, rgba(144, 105, 49, .18), transparent 30rem), #0d0e0e;

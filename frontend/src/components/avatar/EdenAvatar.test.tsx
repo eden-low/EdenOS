@@ -25,11 +25,9 @@ describe('Global avatar page and overlay scope', () => {
   it('waits for a lazy C1 home, restores it, and never falls back over content when it disappears', async () => {
     let resolve!: (value: { default: () => React.ReactNode }) => void
     const LazyPage = lazy(() => new Promise<{ default: () => React.ReactNode }>((done) => { resolve = done }))
-    let setHomeVisible!: (visible: boolean) => void
     function LateHome() {
       const [visible, setVisible] = useState(true)
-      setHomeVisible = setVisible
-      return visible ? <div data-page-avatar-dock="expenses" ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} /> : <p>Home removed</p>
+      return <><button onClick={() => setVisible(false)}>Remove home</button>{visible ? <div data-page-avatar-dock="expenses" ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} /> : <p>Home removed</p>}</>
     }
     const view = render(<StrictMode><EdenAvatarProvider enabled page="expenses"><Suspense fallback={<p>Opening Finance</p>}><LazyPage /></Suspense></EdenAvatarProvider></StrictMode>)
     await measure()
@@ -41,7 +39,7 @@ describe('Global avatar page and overlay scope', () => {
     expect(avatar().querySelector('.eden-avatar-appearance')).toBe(sprite)
     expect(avatar().getAttribute('data-visible')).toBe('true')
     expect((avatar() as HTMLElement).style.position).toBe('absolute')
-    act(() => setHomeVisible(false))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove home' }))
     await measure()
     expect(avatar().getAttribute('data-visible')).toBe('false')
     view.unmount()

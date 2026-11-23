@@ -55,7 +55,7 @@ export function RecordsPage() {
 
   return <div className="core-page mx-auto w-full max-w-[68rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
     <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-      <div><p className="section-label">History</p><h1 className="mt-3 text-[clamp(2.25rem,6vw,4rem)] font-semibold leading-none tracking-[-0.055em] text-[var(--text-primary)]">Records</h1><p className="mt-3 max-w-xl text-sm text-[var(--text-secondary)] sm:text-base">A chronological view of confirmed activity across EdenOS.</p></div>
+      <div><p className="section-label">History</p><h1 className="page-title mt-3 text-[clamp(2.25rem,6vw,4rem)] font-semibold leading-none tracking-[-0.055em] text-[var(--text-primary)]">Records</h1><p className="mt-3 max-w-xl text-sm text-[var(--text-secondary)] sm:text-base">A chronological view of confirmed activity across EdenOS.</p></div>
       <CaptureSheet><Button {...triggerPressFeedback} className="press-feedback self-start sm:self-auto"><Plus aria-hidden="true" size={18} />Capture</Button></CaptureSheet>
     </header>
 

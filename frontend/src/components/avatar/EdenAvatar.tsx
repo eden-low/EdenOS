@@ -133,7 +133,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled, p
       const next = !anchor && todayDock?.isConnected
         ? todayDockPlacement(viewport, rectOf(todayDock), obstacles)
         : !anchor && pageDockSelector ? pageDockPlacement(viewport, pageDock ? rectOf(pageDock) : null, obstacles)
-        : avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, reserveCapture, idleObstacles: anchor ? [] : obstacles })
+        : avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, idleObstacles: anchor ? [] : obstacles })
       setPlacement((current) => {
         // Preserve the last safe coordinates while hidden, so a later return never flies from (0, 0).
         if (next.mode === 'hidden') return current.mode === 'hidden' ? current : { ...current, mode: 'hidden' }
