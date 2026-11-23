@@ -1,0 +1,57 @@
+{
+  "id": "eden-iching",
+  "version": "4D-static-v1",
+  "source": {
+    "file": "eden-iching-source.png",
+    "suppliedFile": "ChatGPT 图像 2026年11月21日 06_36_38-2.png",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 2594543,
+    "sha256": "e9a9f418aee8f7ca3df170aa822c3a93c8f14d6c10938bffe9276c8647a5b22e",
+    "verifiedIdentity": "iching"
+  },
+  "derivation": {
+    "crop": {
+      "left": 24,
+      "top": 0,
+      "width": 987,
+      "height": 1536
+    },
+    "padding": 8,
+    "fit": "contain",
+    "position": "bottom",
+    "mirror": false,
+    "alphaCleanup": {
+      "maximumClearedAlpha": 3,
+      "clearedPixels": 29456
+    },
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-iching-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 86192,
+    "sha256": "5fc3c0f31457a15e31e96920a0242101ae2c34501dae120888da3efa429b0c5d",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "dedicatedActionFrames": false,
+    "capturePerch": false
+  }
+}

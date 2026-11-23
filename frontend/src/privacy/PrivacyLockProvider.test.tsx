@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PrivacyLockProvider } from './PrivacyLockProvider'
 import { usePrivacyLock } from './usePrivacyLock'
 import * as lockService from './privacyLock'
+import { AboutInteractiveAvatar } from '../about/AboutInteractiveAvatar'
+import { FinancialAmount } from '../components/privacy/FinancialAmount'
 
 vi.mock('./privacyLock', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./privacyLock')>()
@@ -38,6 +40,35 @@ describe('PrivacyLockProvider', () => {
     expect(screen.getByText('locked')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Unlock' }))
     await waitFor(() => expect(screen.getByText('unlocked')).toBeTruthy())
+  })
+
+  it('allows all avatar gestures without unmasking money or bypassing the PIN dialog', async () => {
+    vi.mocked(lockService.readPrivacyLockRecord).mockReturnValue(record)
+    vi.mocked(lockService.verifyPrivacyPin).mockClear()
+    vi.mocked(lockService.verifyPrivacyPin).mockImplementation(async (pin) => pin === '123456')
+    render(<PrivacyLockProvider><Harness /><FinancialAmount amountSen={1250} /><AboutInteractiveAvatar /></PrivacyLockProvider>)
+    fireEvent.load(document.querySelector('[data-avatar-art="wave"]')!)
+    for (const [label, action] of [['微笑', 'smile'], ['思考', 'think'], ['挥手', 'wave']]) {
+      const button = screen.getByRole('button', { name: label }) as HTMLButtonElement
+      expect(button.disabled).toBe(false)
+      fireEvent.click(button)
+      expect(document.querySelector('.about-avatar-stage')?.getAttribute('data-action')).toBe(action)
+      expect(screen.getByText('locked')).toBeTruthy()
+      expect(screen.queryByText('RM 12.50')).toBeNull()
+    }
+    expect(lockService.verifyPrivacyPin).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock financial value' }))
+    const input = screen.getByLabelText('PIN')
+    await waitFor(() => expect((screen.getByRole('button', { name: '挥手', hidden: true }) as HTMLButtonElement).disabled).toBe(true))
+    expect(document.querySelector('.about-avatar-stage')?.getAttribute('data-action')).toBe('idle')
+    fireEvent.change(input, { target: { value: '654321' } })
+    fireEvent.submit(input.closest('form')!)
+    expect((await screen.findByRole('alert')).textContent).toBe('That PIN is incorrect.')
+    expect(screen.queryByText('RM 12.50')).toBeNull()
+    fireEvent.change(input, { target: { value: '123456' } })
+    fireEvent.submit(input.closest('form')!)
+    await waitFor(() => expect(screen.getByText('RM 12.50')).toBeTruthy())
+    await waitFor(() => expect((screen.getByRole('button', { name: '挥手' }) as HTMLButtonElement).disabled).toBe(false))
   })
 
   it('masks the numeric PIN in the unlock dialog and preserves valid and invalid submit behavior', async () => {

@@ -1,0 +1,48 @@
+{
+  "id": "eden-treasurer",
+  "version": "4A-static-v1",
+  "source": {
+    "file": "treasurer-eden-abacus-source.png",
+    "width": 992,
+    "height": 1586,
+    "bytes": 1295438,
+    "sha256": "beeeac4d3a2b8a96119f6d8a84e83492f105fef7db01e1d26bda7b0e8450cf42"
+  },
+  "derivation": {
+    "crop": {
+      "left": 120,
+      "top": 0,
+      "width": 872,
+      "height": 1586
+    },
+    "fit": "contain",
+    "position": "centre",
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-treasurer-abacus-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 62760,
+    "sha256": "681f00353d7c9df19dd8f18d60964985e4d5a51b6df42e22eab0c1518b38abb3",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "abacusIdle": false
+  }
+}

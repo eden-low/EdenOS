@@ -24,7 +24,7 @@ export function WeeklyReflection({ weekKey }: { weekKey: string }) {
       <div className="grid gap-4 md:grid-cols-2"><ReflectionField label="What went well?" value={reflection.wentWell} onChange={(wentWell) => setReflection((current) => ({ ...current, wentWell }))} /><ReflectionField label="What should improve?" value={reflection.improve} onChange={(improve) => setReflection((current) => ({ ...current, improve }))} /></div>
       <ReflectionField label="What is next week's focus?" value={reflection.nextFocus} onChange={(nextFocus) => setReflection((current) => ({ ...current, nextFocus }))} />
       {status === 'error' && <p role="alert" className="text-sm text-[var(--danger)]">The reflection could not be loaded or saved. Try again.</p>}
-      <div className="flex justify-end"><Button type="submit" disabled={status === 'saving'}>{status === 'saving' ? 'Saving...' : 'Save reflection'}</Button></div>
+      <div className="flex justify-end"><Button data-avatar-priority type="submit" disabled={status === 'saving'}>{status === 'saving' ? 'Saving...' : 'Save reflection'}</Button></div>
     </form>}
   </section>
 }

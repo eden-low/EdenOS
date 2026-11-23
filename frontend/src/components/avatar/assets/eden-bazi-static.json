@@ -1,0 +1,57 @@
+{
+  "id": "eden-bazi",
+  "version": "4D-static-v1",
+  "source": {
+    "file": "eden-bazi-source.png",
+    "suppliedFile": "ChatGPT 图像 2026年11月21日 06_36_39-3.png",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 2688794,
+    "sha256": "9979837b82bb03252d653c2769d509fd352fb8ec5157ea17bf957eae017b246e",
+    "verifiedIdentity": "bazi"
+  },
+  "derivation": {
+    "crop": {
+      "left": 24,
+      "top": 0,
+      "width": 987,
+      "height": 1536
+    },
+    "padding": 8,
+    "fit": "contain",
+    "position": "bottom",
+    "mirror": false,
+    "alphaCleanup": {
+      "maximumClearedAlpha": 3,
+      "clearedPixels": 16919
+    },
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-bazi-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 88446,
+    "sha256": "21adfcdbb34d51802bc807664e246f20f3f2dc1e9d4654393069f9c36b834704",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "dedicatedActionFrames": false,
+    "capturePerch": false
+  }
+}

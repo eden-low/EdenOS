@@ -1,12 +1,13 @@
-import { CalendarDays, ClipboardCheck, Dumbbell, Layers3, Menu, Plus, ReceiptText, Sparkles, Tv, UserRound } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, Dumbbell, Layers3, Menu, Plus, ReceiptText, Sparkles, Tv, UserRound, Orbit } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { AccountDialog } from '../account/AccountDialog'
 import { CaptureSheet } from '../capture/CaptureSheet'
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { triggerPressFeedback } from '../ui/pressFeedback'
 import { usePrivacyLock } from '../../privacy/usePrivacyLock'
+import './navigation.css'
 
-export type AppPage = 'today' | 'expenses' | 'exercise' | 'records' | 'review' | 'anime' | 'cosmos'
+export type AppPage = 'today' | 'expenses' | 'exercise' | 'records' | 'review' | 'anime' | 'cosmos' | 'about'
 
 const navItems: Array<{ label: string; icon: typeof CalendarDays; page: AppPage }> = [
   { label: 'Today', icon: CalendarDays, page: 'today' },
@@ -16,12 +17,13 @@ const navItems: Array<{ label: string; icon: typeof CalendarDays; page: AppPage 
   { label: 'Review', icon: ClipboardCheck, page: 'review' },
   { label: 'Anime', icon: Tv, page: 'anime' },
   { label: 'Cosmos', icon: Sparkles, page: 'cosmos' },
+  { label: 'About Eden', icon: Orbit, page: 'about' },
 ]
 
 export function DesktopNavigation({ activePage, onNavigate }: { activePage: AppPage; onNavigate: (page: AppPage) => void }) {
-  return <aside aria-label="Eden OS controls" className="fixed bottom-5 left-5 top-5 z-40 hidden w-20 flex-col items-center rounded-[1.75rem] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-4 shadow-[var(--shadow-soft)] lg:flex">
+  return <aside aria-label="Eden OS controls" className="desktop-nav fixed bottom-5 left-5 top-5 z-40 hidden w-20 flex-col items-center rounded-[1.75rem] border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-4 shadow-[var(--shadow-soft)] lg:flex">
     <div aria-label="Eden OS" className="grid size-11 place-items-center rounded-2xl bg-[var(--accent-primary)] text-sm font-bold text-white shadow-[var(--accent-shadow)]">E</div>
-    <nav aria-label="Primary navigation" className="absolute top-1/2 flex -translate-y-1/2 flex-col gap-1">
+    <nav aria-label="Primary navigation" className="desktop-nav-items absolute top-1/2 flex -translate-y-1/2 flex-col gap-1">
       {navItems.map(({ label, icon: Icon, page }) => { const active = page === activePage; return <div key={page} className="group relative"><button type="button" aria-label={label} aria-current={active ? 'page' : undefined} onClick={() => onNavigate(page)} className={`grid size-11 place-items-center rounded-2xl outline-none transition-colors focus-visible:ring-3 focus-visible:ring-[var(--focus)] ${active ? 'bg-[var(--accent-wash)] text-[var(--accent-soft)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-secondary)]'}`}><Icon aria-hidden="true" size={19} strokeWidth={active ? 2.1 : 1.7} /></button><span className="pointer-events-none absolute left-[calc(100%+0.65rem)] top-1/2 z-50 -translate-y-1/2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">{label}</span></div> })}
     </nav>
     <AccountDialog><button type="button" aria-label="Account" className="mt-auto grid size-11 place-items-center rounded-2xl text-[var(--text-muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]"><UserRound aria-hidden="true" size={20} /></button></AccountDialog>
@@ -48,6 +50,6 @@ export function MobileNavigation({ activePage, onNavigate }: { activePage: AppPa
         {privacy.enabled && <button type="button" onClick={() => { if (privacy.locked) privacy.requestUnlock(); else privacy.lock(); setOpen(false) }} className="mt-auto min-h-11 rounded-xl border border-[var(--border-subtle)] px-3 text-left text-sm font-semibold text-[var(--text-secondary)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-3 focus-visible:ring-[var(--focus)]">{privacy.locked ? 'Unlock financial values' : 'Lock financial values'}</button>}
       </DialogContent>
     </Dialog>
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(0.8rem+env(safe-area-inset-bottom))] z-40 flex justify-center lg:hidden"><CaptureSheet><button {...triggerPressFeedback} type="button" aria-label="Capture something" className="press-feedback pointer-events-auto grid size-16 place-items-center rounded-[1.35rem] border border-white/10 bg-[var(--accent-primary)] text-white shadow-[var(--accent-shadow)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]"><Plus aria-hidden="true" size={27} strokeWidth={2.2} /></button></CaptureSheet></div>
+    {activePage === 'today' && <div data-global-capture className="pointer-events-none fixed inset-x-0 bottom-[calc(0.8rem+env(safe-area-inset-bottom))] z-40 flex justify-center lg:hidden"><CaptureSheet><button {...triggerPressFeedback} type="button" aria-label="Capture something" className="press-feedback pointer-events-auto grid size-16 place-items-center rounded-[1.35rem] border border-white/10 bg-[var(--accent-primary)] text-white shadow-[var(--accent-shadow)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]"><Plus aria-hidden="true" size={27} strokeWidth={2.2} /></button></CaptureSheet></div>}
   </>
 }

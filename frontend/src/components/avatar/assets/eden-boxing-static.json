@@ -1,0 +1,54 @@
+{
+  "id": "eden-boxing",
+  "version": "4C-static-v1",
+  "source": {
+    "file": "炫彩拳击少年伊甸.png",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 1922407,
+    "sha256": "f01340383fe59707c967627c45d953b7279453f3b55bac5318dfdf911b6f6863"
+  },
+  "derivation": {
+    "crop": {
+      "left": 83,
+      "top": 23,
+      "width": 833,
+      "height": 1468
+    },
+    "fit": "contain",
+    "position": "bottom",
+    "mirror": false,
+    "alphaCleanup": {
+      "maximumClearedAlpha": 3,
+      "clearedPixels": 14070
+    },
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-boxing-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 71196,
+    "sha256": "145c988a21f9f9edfe6b815fb9eafdb45f3e2fb394c6bb48d0024734bdf406b8",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "dedicatedIdleFrames": false,
+    "capturePerch": false
+  }
+}

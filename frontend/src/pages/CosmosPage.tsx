@@ -8,6 +8,8 @@ import { shuffleTarotDeck } from '../cosmos/tarotShuffle'
 import type { TarotCard } from '../cosmos/tarotDeck'
 import type { CosmosReadingSnapshot, CosmosSnapshotMap, CosmosSystemId } from '../cosmos/cosmosAiTypes'
 import { tarotSnapshot } from '../cosmos/tarotSnapshot'
+import { useCosmosSelection, type CosmosExperience } from '../cosmos/cosmosSelection'
+import { CosmosSelectionBoundary } from '../cosmos/CosmosSelectionProvider'
 import './cosmos.css'
 
 const BaZiExperience = lazy(() => import('../cosmos/BaZiExperience').then((module) => ({ default: module.BaZiExperience })))
@@ -17,7 +19,6 @@ const AskCosmosExperience = lazy(() => import('../cosmos/AskCosmosExperience').t
 
 type ReadingMode = 'single' | 'three'
 type ReadingStage = 'shuffle' | 'select' | 'reveal'
-type CosmosExperience = CosmosSystemId | 'ai'
 
 const cosmosExperiences: { id: CosmosExperience; chinese: string; english: string }[] = [
   { id: 'tarot', chinese: '塔罗', english: 'Tarot' },
@@ -36,7 +37,11 @@ const spreadPositions = [
 ] as const
 
 export function CosmosPage() {
-  const [experience, setExperience] = useState<CosmosExperience>('tarot')
+  return <CosmosSelectionBoundary><CosmosPageContent /></CosmosSelectionBoundary>
+}
+
+function CosmosPageContent() {
+  const [experience, setExperience] = useCosmosSelection()
   const tabRefs = useRef<Partial<Record<CosmosExperience, HTMLButtonElement | null>>>({})
   const [mode, setMode] = useState<ReadingMode>('single')
   const [stage, setStage] = useState<ReadingStage>('shuffle')

@@ -1,27 +1,36 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
-import { DesktopNavigation, MobileNavigation } from './Navigation'
+import { DesktopNavigation, MobileNavigation, type AppPage } from './Navigation'
 
 vi.mock('../capture/CaptureSheet', () => ({ CaptureSheet: ({ children }: { children: ReactNode }) => <>{children}</> }))
 vi.mock('../account/AccountDialog', () => ({ AccountDialog: ({ children }: { children: ReactNode }) => <>{children}</> }))
 
 describe('Mobile Navigation V2', () => {
+  it.each<AppPage>(['today', 'expenses', 'exercise', 'records', 'review', 'anime', 'cosmos', 'about'])('renders the global Capture and its wrapper only on Today: %s', (page) => {
+    const { container, rerender } = render(<MobileNavigation activePage="today" onNavigate={vi.fn()} />)
+    rerender(<MobileNavigation activePage={page} onNavigate={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Capture something' }) !== null).toBe(page === 'today')
+    expect(container.querySelector('[data-global-capture]') !== null).toBe(page === 'today')
+    rerender(<MobileNavigation activePage="today" onNavigate={vi.fn()} />)
+    expect(screen.getAllByRole('button', { name: 'Capture something' })).toHaveLength(1)
+  })
+
   it('keeps only Capture at the bottom and exposes the approved app drawer', async () => {
     const navigate = vi.fn()
     render(<MobileNavigation activePage="today" onNavigate={navigate} />)
     expect(screen.getAllByRole('button', { name: 'Capture something' })).toHaveLength(1)
     fireEvent.click(screen.getByRole('button', { name: 'Open apps' }))
     const drawer = await screen.findByRole('dialog', { name: 'Apps' })
-    for (const label of ['Today', 'Expenses', 'Exercise', 'Records', 'Review', 'Anime', 'Cosmos', 'Account']) expect(drawer.textContent).toContain(label)
-    expect(drawer.querySelectorAll('nav button')).toHaveLength(8)
+    for (const label of ['Today', 'Expenses', 'Exercise', 'Records', 'Review', 'Anime', 'Cosmos', 'About Eden', 'Account']) expect(drawer.textContent).toContain(label)
+    expect(drawer.querySelectorAll('nav button')).toHaveLength(9)
     fireEvent.click(screen.getByRole('button', { name: 'Expenses' }))
     expect(navigate).toHaveBeenCalledWith('expenses')
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Apps' })).toBeNull())
     fireEvent.click(screen.getByRole('button', { name: 'Open apps' }))
     await screen.findByRole('dialog', { name: 'Apps' })
-    fireEvent.click(screen.getByRole('button', { name: 'Cosmos' }))
-    expect(navigate).toHaveBeenCalledWith('cosmos')
+    fireEvent.click(screen.getByRole('button', { name: 'About Eden' }))
+    expect(navigate).toHaveBeenCalledWith('about')
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Apps' })).toBeNull())
   })
 
@@ -44,7 +53,9 @@ describe('Mobile Navigation V2', () => {
     const navigate = vi.fn()
     render(<DesktopNavigation activePage="exercise" onNavigate={navigate} />)
     expect(screen.getByRole('button', { name: 'Exercise' }).getAttribute('aria-current')).toBe('page')
-    expect(screen.getByRole('navigation', { name: 'Primary navigation' }).querySelectorAll('button')).toHaveLength(7)
+    expect(screen.getByRole('navigation', { name: 'Primary navigation' }).querySelectorAll('button')).toHaveLength(8)
+    fireEvent.click(screen.getByRole('button', { name: 'About Eden' }))
+    expect(navigate).toHaveBeenCalledWith('about')
     expect(screen.getByRole('button', { name: 'Cosmos' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Cosmos' }))
     expect(navigate).toHaveBeenCalledWith('cosmos')
