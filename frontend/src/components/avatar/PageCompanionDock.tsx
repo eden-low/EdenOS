@@ -1,7 +1,7 @@
 import type { AppPage } from '../layout/Navigation'
 import './pageCompanion.css'
 
-export type CompanionPage = Extract<AppPage, 'expenses' | 'exercise' | 'review' | 'cosmos'>
+export type CompanionPage = Extract<AppPage, 'expenses' | 'exercise' | 'review' | 'cosmos' | 'records' | 'anime'>
 
 // Reserve content-free space in each page introduction, never over a card or form.
 export function PageCompanionDock({ page }: { page: CompanionPage }) {

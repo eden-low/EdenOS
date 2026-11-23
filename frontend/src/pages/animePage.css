@@ -1,0 +1,44 @@
+.anime-page { container: anime-content / inline-size; }
+.anime-page-header { padding-bottom: 1.5rem; }
+.anime-page-header .page-companion-copy { overflow-wrap: anywhere; }
+.anime-page-header p:last-child { max-width: 54ch; line-height: 1.75; }
+.anime-page .anime-home-overview { margin-top: .5rem; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+.anime-page .anime-section { margin-top: clamp(2rem, 4vw, 3rem); }
+.anime-page :is(.anime-tracking, .anime-catalogue) { padding-top: clamp(1.5rem, 3vw, 2.25rem); }
+.anime-page .anime-tracking-header { flex-wrap: wrap; align-items: start; }
+.anime-page .anime-tracking-header > div { flex: 1 1 12rem; min-width: 0; }
+.anime-page .anime-tracking-header button { max-width: 100%; white-space: normal; }
+.anime-page .anime-tracking-filters { flex-wrap: wrap; overflow: visible; gap: .5rem; }
+.anime-page .anime-scroll { padding: .4rem; }
+.anime-page .anime-poster-grid { grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: stretch; }
+.anime-page .anime-poster-card { display: flex; flex-direction: column; width: 100%; height: 100%; border-radius: 1.15rem; }
+.anime-page .anime-poster-card > div:first-child { width: 100%; flex: 0 0 auto; }
+.anime-page .anime-poster-copy { flex: 1; width: 100%; padding: .9rem; }
+.anime-page .anime-poster-copy h3 { min-height: 3em; line-height: 1.5; overflow-wrap: anywhere; }
+.anime-page .anime-poster-copy p { line-height: 1.6; overflow-wrap: anywhere; }
+.anime-page .anime-poster-card:hover { border-color: var(--border-strong); }
+.anime-page .anime-tracking-title { min-height: 3em; line-height: 1.5; overflow-wrap: anywhere; }
+.anime-page .anime-tracking-poster { border-radius: 1rem; }
+.anime-page .anime-secondary-filters { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: .65rem; }
+.anime-page .anime-secondary-filters > * { min-width: 0; max-width: 100%; }
+.anime-page .anime-state-card { padding: clamp(1.5rem, 4vw, 2.5rem); line-height: 1.75; }
+.anime-page .anime-featured-copy h2 { font-size: clamp(2rem, 3.5vw, 3rem); line-height: 1.15; overflow-wrap: anywhere; }
+.anime-page .anime-featured-copy button { max-width: 100%; white-space: normal; line-height: 1.5; }
+/* Readable captions live under the image; the featured title retains immersion. */
+.anime-page .anime-resume-card { min-width: 0; aspect-ratio: auto; padding-top: 56.25%; }
+.anime-page .anime-resume-cover { inset: 0 0 auto; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.anime-page .anime-resume-shade { display: none; }
+.anime-page .anime-resume-copy { position: relative; inset: auto; background: var(--surface-primary); color: var(--text-primary); }
+.anime-page .anime-resume-play { background: var(--accent-wash); color: var(--accent-soft); }
+.anime-page .anime-resume-meta { color: var(--text-secondary); }
+.anime-page .anime-resume-track { background: var(--surface-secondary); }
+.anime-page .anime-resume-track > span { background: var(--accent-soft); }
+.anime-page button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.anime-page :is(input, select):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+@container anime-content (min-width: 16rem) { .anime-page .anime-poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container anime-content (min-width: 32rem) { .anime-page .anime-poster-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container anime-content (min-width: 44rem) { .anime-page .anime-poster-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@container anime-content (min-width: 68rem) { .anime-page .anime-poster-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@container anime-content (min-width: 62rem) { .anime-page .anime-home-overview { grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); } }
+@container anime-content (width < 18rem) { .anime-page-header { grid-template-columns: minmax(0, 1fr); } .anime-page-header .page-companion-landing { justify-self: end; } }
+@media (prefers-reduced-motion: reduce) { .anime-page *, .anime-page *::before, .anime-page *::after { animation: none !important; transition: none !important; scroll-behavior: auto; } }

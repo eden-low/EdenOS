@@ -1,0 +1,33 @@
+.records-page { container: records-content / inline-size; }
+.records-header { align-items: end; }
+.records-header .page-companion-copy { overflow-wrap: anywhere; }
+.records-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr)); overflow: visible; width: 100%; gap: .25rem; margin-top: 1.75rem; background: var(--surface-primary); }
+.records-filters button { flex: 0 1 auto; }
+.records-filters button:focus-visible, .records-row-button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.records-day { position: relative; }
+.records-date-heading { margin-bottom: .75rem; }
+.records-date-heading h2 { font-size: 1rem; line-height: 1.5; letter-spacing: -.015em; }
+.records-date-heading > span { opacity: .65; }
+.records-row-button { transition: background-color 140ms ease-out; }
+.record-row { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: .45rem 1rem; align-items: start; padding: 1rem .35rem; min-width: 0; }
+.record-icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; margin-top: .2rem; border-radius: .8rem; }
+.record-copy { min-width: 0; }
+.record-meta { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.record-domain { color: var(--text-muted); font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.record-meta time { color: var(--text-muted); font-size: .75rem; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.record-title { margin-top: .3rem; color: var(--text-primary); font-size: .9375rem; font-weight: 600; line-height: 1.55; overflow-wrap: anywhere; }
+.record-detail { display: flex; flex-wrap: wrap; gap: .25rem .65rem; margin-top: .25rem; color: var(--text-secondary); font-size: .8125rem; line-height: 1.65; overflow-wrap: anywhere; }
+.record-value { grid-column: 2; min-width: 0; max-width: 100%; font-size: .9375rem; line-height: 1.5; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.record-value > * { max-width: 100%; overflow-wrap: anywhere; }
+.records-empty { padding-block: clamp(2.5rem, 6vw, 4rem); }
+.records-empty > p { max-width: 46ch; margin-inline: auto; line-height: 1.75; }
+@container records-content (min-width: 38rem) {
+  .records-filters { display: flex; width: fit-content; }
+  .record-row { grid-template-columns: 2.25rem minmax(0, 1fr) minmax(0, 11rem); gap: 1.25rem; padding: 1.15rem .65rem; }
+  .record-value { grid-column: 3; align-self: center; justify-self: end; }
+}
+@container records-content (width < 18rem) {
+  .records-header .page-companion-introduction { grid-template-columns: minmax(0, 1fr); }
+  .records-header .page-companion-landing { justify-self: end; }
+}
+@media (prefers-reduced-motion: reduce) { .records-row-button { transition: none; } }

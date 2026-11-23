@@ -36,3 +36,14 @@
 @media (max-height: 500px) and (orientation: landscape) { .about-wardrobe-character { height: 16rem; } }
 @media (prefers-reduced-transparency: reduce) { .about-wardrobe-character { background: var(--surface-primary); } .about-wardrobe-halo { background: none; } }
 @media (forced-colors: active) { .about-wardrobe-halo { display: none; } .about-wardrobe-character, .about-wardrobe-grid button, .about-wardrobe-step button { border-color: ButtonText; } .about-wardrobe-grid button[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -4px; } }
+
+.about-wardrobe-layout { gap: clamp(1.5rem, 3vw, 2.5rem); }
+.about-wardrobe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.about-wardrobe-grid button { gap: .5rem; padding: .9rem; }
+.about-wardrobe-card-top { font-size: .75rem; }
+.about-wardrobe-card-name { font-size: .875rem; }
+.about-wardrobe-card-english { font-size: .75rem; line-height: 1.6; }
+.about-wardrobe-status { font-size: .8125rem; }
+.about-wardrobe-description { line-height: 1.9; }
+@container about-content (min-width: 38rem) { .about-wardrobe-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container about-content (width < 18rem) { .about-wardrobe-grid { grid-template-columns: minmax(0, 1fr); } }
