@@ -45,6 +45,25 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
   const [placement, setPlacement] = useState<AvatarPlacement>({ left: 0, top: 0, width: 0, height: 0, mode: 'hidden' })
   const [occluded, setOccluded] = useState(false)
   const open = Boolean(anchor)
+  const [host] = useState(() => {
+    const node = document.createElement('div')
+    node.style.display = 'contents'
+    return node
+  })
+  const [documentHome, setDocumentHome] = useState<HTMLElement | null>(null)
+
+  // Move one stable portal host, not the sprite subtree: blink phase and identity survive.
+  // Native page layout moves idle Eden with scrolling; Capture/return still use fixed coordinates.
+  useLayoutEffect(() => {
+    const home = reserveCapture && !anchor && state === 'idle'
+      ? document.querySelector<HTMLElement>('[data-today-avatar-dock]') : null
+    const parent = home ?? document.body
+    if (host.parentElement !== parent) parent.appendChild(host)
+    // Synchronize the external DOM host before paint, including the fallback when no dock exists.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setDocumentHome(home)
+  }, [host, reserveCapture, anchor, state])
+  useLayoutEffect(() => () => { host.remove() }, [host])
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -142,12 +161,15 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
   const visible = !occluded && !anchor?.suspended && placement.mode !== 'hidden'
   // Layout/collisions can hide the standing avatar; only an open Capture may select its perch.
   const perched = open && (state === 'perched' || reduced)
-  const style = useMemo(() => ({ left: placement.left, top: placement.top, width: placement.width, height: placement.height }), [placement])
+  const docked = Boolean(documentHome && !anchor && state === 'idle')
+  const style = useMemo(() => docked
+    ? { position: 'absolute' as const, left: 0, top: 0, width: '100%', height: '100%' }
+    : { position: 'fixed' as const, left: placement.left, top: placement.top, width: placement.width, height: placement.height }, [docked, placement])
   return createPortal(<>
     <div ref={probe} className="eden-avatar-safe-area" aria-hidden="true" />
     <div ref={element} className="eden-avatar" aria-hidden="true" inert data-state={state} data-sheet={open || undefined}
       data-reduced={reduced || undefined} data-visible={visible} style={style}>
       <AvatarAppearance avatarId={avatarId} motionEnabled={motionEnabled} faceInward={corner === 'left'} perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
     </div>
-  </>, document.body)
+  </>, host)
 }

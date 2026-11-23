@@ -16,18 +16,18 @@ export function DashboardHeader({
 }) {
   return (
     <header className="dashboard-hero py-2 sm:py-3">
-      <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+      <div className="today-header-layout flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div className="today-landing-introduction">
-          <div className="min-w-0">
-          <p className="section-label">Today</p>
-          <div className="mt-2 inline-flex items-center gap-2 text-sm text-[var(--text-muted)]">
-            <CalendarDays aria-hidden="true" size={14} strokeWidth={1.8} />
-            {displayDate}
-          </div>
-          <h1 className="mt-3 max-w-3xl text-[clamp(2rem,5vw,3.35rem)] font-semibold leading-[1.02] tracking-[-0.055em] text-[var(--text-primary)]">
-            {greeting}
-          </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">Here is what matters today.</p>
+          <div className="today-greeting-copy min-w-0">
+            <p className="section-label">Today</p>
+            <div className="today-greeting-date mt-2 inline-flex items-center gap-2 text-sm text-[var(--text-muted)]">
+              <CalendarDays aria-hidden="true" size={14} strokeWidth={1.8} />
+              {displayDate}
+            </div>
+            <h1 className="today-greeting-title mt-3 max-w-3xl text-[clamp(2rem,5vw,3.35rem)] font-semibold leading-[1.02] tracking-[-0.055em] text-[var(--text-primary)]">
+              {greeting}
+            </h1>
+            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">Here is what matters today.</p>
           </div>
           <TodayAvatarDock />
         </div>

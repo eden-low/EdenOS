@@ -40,6 +40,12 @@ describe('Today V2', () => {
     animeRepository.countPublishedSince.mockResolvedValue(3)
   })
 
+  it('uses static Today atmosphere without mounting the large lotus artwork', async () => {
+    const { container } = await act(async () => render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />))
+    expect(container.querySelector('.today-atmosphere')?.getAttribute('aria-hidden')).toBe('true')
+    expect(container.querySelector('.today-lotus-backdrop')).toBeNull()
+  })
+
   it('changes layout only in explicit edit mode and can reset the UID-local preference', async () => {
     await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
     expect(screen.getByRole('button', { name: 'Open Finance' })).toBeTruthy()
@@ -77,7 +83,7 @@ describe('Today V2', () => {
     await act(async () => { ({ container, unmount } = render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />)) })
     expect(container.querySelector('.today-dashboard')).toBeTruthy()
     expect(container.querySelector('.today-dashboard-content')).toBeTruthy()
-    expect(container.querySelector('.today-lotus-backdrop')).toBeTruthy()
+    expect(container.querySelector('.today-atmosphere')).toBeTruthy()
     expect(container.querySelector('.dashboard-widget-grid')).toBeTruthy()
     expect(container.querySelectorAll('.dashboard-summary-widget')).toHaveLength(4)
     expect(container.querySelector('.dashboard-widget-finance')).toBeTruthy()
@@ -85,7 +91,7 @@ describe('Today V2', () => {
     expect(container.querySelector('.dashboard-widget-cosmos')).toBeTruthy()
     expect(container.querySelector('.dashboard-quick-capture')).toBeTruthy()
     unmount()
-    expect(document.querySelector('.today-lotus-backdrop')).toBeNull()
+    expect(document.querySelector('.today-atmosphere')).toBeNull()
   })
 
   it('never exposes dashboard finance amounts while Expense Privacy Lock is active', async () => {
