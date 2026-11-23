@@ -1,3 +1,4 @@
+import { PageCompanionDock } from '../components/avatar/PageCompanionDock'
 import { ArrowDownLeft, ArrowUpRight, CalendarDays, CircleAlert, FileInput } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { CashflowChart } from '../components/finance/CashflowChart'
@@ -64,7 +65,10 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
 
   return <Page>
     <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-      <div><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Finance</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">A clear monthly view of income, actual spending, available money, goals, and budgets.</p></div>
+      <div className="page-companion-introduction">
+        <div className="page-companion-copy"><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Finance</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">A clear monthly view of income, actual spending, available money, goals, and budgets.</p></div>
+        <PageCompanionDock page="expenses" />
+      </div>
       <div className="grid gap-3 sm:justify-items-end">
         <div className="flex flex-wrap gap-2"><Button onClick={() => openEntry('expense')}><ArrowUpRight size={17} />Add Expense</Button><Button variant="secondary" onClick={() => openEntry('income')}><ArrowDownLeft size={17} />Add Income</Button><Button variant="ghost" onClick={openBatchImport}><FileInput size={17} />Batch Import</Button></div>
         <div className="grid min-h-11 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 min-[360px]:flex min-[360px]:py-0">

@@ -1,3 +1,4 @@
+import { PageCompanionDock } from '../components/avatar/PageCompanionDock'
 import { lazy, Suspense, useCallback, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { Button } from '../components/ui/button'
 import { IChingExperience } from '../cosmos/IChingExperience'
@@ -133,9 +134,14 @@ function CosmosPageContent() {
 
   return <div className="cosmos-page mx-auto min-h-[calc(100dvh-6rem)] w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
     <header className="cosmos-header">
-      <p className="section-label">Eden OS · Cosmos</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Cosmos <span className="cosmos-title-zh">象数探索</span></h1>
-      <p className="mt-3 max-w-xl text-sm leading-7">先在设备上完成传统象征体验；如你明确同意，也可把所选衍生结果交给 Gemini 协助反思。</p>
+      <div className="page-companion-introduction">
+        <div className="page-companion-copy">
+          <p className="section-label">Eden OS · Cosmos</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Cosmos <span className="cosmos-title-zh">象数探索</span></h1>
+          <p className="mt-3 max-w-xl text-sm leading-7">先在设备上完成传统象征体验；如你明确同意，也可把所选衍生结果交给 Gemini 协助反思。</p>
+        </div>
+        <PageCompanionDock page="cosmos" />
+      </div>
     </header>
 
     <div className="cosmos-experience-tabs mt-6" role="tablist" aria-label="Cosmos experiences">
