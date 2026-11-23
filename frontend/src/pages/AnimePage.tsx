@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { PageCompanionDock } from '../components/avatar/PageCompanionDock'
+import './animePage.css'
 import { AnimeCard } from '../components/anime/AnimeCard'
 import { AnimeCatalogueStatusCard } from '../components/anime/AnimeDiscoverySections'
 import { AnimeFilters } from '../components/anime/AnimeFilters'
@@ -74,12 +76,12 @@ export function AnimePage() {
     } catch { setStatus('error') }
   }
 
-  return <div className="mx-auto w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
-    <header><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="page-title mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('anime')}</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">{t('subtitle')}</p></header>
+  return <div className="anime-page mx-auto w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
+    <header className="anime-page-header page-companion-introduction"><div className="page-companion-copy"><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="page-title mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('anime')}</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">{t('subtitle')}</p></div><PageCompanionDock page="anime" /></header>
     <AnimeCatalogueStatusCard repository={repository} />
     <AnimeMediaHome repository={repository} catalogueFallback={items[0]} onOpen={setSelected} />
     <AnimeTrackingPanel repository={repository} onOpen={setSelected} />
-    <section className="mt-10 border-t border-[var(--border-subtle)] pt-10" aria-labelledby="anime-catalogue-heading">
+    <section className="anime-catalogue anime-section mt-10 border-t border-[var(--border-subtle)] pt-10" aria-labelledby="anime-catalogue-heading">
       <p className="section-label text-[var(--accent-soft)]">Browse all</p>
       <h2 id="anime-catalogue-heading" className="mt-1 text-2xl font-semibold tracking-[-0.03em]">{t('catalogue')}</h2>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">Search and filter the full catalogue.</p>
@@ -87,9 +89,9 @@ export function AnimePage() {
         <SearchField label={t('search')} placeholder={t('search')} value={queryInput} onChange={changeSearchInput} onClear={clearSearch} clearLabel={t('clearSearch')} />
       </form>
       <AnimeFilters value={filters} onChange={setFilters} />
-      {status === 'loading' && items.length === 0 && <div aria-label="Loading Anime catalogue" className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">{Array.from({ length: 12 }, (_, index) => <div key={index} className="aspect-[2/3] animate-pulse rounded-2xl bg-[var(--surface-primary)]" />)}</div>}
-      {status === 'error' && <div role="alert" className="mt-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6"><p>{t('catalogueError')}</p><Button type="button" variant="secondary" className="mt-4" onClick={() => void loadFirst()}>{t('retry')}</Button></div>}
-      {status === 'ready' && items.length === 0 && <div className="mt-6 rounded-2xl border border-dashed border-[var(--border-subtle)] p-6 text-center sm:p-8">
+      {status === 'loading' && items.length === 0 && <div role="status" aria-busy="true" aria-label="Loading Anime catalogue" className="anime-poster-grid mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">{Array.from({ length: 12 }, (_, index) => <div key={index} className="aspect-[2/3] animate-pulse rounded-2xl bg-[var(--surface-primary)]" />)}</div>}
+      {status === 'error' && <div role="alert" className="anime-state-card mt-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-6"><p>{t('catalogueError')}</p><Button type="button" variant="secondary" className="mt-4" onClick={() => void loadFirst()}>{t('retry')}</Button></div>}
+      {status === 'ready' && items.length === 0 && <div className="anime-state-card mt-6 rounded-2xl border border-dashed border-[var(--border-subtle)] p-6 text-center sm:p-8">
         <p className="text-sm font-medium text-[var(--text-secondary)]">{search ? `${t('noSearchResults')} “${search}”` : t('noResults')}</p>
         {search && hasSecondaryFilters && <p className="mt-2 text-xs text-[var(--text-muted)]">{t('filtersMayRestrict')}</p>}
         {(search || hasSecondaryFilters) && <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -97,7 +99,7 @@ export function AnimePage() {
           {hasSecondaryFilters && <Button type="button" variant="secondary" onClick={clearSecondaryFilters}>{t('clearFilters')}</Button>}
         </div>}
       </div>}
-      {items.length > 0 && <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6"><>{items.map((anime) => <AnimeCard anime={anime} onOpen={setSelected} key={anime.externalId} />)}</></div>}
+      {items.length > 0 && <div className="anime-poster-grid mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6"><>{items.map((anime) => <AnimeCard anime={anime} onOpen={setSelected} key={anime.externalId} />)}</></div>}
       <div className="mt-6 flex flex-col items-center gap-3"><div aria-live="polite" className="text-center"><p className="section-label">{t('results')}</p><p className="mt-1 text-sm text-[var(--text-muted)]">{t('loaded')} {items.length} / {total}</p></div>{hasMore && <Button type="button" variant="secondary" onClick={() => void loadMore()} disabled={status === 'loading'}>{status === 'loading' ? t('loading') : `${t('loadMore')} (${animePageSize})`}</Button>}</div>
     </section>
     <AnimePlayerDialog target={selected} onClose={() => setSelected(null)} />

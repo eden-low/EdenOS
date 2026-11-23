@@ -48,7 +48,7 @@ export function AnimeMediaHome({ repository, catalogueFallback, onOpen }: {
   const railTitle = newItems.length ? 'New this week' : 'Latest updates'
 
   return <>
-    <div className="mt-6 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,2.35fr)_minmax(18rem,0.85fr)]">
+    <div className="anime-home-overview mt-6 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,2.35fr)_minmax(18rem,0.85fr)]">
       <AnimeHero selection={hero} loading={!hero && (newState === 'loading' || recentState === 'loading')} onOpen={onOpen} />
       <DiscoveryRail title={railTitle} items={railItems} state={newItems.length ? newState : recentState} onRetry={() => newItems.length ? setNewAttempt((value) => value + 1) : setRecentAttempt((value) => value + 1)} onOpen={onOpen} />
     </div>
@@ -67,9 +67,9 @@ function AnimeHero({ selection, loading, onOpen }: { selection: AnimeHeroSelecti
   const coverUrl = item.coverUrl
   const label = selection.kind === 'progress' ? 'Continue watching' : selection.kind === 'new' ? 'New this week' : selection.kind === 'recent' ? 'Recently updated' : 'From the catalogue'
   const target = { externalId: item.externalId, title: item.title, coverUrl: item.coverUrl, totalEpisodes: item.totalEpisodes }
-  return <section aria-label="Featured Anime" className={`relative min-h-72 min-w-0 overflow-hidden rounded-[1.75rem] border border-[var(--border-subtle)] shadow-[var(--shadow-soft)] sm:min-h-[20rem] ${coverUrl ? 'bg-black text-white' : 'bg-[var(--surface-primary)] text-[var(--text-primary)]'}`}>
+  return <section aria-label="Featured Anime" className={`anime-featured relative min-h-72 min-w-0 overflow-hidden rounded-[1.75rem] border border-[var(--border-subtle)] shadow-[var(--shadow-soft)] sm:min-h-[20rem] ${coverUrl ? 'bg-black text-white' : 'bg-[var(--surface-primary)] text-[var(--text-primary)]'}`}>
     {coverUrl && <><img src={coverUrl} alt="" className="absolute inset-0 size-full object-cover object-[center_28%] opacity-70" /><div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/68 to-black/20" /></>}
-    <div className="relative flex min-h-72 max-w-2xl flex-col justify-end p-6 sm:min-h-[20rem] sm:p-8 lg:p-10">
+    <div className="anime-featured-copy relative flex min-h-72 max-w-2xl flex-col justify-end p-6 sm:min-h-[20rem] sm:p-8 lg:p-10">
       <p className={`section-label ${coverUrl ? 'text-white/70' : 'text-[var(--accent-soft)]'}`}>{label}</p>
       <h2 className="mt-3 line-clamp-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{item.title}</h2>
       <p className={`mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm ${coverUrl ? 'text-white/76' : 'text-[var(--text-secondary)]'}`}>
@@ -99,7 +99,7 @@ function DiscoveryRail({ title, items, state, onRetry, onOpen }: { title: string
 
 export function ContinueWatchingRow({ items, onOpen }: { items: AnimeProgress[]; onOpen: (target: AnimePlayerTarget) => void }) {
   const watching = items.filter((item) => item.trackingStatus === 'watching').sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 6)
-  return <section className="mt-10 min-w-0" aria-labelledby="continue-watching-heading">
+  return <section className="anime-section mt-10 min-w-0" aria-labelledby="continue-watching-heading">
     <SectionHeading id="continue-watching-heading" eyebrow="Your queue" title="Continue Watching" />
     {watching.length === 0 ? <p className="mt-4 rounded-2xl border border-dashed border-[var(--border-subtle)] p-5 text-sm text-[var(--text-muted)]">Start a title from My List and it will appear here.</p> : <div data-testid="continue-watching-row" className="anime-scroll mt-4 grid snap-x snap-mandatory grid-flow-col auto-cols-[min(82vw,21rem)] gap-4 overflow-x-auto pb-3 sm:auto-cols-[20rem] xl:auto-cols-[21rem]">{watching.map((item) => <LandscapeProgressCard key={item.externalId} item={item} onOpen={onOpen} />)}</div>}
   </section>
@@ -107,19 +107,19 @@ export function ContinueWatchingRow({ items, onOpen }: { items: AnimeProgress[];
 
 function LandscapeProgressCard({ item, onOpen }: { item: AnimeProgress; onOpen: (target: AnimePlayerTarget) => void }) {
   const progress = item.totalEpisodes ? Math.min(100, Math.max(0, (item.currentEpisode / item.totalEpisodes) * 100)) : null
-  return <button type="button" aria-label={`Resume ${item.title}`} onClick={() => onOpen({ externalId: item.externalId, title: item.title, coverUrl: item.coverUrl, totalEpisodes: item.totalEpisodes })} className="group relative aspect-[16/9] snap-start overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-left shadow-[var(--shadow-soft)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]">
-    {item.coverUrl ? <img src={item.coverUrl} alt="" loading="lazy" className="absolute inset-0 size-full object-cover object-[center_30%] transition-transform duration-300 group-hover:scale-[1.03]" /> : <span className="absolute inset-0 grid place-items-center text-[var(--text-muted)]"><Film size={26} /></span>}
-    <span className="absolute inset-0 bg-gradient-to-t from-black/94 via-black/34 to-black/5" />
-    <span className="absolute inset-x-0 bottom-0 block p-4 text-white">
-      <span className="flex items-center gap-2"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-black"><Play size={15} fill="currentColor" /></span><strong className="line-clamp-1 min-w-0 text-base">{item.title}</strong></span>
-      <span className="mt-3 flex items-center justify-between gap-3 text-xs text-white/76"><span>Episode {item.currentEpisode}{item.totalEpisodes ? ` of ${item.totalEpisodes}` : ''}</span>{progress !== null && <span>{Math.round(progress)}%</span>}</span>
-      {progress !== null && <span className="mt-2 block h-1 overflow-hidden rounded-full bg-white/25"><span className="block h-full rounded-full bg-white" style={{ width: `${progress}%` }} /></span>}
+  return <button type="button" aria-label={`Resume ${item.title}`} onClick={() => onOpen({ externalId: item.externalId, title: item.title, coverUrl: item.coverUrl, totalEpisodes: item.totalEpisodes })} className="anime-resume-card group relative aspect-[16/9] snap-start overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-left shadow-[var(--shadow-soft)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)]">
+    {item.coverUrl ? <img src={item.coverUrl} alt="" loading="lazy" className="anime-resume-cover absolute inset-0 size-full object-cover object-[center_30%] transition-transform duration-300 group-hover:scale-[1.03]" /> : <span className="anime-resume-cover absolute inset-0 grid place-items-center text-[var(--text-muted)]"><Film size={26} /></span>}
+    <span className="anime-resume-shade absolute inset-0 bg-gradient-to-t from-black/94 via-black/34 to-black/5" />
+    <span className="anime-resume-copy absolute inset-x-0 bottom-0 block p-4 text-white">
+      <span className="flex items-center gap-2"><span className="anime-resume-play grid size-9 shrink-0 place-items-center rounded-full bg-white text-black"><Play size={15} fill="currentColor" /></span><strong className="line-clamp-2 min-w-0 text-base">{item.title}</strong></span>
+      <span className="anime-resume-meta mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-white/76"><span>Episode {item.currentEpisode}{item.totalEpisodes ? ` of ${item.totalEpisodes}` : ''}</span>{progress !== null && <span>{Math.round(progress)}%</span>}</span>
+      {progress !== null && <span className="anime-resume-track mt-2 block h-1 overflow-hidden rounded-full bg-white/25"><span className="block h-full rounded-full bg-white" style={{ width: `${progress}%` }} /></span>}
     </span>
   </button>
 }
 
 function RecentlyUpdatedRow({ items, state, onRetry, onOpen }: { items: AnimeSummary[]; state: LoadState; onRetry: () => void; onOpen: (target: AnimePlayerTarget) => void }) {
-  return <section className="mt-10 min-w-0" aria-label="Recently updated">
+  return <section className="anime-section mt-10 min-w-0" aria-label="Recently updated">
     <SectionHeading eyebrow="Catalogue activity" title="Recently Updated" />
     {state === 'loading' && items.length === 0 && <div aria-label="Loading recently updated Anime" className="mt-4 grid grid-flow-col auto-cols-[9.5rem] gap-3 overflow-hidden lg:grid-cols-6 lg:grid-flow-row">{Array.from({ length: 6 }, (_, index) => <div key={index} className="aspect-[2/3] animate-pulse rounded-2xl bg-[var(--surface-primary)]" />)}</div>}
     {state === 'error' && items.length === 0 && <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-4 text-sm"><span className="min-w-0 flex-1 text-[var(--text-secondary)]">Recently updated titles are temporarily unavailable.</span><Button type="button" variant="secondary" onClick={onRetry}><RefreshCw size={15} />Retry</Button></div>}

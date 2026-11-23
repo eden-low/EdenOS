@@ -15,13 +15,27 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 function pageFixture(page: AppPage) {
   return <RecordsContext.Provider value={{ drafts: [] } as unknown as RecordsContextValue}>
-    <EdenAvatarProvider enabled page={page}>{['expenses', 'exercise', 'review', 'cosmos'].includes(page) && <div data-page-avatar-dock={page} ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} />}<CaptureSheet key={page}><button>Page Capture</button></CaptureSheet></EdenAvatarProvider>
+    <EdenAvatarProvider enabled page={page}>{['expenses', 'exercise', 'review', 'cosmos', 'records', 'anime'].includes(page) && <div data-page-avatar-dock={page} ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} />}<CaptureSheet key={page}><button>Page Capture</button></CaptureSheet></EdenAvatarProvider>
   </RecordsContext.Provider>
 }
 function avatar() { return document.querySelector('.eden-avatar')! }
 async function measure() { await act(async () => { window.dispatchEvent(new Event('resize')); await new Promise((resolve) => setTimeout(resolve, 40)) }) }
 
 describe('Global avatar page and overlay scope', () => {
+  it.each<AppPage>(['records', 'anime'])('keeps %s in its content-free home and hides if the home disappears', async (page) => {
+    const view = render(pageFixture(page))
+    await measure()
+    const original = avatar()
+    expect(original.closest(`[data-page-avatar-dock="${page}"]`)).toBeTruthy()
+    expect((original as HTMLElement).style.position).toBe('absolute')
+    const dock = document.querySelector(`[data-page-avatar-dock="${page}"]`)!
+    dock.remove()
+    await measure()
+    expect(avatar()).toBe(original)
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    // Restore the detached home before React cleans up its own tree.
+    view.container.appendChild(dock)
+  })
   it('waits for a lazy C1 home, restores it, and never falls back over content when it disappears', async () => {
     let resolve!: (value: { default: () => React.ReactNode }) => void
     const LazyPage = lazy(() => new Promise<{ default: () => React.ReactNode }>((done) => { resolve = done }))
