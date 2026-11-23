@@ -86,7 +86,7 @@ function DailyWeatherForUser({ uid }: { uid: string }) {
   const attribution = weather ? weatherAttributions[weather.provider] : null
   const Icon = weather ? weatherIcons[weather.condition.kind] : CloudSun
   return (
-    <div role="region" aria-label="Weather" className="flex min-h-24 min-w-0 items-center gap-3 border-b border-[var(--border-subtle)] px-4 py-2 sm:min-h-28 sm:border-b-0 sm:border-r sm:px-5 sm:py-3">
+    <div role="region" aria-label="Weather" className="daily-weather flex min-h-24 min-w-0 items-center gap-3 border-b border-[var(--border-subtle)] px-4 py-2 sm:min-h-28 sm:border-b-0 sm:border-r sm:px-5 sm:py-3">
       <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--accent-blue-wash)] text-[var(--accent-soft)]">
         <Icon aria-hidden="true" size={19} />
       </span>

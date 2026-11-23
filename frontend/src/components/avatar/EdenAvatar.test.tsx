@@ -39,6 +39,30 @@ describe('Global avatar page and overlay scope', () => {
     expect(avatar().getAttribute('data-state')).toBe('idle')
   })
 
+  it('moves a stable Today portal between document home and Capture without remounting the sprite', async () => {
+    const view = render(<RecordsContext.Provider value={{ drafts: [] } as unknown as RecordsContextValue}>
+      <EdenAvatarProvider enabled><div data-today-avatar-dock /><CaptureSheet><button>Dock Capture</button></CaptureSheet></EdenAvatarProvider>
+    </RecordsContext.Provider>)
+    const dock = document.querySelector<HTMLElement>('[data-today-avatar-dock]')!
+    dock.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164)
+    await measure()
+    const original = avatar(), sprite = original.querySelector('.eden-avatar-art')
+    expect(original.parentElement?.parentElement).toBe(dock)
+    expect((original as HTMLElement).style.position).toBe('absolute')
+    fireEvent.click(screen.getByRole('button', { name: 'Dock Capture' }))
+    await waitFor(() => expect(avatar().getAttribute('data-state')).toBe('perched'), { timeout: 1500 })
+    expect(avatar()).toBe(original)
+    expect(avatar().querySelector('.eden-avatar-art')).toBe(sprite)
+    expect(original.parentElement?.parentElement).toBe(document.body)
+    expect((original as HTMLElement).style.position).toBe('fixed')
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    await waitFor(() => expect(avatar().getAttribute('data-state')).toBe('idle'))
+    expect(original.parentElement?.parentElement).toBe(dock)
+    expect(avatar().querySelector('.eden-avatar-art')).toBe(sprite)
+    view.unmount()
+    expect(document.querySelector('.eden-avatar')).toBeNull()
+  })
+
   it('cancels a Today Capture and its timers when changing page, including a return to Today', async () => {
     const view = render(pageFixture('today'))
     fireEvent.click(screen.getByRole('button', { name: 'Page Capture' }))

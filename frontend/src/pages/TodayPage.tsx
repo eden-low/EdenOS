@@ -11,7 +11,7 @@ import { CosmosTodayCard } from '../components/dashboard/CosmosTodayCard'
 import { TodaySummary } from '../components/dashboard/TodaySummary'
 import { WeeklyReviewCard } from '../components/dashboard/WeeklyReviewCard'
 import { DashboardEditor } from '../components/dashboard/DashboardEditor'
-import { LotusBackdrop } from '../components/dashboard/LotusBackdrop'
+import { TodayAtmosphere } from '../components/dashboard/TodayAtmosphere'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { createFirestoreAnimeRepository } from '../repositories/firestoreAnimeRepository'
 import { selectDashboardSummary } from '../selectors/dashboardSelectors'
@@ -104,7 +104,7 @@ export function TodayPage({ onNavigate, onOpenCommand }: { onNavigate: (page: Ap
   }
   return (
     <div className="core-page today-dashboard relative mx-auto w-full max-w-[76rem] px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-      <LotusBackdrop />
+      <TodayAtmosphere />
       <div className="today-dashboard-content relative z-1">
         <DashboardHeader greeting={dashboard.greeting} displayDate={dashboard.displayDate} onOpenCommand={onOpenCommand} />
         <TodaySummary

@@ -10,6 +10,7 @@ import { CosmosSelectionProvider } from '../../cosmos/CosmosSelectionProvider'
 import type { AvatarId } from './avatarRegistry'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
+import { todayDockPlacement } from './todayDockPlacement'
 import { isIdleAvatarObstacle } from './avatarObstacles'
 import './avatar.css'
 
@@ -44,6 +45,25 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
   const [placement, setPlacement] = useState<AvatarPlacement>({ left: 0, top: 0, width: 0, height: 0, mode: 'hidden' })
   const [occluded, setOccluded] = useState(false)
   const open = Boolean(anchor)
+  const [host] = useState(() => {
+    const node = document.createElement('div')
+    node.style.display = 'contents'
+    return node
+  })
+  const [documentHome, setDocumentHome] = useState<HTMLElement | null>(null)
+
+  // Move one stable portal host, not the sprite subtree: blink phase and identity survive.
+  // Native page layout moves idle Eden with scrolling; Capture/return still use fixed coordinates.
+  useLayoutEffect(() => {
+    const home = reserveCapture && !anchor && state === 'idle'
+      ? document.querySelector<HTMLElement>('[data-today-avatar-dock]') : null
+    const parent = home ?? document.body
+    if (host.parentElement !== parent) parent.appendChild(host)
+    // Synchronize the external DOM host before paint, including the fallback when no dock exists.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setDocumentHome(home)
+  }, [host, reserveCapture, anchor, state])
+  useLayoutEffect(() => () => { host.remove() }, [host])
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -66,6 +86,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
     let dirty = true
     let controls: Element[] = []
     let nativeMediaFullscreen = false
+    const todayDock = reserveCapture ? document.querySelector<HTMLElement>('[data-today-avatar-dock]') : null
     const invalidate = () => { dirty = true; if (!frame) frame = requestAnimationFrame(measure) }
     function measure() {
       frame = 0
@@ -92,7 +113,9 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
         const styles = getComputedStyle(control)
         return styles.visibility !== 'hidden' && styles.display !== 'none' && control.getClientRects().length > 0
       }).map(rectOf)
-      const next = avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, reserveCapture, idleObstacles: anchor ? [] : obstacles })
+      const next = !anchor && todayDock?.isConnected
+        ? todayDockPlacement(viewport, rectOf(todayDock), obstacles)
+        : avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, reserveCapture, idleObstacles: anchor ? [] : obstacles })
       setPlacement((current) => {
         // Preserve the last safe coordinates while hidden, so a later return never flies from (0, 0).
         if (next.mode === 'hidden') return current.mode === 'hidden' ? current : { ...current, mode: 'hidden' }
@@ -106,6 +129,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(invalidate)
     resize?.observe(document.documentElement)
     if (anchor) resize?.observe(anchor.sheet)
+    if (todayDock) resize?.observe(todayDock)
     window.addEventListener('resize', invalidate)
     window.addEventListener('scroll', invalidate, true)
     document.addEventListener('focusin', invalidate)
@@ -137,12 +161,15 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
   const visible = !occluded && !anchor?.suspended && placement.mode !== 'hidden'
   // Layout/collisions can hide the standing avatar; only an open Capture may select its perch.
   const perched = open && (state === 'perched' || reduced)
-  const style = useMemo(() => ({ left: placement.left, top: placement.top, width: placement.width, height: placement.height }), [placement])
+  const docked = Boolean(documentHome && !anchor && state === 'idle')
+  const style = useMemo(() => docked
+    ? { position: 'absolute' as const, left: 0, top: 0, width: '100%', height: '100%' }
+    : { position: 'fixed' as const, left: placement.left, top: placement.top, width: placement.width, height: placement.height }, [docked, placement])
   return createPortal(<>
     <div ref={probe} className="eden-avatar-safe-area" aria-hidden="true" />
     <div ref={element} className="eden-avatar" aria-hidden="true" inert data-state={state} data-sheet={open || undefined}
       data-reduced={reduced || undefined} data-visible={visible} style={style}>
       <AvatarAppearance avatarId={avatarId} motionEnabled={motionEnabled} faceInward={corner === 'left'} perched={perched} attentive={state === 'attentive'} still={reduced || !visible} />
     </div>
-  </>, document.body)
+  </>, host)
 }
