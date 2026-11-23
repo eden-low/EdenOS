@@ -46,3 +46,15 @@
 .finance-page .finance-card-heading > div { flex: 1 1 10rem; min-width: 0; }
 .finance-page .finance-card-heading > :is(a, button) { max-width: 100%; flex-shrink: 0; }
 .finance-page .finance-budget-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); }
+
+.finance-page .expense-donut-category { flex: 1 1 7rem; }
+.finance-page .expense-donut-category-value { max-width: 100%; margin-inline-start: auto; overflow-wrap: anywhere; }
+.finance-page .expense-donut-visual > div { padding-inline: .25rem; overflow-wrap: anywhere; }
+
+/* Enlarged text moves below the ring when the card cannot fit the original center label. */
+.finance-page .finance-donut { container-type: inline-size; }
+@container (width < 14rem) {
+  .finance-page .expense-donut-visual { aspect-ratio: auto; }
+  .finance-page .expense-donut-visual > svg { height: auto; aspect-ratio: 1; }
+  .finance-page .expense-donut-visual > div { position: static; margin-top: .75rem; }
+}
