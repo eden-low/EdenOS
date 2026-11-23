@@ -13,9 +13,13 @@ describe('Today document landing safety', () => {
   })
   it('hides when its home scrolls outside the safe viewport instead of overlapping content elsewhere', () => {
     expect(todayDockPlacement(view, { ...dock, top: -10 }).mode).toBe('hidden')
-    expect(todayDockPlacement(view, { ...dock, top: 600 }).mode).toBe('hidden')
+    expect(todayDockPlacement(view, { ...dock, top: 680 }).mode).toBe('hidden')
   })
-  it('keeps safe-area insets, the mobile Capture reserve and fixed/focused obstacles authoritative', () => {
+  it('does not hide a safe document home merely because it reaches the removed plus-button zone', () => {
+    expect(todayDockPlacement(view, { ...dock, top: 640 }).mode).toBe('full')
+    expect(todayDockPlacement({ ...view, safeBottom: 34 }, { ...dock, top: 640 }).mode).toBe('hidden')
+  })
+  it('keeps safe-area insets, the home indicator and fixed/focused obstacles authoritative', () => {
     expect(todayDockPlacement({ ...view, safeRight: 34 }, dock).mode).toBe('hidden')
     expect(todayDockPlacement(view, dock, [{ left: 280, top: 120, width: 40, height: 40 }]).mode).toBe('hidden')
     expect(todayDockPlacement({ ...view, height: 220 }, dock).mode).toBe('hidden')

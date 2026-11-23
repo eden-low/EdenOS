@@ -75,7 +75,7 @@ export function AnimePage() {
   }
 
   return <div className="mx-auto w-full max-w-[92rem] px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pt-8">
-    <header><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('anime')}</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">{t('subtitle')}</p></header>
+    <header><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="page-title mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('anime')}</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">{t('subtitle')}</p></header>
     <AnimeCatalogueStatusCard repository={repository} />
     <AnimeMediaHome repository={repository} catalogueFallback={items[0]} onOpen={setSelected} />
     <AnimeTrackingPanel repository={repository} onOpen={setSelected} />

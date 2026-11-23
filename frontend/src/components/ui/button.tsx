@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-[var(--accent-primary)] px-5 text-white shadow-[var(--accent-shadow)] hover:-translate-y-0.5 hover:bg-[var(--accent-soft)] hover:text-[var(--text-on-accent-soft)]',
+          'bg-[var(--accent-primary)] px-5 text-[var(--text-on-accent)] shadow-[var(--accent-shadow)] hover:-translate-y-0.5 hover:bg-[var(--accent-soft)] hover:text-[var(--text-on-accent-soft)]',
         ghost:
           'px-4 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]',
         secondary:
@@ -17,7 +17,7 @@ const buttonVariants = cva(
         danger:
           'border border-[var(--danger-border)] bg-[var(--danger-wash)] px-5 text-[var(--danger)] hover:bg-[var(--danger-wash-strong)]',
         icon:
-          'size-12 rounded-2xl bg-[var(--accent-primary)] text-white shadow-[var(--accent-shadow)] hover:-translate-y-0.5 hover:bg-[var(--accent-soft)] hover:text-[var(--text-on-accent-soft)]',
+          'size-12 rounded-2xl bg-[var(--accent-primary)] text-[var(--text-on-accent)] shadow-[var(--accent-shadow)] hover:-translate-y-0.5 hover:bg-[var(--accent-soft)] hover:text-[var(--text-on-accent-soft)]',
       },
     },
     defaultVariants: {
