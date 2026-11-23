@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { lazy, StrictMode, Suspense } from 'react'
+import { lazy, StrictMode, Suspense, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EdenAvatarProvider } from './EdenAvatar'
 import { PrivacyLockContext, unlockedPrivacyLock } from '../../privacy/privacyLockContext'
@@ -15,13 +15,40 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 function pageFixture(page: AppPage) {
   return <RecordsContext.Provider value={{ drafts: [] } as unknown as RecordsContextValue}>
-    <EdenAvatarProvider enabled page={page}><CaptureSheet key={page}><button>Page Capture</button></CaptureSheet></EdenAvatarProvider>
+    <EdenAvatarProvider enabled page={page}>{['expenses', 'exercise', 'review', 'cosmos'].includes(page) && <div data-page-avatar-dock={page} ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} />}<CaptureSheet key={page}><button>Page Capture</button></CaptureSheet></EdenAvatarProvider>
   </RecordsContext.Provider>
 }
 function avatar() { return document.querySelector('.eden-avatar')! }
 async function measure() { await act(async () => { window.dispatchEvent(new Event('resize')); await new Promise((resolve) => setTimeout(resolve, 40)) }) }
 
 describe('Global avatar page and overlay scope', () => {
+  it('waits for a lazy C1 home, restores it, and never falls back over content when it disappears', async () => {
+    let resolve!: (value: { default: () => React.ReactNode }) => void
+    const LazyPage = lazy(() => new Promise<{ default: () => React.ReactNode }>((done) => { resolve = done }))
+    let setHomeVisible!: (visible: boolean) => void
+    function LateHome() {
+      const [visible, setVisible] = useState(true)
+      setHomeVisible = setVisible
+      return visible ? <div data-page-avatar-dock="expenses" ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} /> : <p>Home removed</p>
+    }
+    const view = render(<StrictMode><EdenAvatarProvider enabled page="expenses"><Suspense fallback={<p>Opening Finance</p>}><LazyPage /></Suspense></EdenAvatarProvider></StrictMode>)
+    await measure()
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    const original = avatar(), sprite = original.querySelector('.eden-avatar-appearance')
+    await act(async () => { resolve({ default: LateHome }) })
+    await measure()
+    expect(avatar()).toBe(original)
+    expect(avatar().querySelector('.eden-avatar-appearance')).toBe(sprite)
+    expect(avatar().getAttribute('data-visible')).toBe('true')
+    expect((avatar() as HTMLElement).style.position).toBe('absolute')
+    act(() => setHomeVisible(false))
+    await measure()
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    view.unmount()
+    expect(document.querySelector('.eden-avatar')).toBeNull()
+    expect(document.querySelector('.eden-avatar-safe-area')).toBeNull()
+  })
+
   it.each<AppPage>(['exercise', 'records'])('keeps %s Capture hidden and standing, then restores idle', async (page) => {
     render(pageFixture(page))
     await measure()

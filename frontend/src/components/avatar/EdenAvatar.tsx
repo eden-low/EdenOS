@@ -11,6 +11,7 @@ import type { AvatarId } from './avatarRegistry'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
 import { todayDockPlacement } from './todayDockPlacement'
+import { pageDockPlacement } from './pageDockPlacement'
 import { isIdleAvatarObstacle } from './avatarObstacles'
 import './avatar.css'
 
@@ -33,11 +34,11 @@ function AvatarScene({ enabled, page, children }: { enabled: boolean; page: AppP
   const avatarId = page === 'exercise' && !exerciseForm ? null : selectAvatarForPage(page, exerciseForm ?? undefined, cosmosExperience)
   return <AvatarCaptureContext.Provider value={publish}>
     {children}
-    {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} motionEnabled={page === 'expenses' || page === 'records' || page === 'review'} />}
+    {enabled && avatarId && <EdenAvatar key={`avatar:${page}`} avatarId={avatarId} anchor={anchor} pageDockSelector={page === 'expenses' || page === 'exercise' || page === 'review' || page === 'cosmos' ? `[data-page-avatar-dock="${page}"]` : null} corner={page === 'review' ? 'left' : 'right'} reserveCapture={page === 'today'} motionEnabled={page === 'expenses' || page === 'records' || page === 'review'} />}
   </AvatarCaptureContext.Provider>
 }
 
-function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }: { avatarId: AvatarId; anchor: CaptureAnchor | null; corner: 'left' | 'right'; reserveCapture: boolean; motionEnabled: boolean }) {
+function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled, pageDockSelector }: { avatarId: AvatarId; anchor: CaptureAnchor | null; corner: 'left' | 'right'; reserveCapture: boolean; motionEnabled: boolean; pageDockSelector: string | null }) {
   const [state, dispatch] = useReducer(avatarTransition, 'idle')
   const [reduced, setReduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const element = useRef<HTMLDivElement>(null)
@@ -55,6 +56,21 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
   // Move one stable portal host, not the sprite subtree: blink phase and identity survive.
   // Native page layout moves idle Eden with scrolling; Capture/return still use fixed coordinates.
   useLayoutEffect(() => {
+    if (pageDockSelector) {
+      const selector = pageDockSelector
+      function syncHome() {
+        const home = !anchor && state === 'idle' ? document.querySelector<HTMLElement>(selector) : null
+        const parent = home ?? document.body
+        if (host.parentElement !== parent) parent.appendChild(host)
+        setDocumentHome(home)
+      }
+      syncHome()
+      // Lazy C1 pages can commit their home later; keep one sprite across that boundary.
+      const observer = new MutationObserver(syncHome)
+      observer.observe(document.body, { childList: true, subtree: true })
+      return () => observer.disconnect()
+    }
+    // Keep Today's accepted Capture/home lifecycle unchanged.
     const home = reserveCapture && !anchor && state === 'idle'
       ? document.querySelector<HTMLElement>('[data-today-avatar-dock]') : null
     const parent = home ?? document.body
@@ -62,7 +78,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
     // Synchronize the external DOM host before paint, including the fallback when no dock exists.
     // oxlint-disable-next-line react/set-state-in-effect
     setDocumentHome(home)
-  }, [host, reserveCapture, anchor, state])
+  }, [host, reserveCapture, anchor, state, pageDockSelector])
   useLayoutEffect(() => () => { host.remove() }, [host])
 
   useEffect(() => {
@@ -113,8 +129,10 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
         const styles = getComputedStyle(control)
         return styles.visibility !== 'hidden' && styles.display !== 'none' && control.getClientRects().length > 0
       }).map(rectOf)
+      const pageDock = pageDockSelector ? document.querySelector<HTMLElement>(pageDockSelector) : null
       const next = !anchor && todayDock?.isConnected
         ? todayDockPlacement(viewport, rectOf(todayDock), obstacles)
+        : !anchor && pageDockSelector ? pageDockPlacement(viewport, pageDock ? rectOf(pageDock) : null, obstacles)
         : avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, reserveCapture, idleObstacles: anchor ? [] : obstacles })
       setPlacement((current) => {
         // Preserve the last safe coordinates while hidden, so a later return never flies from (0, 0).
@@ -156,7 +174,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
       window.visualViewport?.removeEventListener('resize', invalidate)
       window.visualViewport?.removeEventListener('scroll', invalidate)
     }
-  }, [anchor, corner, reserveCapture])
+  }, [anchor, corner, reserveCapture, pageDockSelector])
 
   const visible = !occluded && !anchor?.suspended && placement.mode !== 'hidden'
   // Layout/collisions can hide the standing avatar; only an open Capture may select its perch.

@@ -1,3 +1,4 @@
+import { PageCompanionDock } from '../components/avatar/PageCompanionDock'
 import { ChevronLeft, ChevronRight, Dumbbell, PlayCircle, ReceiptText } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { FinancialAmount } from '../components/privacy/FinancialAmount'
@@ -35,9 +36,14 @@ export function WeeklyReviewPage() {
 
   return <div className="core-page mx-auto w-full max-w-[72rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
     <header className="py-1 sm:py-2">
-      <p className="section-label">Reflection</p>
-      <h1 className="mt-3 text-[clamp(2.25rem,6vw,4rem)] font-semibold leading-none tracking-[-0.055em] text-[var(--text-primary)]">Weekly Review</h1>
-      <p className="mt-3 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">Use the week’s confirmed records as context, then decide what comes next.</p>
+      <div className="page-companion-introduction page-companion-introduction-review">
+        <div className="page-companion-copy">
+          <p className="section-label">Reflection</p>
+          <h1 className="mt-3 text-[clamp(2.25rem,6vw,4rem)] font-semibold leading-none tracking-[-0.055em] text-[var(--text-primary)]">Weekly Review</h1>
+          <p className="mt-3 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">Use the week’s confirmed records as context, then decide what comes next.</p>
+        </div>
+        <PageCompanionDock page="review" />
+      </div>
     </header>
 
     <section aria-label="Select week" className="mt-7 flex flex-col gap-5 border-y border-[var(--border-subtle)] py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
