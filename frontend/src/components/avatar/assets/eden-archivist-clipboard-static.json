@@ -1,0 +1,50 @@
+{
+  "id": "eden-archivist",
+  "version": "4B-static-v1",
+  "source": {
+    "file": "Part4B_Archivist_Eden_visual_draft.png",
+    "width": 380,
+    "height": 630,
+    "bytes": 372144,
+    "sha256": "ac632b474484cbdc7e2180530d5d7c681f109e7611fda83e122ceb999ccda47d"
+  },
+  "derivation": {
+    "crop": {
+      "left": 74,
+      "top": 7,
+      "width": 266,
+      "height": 623
+    },
+    "fit": "contain",
+    "position": "centre",
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-archivist-clipboard-static.webp",
+    "width": 264,
+    "height": 492,
+    "bytes": 48890,
+    "sha256": "75bef2ce7bfcd3e0175e7f7c5f367541084e45df391ac90ca0baefc9f88ebf83",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "clipboardReading": false,
+    "pageTurn": false,
+    "nod": false
+  }
+}

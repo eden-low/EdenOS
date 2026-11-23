@@ -1,0 +1,54 @@
+{
+  "id": "eden-swim",
+  "version": "4C-static-v1",
+  "source": {
+    "file": "泳池训练少年与猫咪装备.png",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 1981910,
+    "sha256": "8a2f2b298c44ae37d0a3fbe86ecf8e4f09d1a160e898e4ff30c2c21a652530f5"
+  },
+  "derivation": {
+    "crop": {
+      "left": 83,
+      "top": 23,
+      "width": 833,
+      "height": 1468
+    },
+    "fit": "contain",
+    "position": "bottom",
+    "mirror": false,
+    "alphaCleanup": {
+      "maximumClearedAlpha": 3,
+      "clearedPixels": 19187
+    },
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "runtime": {
+    "file": "eden-swim-static.webp",
+    "width": 352,
+    "height": 656,
+    "bytes": 80290,
+    "sha256": "64ef6e966198d48578670a6064b4f0d74f825718d48ed446422ad31ecbd8dbaa",
+    "hasAlpha": true,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "footAnchor": {
+      "x": 0.5,
+      "y": 1
+    }
+  },
+  "capabilities": {
+    "static": true,
+    "blink": false,
+    "dedicatedIdleFrames": false,
+    "capturePerch": false
+  }
+}

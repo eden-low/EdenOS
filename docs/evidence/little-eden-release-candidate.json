@@ -1,0 +1,694 @@
+{
+  "version": "Little Eden Part 1–4 approved release candidate",
+  "status": "Production approval required; not released by this task",
+  "part4": "Closed at approved release scope",
+  "remainingAnimationEnhancements": "Deferred",
+  "part5Through8": "Not Started",
+  "acceptedStagingSha": "cbbbd402a229fd173de0931be9c44cbb4e8db8f7",
+  "productionMainSha": "f4b0b26b2398f040576fa01c81a9ef542407e389",
+  "commonAncestor": "761062386ce0f5a82a3c2a8cfbd608f98fdc5fa0",
+  "mainOnlyCommitsRetained": [
+    "f4b0b26b2398f040576fa01c81a9ef542407e389",
+    "08fd41e11c053bb2dad6ac55375437ed35e76656",
+    "caa71c24c2346743817d0f8fde73afc9110b5ac3",
+    "d8475c42965902309a4a9dafcb344a41d86e63a6"
+  ],
+  "stagingOnlyCommitsRetained": [
+    "cbbbd402a229fd173de0931be9c44cbb4e8db8f7",
+    "bd884ca96a48d577fbed5f05498697048d1b2508",
+    "7ff1eb4f3e40de053da6b4ae995a227ae41a5606",
+    "ca120f3d45609a2464e7cacf60bb9128b3c6ce67",
+    "bc46d9e9481a7048545701c1ba5d96b91b406fcc",
+    "46bd88f58abef978e8a0cdddc0a86cd4495786d8",
+    "3b5ddf76f2e6cf82d04aaffc362b9adf34de4883",
+    "6016dd59c823e982e158e264f6c66d2961ebb525",
+    "0a93906dead4b436f170b24a6964ba1a75bdf0d5",
+    "98c4d2745fadda68a242e7bc2b147890e9df59c7",
+    "1a5717ec7c9eecbfed67b366ac839e740823c87c",
+    "905b9f4b30300e66ba50dc0fb99ea49cfa43adbf",
+    "5c8162c338562bb73a74b8adc04bb6137837ab27",
+    "70f8c5d6865d7d22f8c1ef3317fdbe5a29010b2c",
+    "a5bc4e402f12f1e012acb7b0bd196c7bdc60667f",
+    "1cac572d6cc1d7d31800f5d9c9b260cd118b1e82",
+    "f7efbe915dcf1e40182bf73d1e58bd3bc0485711",
+    "f8f8baeaefb530c5471f2f7de416cc2d6ca33516",
+    "e3856c16fbca1c80789d73b0a07819140d725c23"
+  ],
+  "acceptedRootTree": "83aed1beed9b240c6d6bc5e37fe6b5b34b7c4f5f",
+  "automaticMergedTree": "83aed1beed9b240c6d6bc5e37fe6b5b34b7c4f5f",
+  "acceptedFrontendTree": "33be30061a7f57f20ea336fb21dfaf975a441cf9",
+  "candidateFrontendTree": "33be30061a7f57f20ea336fb21dfaf975a441cf9",
+  "runtimeAndAllFrontendFilesIdentical": true,
+  "releaseOnlyFiles": [
+    "docs/eden-avatar-part4-plan.md",
+    "docs/eden-avatar-part4g-a.md",
+    "docs/eden-avatar-part4g-b.md",
+    "docs/eden-avatar-part4g-b2.md",
+    "docs/little-eden-part1-4-release.md",
+    "docs/evidence/little-eden-release-candidate.json"
+  ],
+  "changedFileCount": 149,
+  "files": [
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part1a.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part2-1.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part2-2.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part2.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part3-1.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part3.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4-plan.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4b-archivist.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4b-reflector.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4b-watching.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4c-exercise.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4d-cosmos.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4e.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4f.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4g-a.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4g-b.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/eden-avatar-part4g-b2.md"
+    },
+    {
+      "status": "A",
+      "path": "docs/evidence/eden-avatar-part4e-baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "docs/evidence/little-eden-release-candidate.json"
+    },
+    {
+      "status": "A",
+      "path": "docs/little-eden-part1-4-release.md"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/aboutBrowserValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/aboutPwaValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/aboutStagingValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/aboutWardrobeBrowserValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/avatarBrowserValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/avatarCaptureLifecycleValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/avatarRouteBrowserValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/avatarSyntheticRepositories.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/avatarSystemBaseline.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/browserSession.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/cosmosAvatarBrowserValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/exerciseAvatarBrowserValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/inspectArchivistMotion.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/inspectTreasurerMotion.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareArchivistAvatar.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareArchivistMotion.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareCosmosAvatars.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareExerciseAvatars.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareReflectorAvatar.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareReflectorMotion.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareTreasurerAvatar.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareTreasurerMotion.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/prepareWatchingAvatar.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/scripts/treasurerMotionBrowserValidation.mjs"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/about.css"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/AboutAccess.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/aboutAvatarMachine.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/aboutAvatarMachine.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/aboutContent.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/AboutHero.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/AboutInteractiveAvatar.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/AboutInteractiveAvatar.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/aboutWardrobe.css"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/aboutWardrobeAssets.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/aboutWardrobeContent.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/AboutWardrobeGallery.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/AboutWardrobeGallery.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/AboutWardrobePreview.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/aboutWaveAssets.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/assets/eden-about-gestures.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/assets/eden-about-hero.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/about/assets/eden-about-wave-v2.webp"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/App.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/archivistAsset.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/archivistMotion.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/archivistMotion.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/archivistMotionAssets.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-ai-explorer-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-ai-explorer-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-archivist-clipboard-motion-v1.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-archivist-clipboard-motion-v1.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-archivist-clipboard-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-archivist-clipboard-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-astrology-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-astrology-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-base-v1.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-bazi-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-bazi-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-boxing-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-boxing-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-iching-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-iching-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-reflector-journal-motion-v1.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-reflector-journal-motion-v1.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-reflector-journal-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-reflector-journal-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-swim-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-swim-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-tarot-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-tarot-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-treasurer-abacus-motion-v1.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-treasurer-abacus-motion-v1.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-treasurer-abacus-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-treasurer-abacus-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-watching-prone-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-watching-prone-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-ziwei-static.json"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/assets/eden-ziwei-static.webp"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatar.css"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/AvatarAppearance.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/AvatarAppearance.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/AvatarCaptureContext.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarLayout.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarLayout.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarMachine.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarMachine.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarMotion.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarMotion.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/AvatarMotionLayer.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/AvatarMotionLayer.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarObstacles.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarObstacles.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarPageSelection.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarRegistry.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/avatarRegistry.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/AvatarSprite.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/cosmosAssets.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/CosmosAvatar.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/EdenAvatar.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/EdenAvatar.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/exerciseAssets.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/exerciseAvatarEntry.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/exerciseAvatarEntry.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/reflectorAsset.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/reflectorMotion.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/reflectorMotion.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/reflectorMotionAssets.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/treasurerAsset.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/treasurerMotion.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/treasurerMotionAssets.test.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/useExerciseAvatarEntry.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/avatar/watchingAsset.test.ts"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/capture/CaptureSheet.test.tsx"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/capture/CaptureSheet.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/components/layout/navigation.css"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/layout/Navigation.test.tsx"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/layout/Navigation.tsx"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/components/review/WeeklyReflection.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/cosmos/cosmosSelection.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/cosmos/cosmosSelection.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/cosmos/CosmosSelectionProvider.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/AboutPage.test.tsx"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/pages/AboutPage.tsx"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/pages/CosmosPage.tsx"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/privacy/PrivacyLockProvider.test.tsx"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/routing/appRoutes.test.ts"
+    },
+    {
+      "status": "M",
+      "path": "frontend/src/routing/appRoutes.ts"
+    },
+    {
+      "status": "A",
+      "path": "frontend/src/routing/AppRouteSync.test.tsx"
+    },
+    {
+      "status": "M",
+      "path": "frontend/vite.config.ts"
+    }
+  ],
+  "freshLocalChecks": {
+    "npmCi": "passed",
+    "vitest": {
+      "files": 204,
+      "tests": 1622,
+      "result": "passed"
+    },
+    "typescript": "passed",
+    "repositoryLint": {
+      "tool": "Oxlint",
+      "result": "passed",
+      "eslint": "No project ESLint configuration/executable; not claimed as run"
+    },
+    "productionBuild": "passed",
+    "firestoreDemoEmulator": "passed",
+    "functionsPackages": 5,
+    "browserSuites": "Today/Capture; all routes; About gestures; 13-outfit wardrobe; three motion roles; Exercise parity; Cosmos six systems; safety/lifecycle",
+    "pwa": "passed; 53 to 53 explicit cache update, offline routes/assets/three motions; actual native install Pending"
+  },
+  "ciAndStaging": "Exact matching candidate SHA CI and Ready deployment are supplied in the formal Release PR after staging promotion",
+  "productionRollback": {
+    "id": "6afde0c0845874dbc898c475",
+    "sha": "f4b0b26b2398f040576fa01c81a9ef542407e389",
+    "readyApiVerified": true,
+    "immutableUrl": "https://6afde0c0845874dbc898c475--edenos.netlify.app",
+    "immutableAvailable": true,
+    "assetHashesMatchCurrentProduction": true,
+    "noRollbackPerformed": true
+  },
+  "firebaseParity": {
+    "status": "Not verified",
+    "method": "Read-only six-key Netlify site production and branch-deploy environment contexts",
+    "noValuesExported": true,
+    "noEnvironmentChanges": true,
+    "reason": "Protected non-local values not validated as usable actual Firebase configuration; no parity claim"
+  },
+  "remainingManualAcceptance": [
+    "Final candidate real Google/Guest auth and signed-in restore on authorized Staging",
+    "Owner PIN",
+    "iPhone Safari",
+    "Installed iPhone PWA installation/update/offline/cold resume",
+    "Desktop manual review"
+  ],
+  "knownRisk": "Anime Player close → Today Capture intermittent missing perch/anchor; no root cause/fix claimed; not reproduced in fresh release browser/PWA cycles",
+  "noRealUserDataOrGuestOperationOrPaidApi": true
+}

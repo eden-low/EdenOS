@@ -1,0 +1,162 @@
+{
+  "id": "eden-reflector",
+  "version": "4G-B2-candidate-v1",
+  "ownerAnimationAcceptance": "Pending",
+  "source": {
+    "zip": "EdenOS_Part4G_B2_Reflector_Visual_Review.zip",
+    "zipBytes": 6900599,
+    "zipSha256": "bdb5a0b806080d988fe23af0121ca9836c9f1792f6514be293f89995740a521d",
+    "historicalManifestStatus": "VISUAL_DRAFT_NOT_APPROVED",
+    "manifestSha256": "7f456112ebe444d8a59d5862baa363d6c8e38f0234ad91fa5877003bfc59a7d5",
+    "currentAuthorization": "Owner explicitly authorized B2 staging candidate integration on 2026-11-22; historical draft label retained, not final visual acceptance",
+    "sheet": "reflector-sixframe-CANDIDATE.png",
+    "sheetSha256": "d43dc94b4977e44c08d4c2facd16a2250544f2d815059f85a5c509a4e11f6c9e",
+    "width": 1920,
+    "height": 900,
+    "columns": 6,
+    "cell": {
+      "width": 320,
+      "height": 900
+    },
+    "referenceSha256": "88a0f92b25c9b6739f311912d392b9db8a7327411f2a28d1f534890895b6b3e0",
+    "historicalApprovedSourceSha256": "c9aa5e052b165961f1c54eb7352eb98f284cc70c7a01aae21a6559c1ac0dad1a"
+  },
+  "derivation": {
+    "crop": {
+      "left": 0,
+      "top": 42,
+      "width": 320,
+      "height": 828
+    },
+    "cell": {
+      "width": 264,
+      "height": 492
+    },
+    "fit": "contain",
+    "uniformAcrossFrames": true,
+    "mirror": false,
+    "registration": null,
+    "alphaCleanup": "Only 1–3/255 export speckles; all alpha >=4 artwork retained",
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "frames": [
+    {
+      "index": 1,
+      "file": "01_idle-think.png",
+      "sourceSha256": "ecb96b1362d3f54f6924968138e478ba9e7c2987806c5422b59d3a6aec1a5f13",
+      "sourceBytes": 356861,
+      "sourceCellRawSha256": "66a6db718cc42ef103e51de57360ab0904fd0a60abc2be09bc0e3ecd060e3571",
+      "sourceAlpha": {
+        "zero": 124352,
+        "edgeVisiblePixels": 0,
+        "headTop": 47,
+        "shoeBottom": 864,
+        "nearInvisibleCleared": 13153
+      },
+      "runtimeCellRawSha256": "902c32b082b2a1e8fd5736b745b9d73458a8819e945d9710cf3398b1b413b82a"
+    },
+    {
+      "index": 2,
+      "file": "02_blink-half.png",
+      "sourceSha256": "10a4549b755ae8beb4976478ec3d3a559aeee6c2ccf3942cfa5f4ae813abb7e9",
+      "sourceBytes": 358296,
+      "sourceCellRawSha256": "f1bcb2bf3eabc7b177290ac4ac0d610a42388c451d40abdc5b07e20ef7417001",
+      "sourceAlpha": {
+        "zero": 122565,
+        "edgeVisiblePixels": 0,
+        "headTop": 48,
+        "shoeBottom": 864,
+        "nearInvisibleCleared": 14668
+      },
+      "runtimeCellRawSha256": "4be85486862055e4f5ed320b83a6bc02d86eed7678a2cb9a69d894d6a752b25e"
+    },
+    {
+      "index": 3,
+      "file": "03_blink-closed.png",
+      "sourceSha256": "8143a4c7e9dbbe639b0fad4e87e1aab6ff3501fa5ba03ce7ff85658748d10a51",
+      "sourceBytes": 353235,
+      "sourceCellRawSha256": "b1bada1c3eff784225759ac88da778c1d75b18b92de685da6a8351b901a24164",
+      "sourceAlpha": {
+        "zero": 125446,
+        "edgeVisiblePixels": 0,
+        "headTop": 48,
+        "shoeBottom": 864,
+        "nearInvisibleCleared": 12371
+      },
+      "runtimeCellRawSha256": "9e765c4c785d2735206385b50bf7ff61800d90e042cb6b4eda19083f93415b5d"
+    },
+    {
+      "index": 4,
+      "file": "04_journal-write.png",
+      "sourceSha256": "b63450a8b2ed72d30387a2ae9bdfa17f4992332e10012bbf18834d91c0a6a5ef",
+      "sourceBytes": 360765,
+      "sourceCellRawSha256": "846cdf1fe60204ec609dde5cfde9837c35f570dafb6f22d16162ddf97a9afb7d",
+      "sourceAlpha": {
+        "zero": 124126,
+        "edgeVisiblePixels": 0,
+        "headTop": 47,
+        "shoeBottom": 864,
+        "nearInvisibleCleared": 13020
+      },
+      "runtimeCellRawSha256": "d01963ae5f42bbdf08ab2bf4295d4a381ce093f9cc1d6095ee9cd32ad6f75814"
+    },
+    {
+      "index": 5,
+      "file": "05_page-turn.png",
+      "sourceSha256": "8c2e0a1493601344b1a2bc1188e587155105397695055ca9e7283c2c0bbd2de0",
+      "sourceBytes": 364047,
+      "sourceCellRawSha256": "34b0297ae9107e126d8935cb12460a2c6287d15d8a1e0905b02027fe17940fe7",
+      "sourceAlpha": {
+        "zero": 119476,
+        "edgeVisiblePixels": 0,
+        "headTop": 48,
+        "shoeBottom": 864,
+        "nearInvisibleCleared": 17444
+      },
+      "runtimeCellRawSha256": "14c639aec0569e370c7745060a667f7a3eb22f9ffce09466ff8d43c85f21b51d"
+    },
+    {
+      "index": 6,
+      "file": "06_recover-think.png",
+      "sourceSha256": "054b298bdfa2d718ebb311af6f8a567bc8e259881416197b706494762c42dc21",
+      "sourceBytes": 354564,
+      "sourceCellRawSha256": "e370deb7ba8e42fe11c04d28a1cf49c1677b28cc898dcef94396abbd5a46e68c",
+      "sourceAlpha": {
+        "zero": 125967,
+        "edgeVisiblePixels": 0,
+        "headTop": 48,
+        "shoeBottom": 864,
+        "nearInvisibleCleared": 11739
+      },
+      "runtimeCellRawSha256": "a09d530dcda359739492009d89b8fcbeef2a8b9c12b577f39e5f938400ba826f"
+    }
+  ],
+  "runtime": {
+    "file": "eden-reflector-journal-motion-v1.webp",
+    "width": 792,
+    "height": 984,
+    "columns": 3,
+    "rows": 2,
+    "cell": {
+      "width": 264,
+      "height": 492
+    },
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "nativeFacing": "right",
+    "bytes": 227502,
+    "sha256": "13b69909347234b5c5c4bf3e2b6bf6ceb1a3ca53f4cdfa1bee394a16e00af849"
+  },
+  "fallback": "eden-reflector-journal-static.webp",
+  "limitations": [
+    "Candidate lapel/collar/folds differ from accepted still with owner staging permission",
+    "Frame 04 is a writing pose, not multiple independently drawn pen strokes"
+  ]
+}

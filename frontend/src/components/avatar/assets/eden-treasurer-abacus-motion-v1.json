@@ -1,0 +1,126 @@
+{
+  "id": "eden-treasurer",
+  "version": "4G-A-candidate-v1",
+  "ownerAnimationAcceptance": "Pending",
+  "source": {
+    "zip": "Part4G_A_Treasurer_Motion_Asset_Pack.zip",
+    "zipSha256": "6455958377e9e7cae0ba50a87dabe1991e14a18cd6e50d9a763692667f1c6192",
+    "sheet": "treasurer-motion-sixframe-source.png",
+    "sha256": "2685cfca4fa03f5ff2dc4820281f88d888ef6fe3d7ec97a292154dc7793f1041",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1944504,
+    "reference": "treasurer-original-approved-reference.png",
+    "referenceSha256": "dc7b4e1b63f8e5a7dfe3240ad09325b4e78f5f5e0c0c7227cc97328a795288df",
+    "historicalStillSourceSha256": "beeeac4d3a2b8a96119f6d8a84e83492f105fef7db01e1d26bda7b0e8450cf42",
+    "referenceExactPixelIdentityNotEstablished": true
+  },
+  "derivation": {
+    "crop": {
+      "left": 158,
+      "top": 0,
+      "width": 252,
+      "height": 506
+    },
+    "cell": {
+      "width": 264,
+      "height": 492
+    },
+    "fit": "contain",
+    "position": "centre",
+    "uniformAcrossFrames": true,
+    "webp": {
+      "quality": 92,
+      "alphaQuality": 100,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "frames": [
+    {
+      "index": 1,
+      "cell": 0,
+      "file": "01_idle-open.png",
+      "sourceSha256": "004ca91a5c2dcdbc0a9963af2c3de05257f9cb35d17c33b23f8d787f9ee7e788",
+      "sourceCellRawSha256": "ba5b9b3bcfc65bc67e4ae3ec289b0104389703d16dc42878ad25d79fb7825ae0",
+      "nearInvisibleAlphaCleared": 12968,
+      "runtimeCellRawSha256": "38a8ffd53f0bb9ba7b39e6b771a3076a66730251cf3ee8c8ebd755af26bbcd5b"
+    },
+    {
+      "index": 2,
+      "cell": 1,
+      "file": "02_blink-half.png",
+      "sourceSha256": "44b21fc3c602399477b60b299eb3fdeff815acfa8fb9039aa5ad46c40bfa660a",
+      "sourceCellRawSha256": "ad414b09af84aeb39bf94e8fae21e3125d432f4c50b2f357db617377e57f3806",
+      "nearInvisibleAlphaCleared": 12699,
+      "runtimeCellRawSha256": "da8793147cf9fd533dd1204eb3bd55676b0c7367fcb8f93c51b6e4b84bbf4449"
+    },
+    {
+      "index": 3,
+      "cell": 2,
+      "file": "03_blink-closed.png",
+      "sourceSha256": "f2af5d5ccd778a37588404381a1e9451a9d222c3bf21f4c2f69ff082424945f2",
+      "sourceCellRawSha256": "693cee244e02b21bd0c3fe4e3a6f159103010cc8e1dc577d23e74c2957252553",
+      "nearInvisibleAlphaCleared": 12377,
+      "runtimeCellRawSha256": "be1f84bb39973b016a68fbb049faec9c34558e0763fd5c5069f1dd2de2b209c9"
+    },
+    {
+      "index": 4,
+      "cell": 3,
+      "file": "04_look-down.png",
+      "sourceSha256": "95d94ee1a0908fabe3b88f4a310172be2f8002d6602f1bcf12a9fd5890b4bf1c",
+      "sourceCellRawSha256": "224d32a3b029ad24e2935c5a847392223977ecf35eed714d49ef8be517218127",
+      "nearInvisibleAlphaCleared": 15698,
+      "runtimeCellRawSha256": "e1b8ced86bda78d90ba168eda6625f723157f5e7faa8ac033068af7d86794d93"
+    },
+    {
+      "index": 5,
+      "cell": 4,
+      "file": "05_abacus-touch.png",
+      "sourceSha256": "a70482b7776e5d1887b7d09467ff8ac6000daaa55ebb113ab11f90e6df51e7de",
+      "sourceCellRawSha256": "e138fff2e8d21f277831fbd504e34fb090fe1ead44aa5b6b81f8ad5da6fb118b",
+      "nearInvisibleAlphaCleared": 15218,
+      "runtimeCellRawSha256": "335ed64c4a783cf9fd8d5d169c805c364f81f9b653e2a661eb732c90e4691e53"
+    },
+    {
+      "index": 6,
+      "cell": 5,
+      "file": "06_recover-open.png",
+      "sourceSha256": "d869aa199f6917dd60f6ee5ca61a47eba180b87b788fef8d94d643e6818976f0",
+      "sourceCellRawSha256": "5c859c4cda067561a17b5aadc14b33b9efde722952c440a8ca5f069dff67438d",
+      "nearInvisibleAlphaCleared": 15077,
+      "runtimeCellRawSha256": "7423627999b73ae990be35c5bb0aee89ee7ab99987710473b44e7b9d752e7881"
+    }
+  ],
+  "runtime": {
+    "file": "eden-treasurer-abacus-motion-v1.webp",
+    "width": 792,
+    "height": 984,
+    "cell": {
+      "width": 264,
+      "height": 492
+    },
+    "columns": 3,
+    "rows": 2,
+    "cssFrame": {
+      "width": 88,
+      "height": 164
+    },
+    "bytes": 255214,
+    "sha256": "5be75a2bb61cad18a766d60e985bc7dfd0ea8dcc6969eaa600b6d44d5fe6bf4f"
+  },
+  "fallback": "eden-treasurer-abacus-static.webp",
+  "visualReview": {
+    "technicalIntegrity": "passed",
+    "headTopSourcePixelRange": [
+      7,
+      8
+    ],
+    "footBottomSourcePixelRange": [
+      497,
+      498
+    ],
+    "blink": "visible at 88x164",
+    "abacus": "look-down and fingertip action visible; fine bead movement requires owner device acceptance"
+  }
+}

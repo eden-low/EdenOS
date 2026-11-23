@@ -1,5 +1,6 @@
 import { Camera, Dumbbell, Keyboard, MessageSquareText } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useAvatarCapture } from '../avatar/AvatarCaptureContext'
 import type { ExerciseTextCandidate, ExerciseTextParseResult } from '../../domain/parseExerciseText'
 import { exerciseWriteErrorMessage } from '../../lib/exerciseWriteError'
 import { expenseWriteErrorMessage } from '../../lib/expenseWriteError'
@@ -39,6 +40,8 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     confirmExerciseDraft,
   } = useRecords()
   const [open, setOpen] = useState(false)
+  const [sheetElement, setSheetElement] = useState<HTMLDivElement | null>(null)
+  const [avatarOwner] = useState(() => Symbol('capture-sheet'))
   const [step, setStep] = useState<CaptureStep>('menu')
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
@@ -46,6 +49,10 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
   const [hasUnsavedFormChanges, setHasUnsavedFormChanges] = useState(false)
   const [receiptCandidate, setReceiptCandidate] = useState<ReceiptCandidate | null>(null)
   const [discardConfirmationOpen, setDiscardConfirmationOpen] = useState(false)
+  const avatarAnchor = useMemo(() => open && sheetElement
+    ? { owner: avatarOwner, sheet: sheetElement, suspended: discardConfirmationOpen }
+    : null, [open, sheetElement, avatarOwner, discardConfirmationOpen])
+  useAvatarCapture(avatarAnchor, avatarOwner)
   const [exerciseText, setExerciseText] = useState('')
   const [exerciseTextError, setExerciseTextError] = useState<string | null>(null)
   const [exerciseTextCandidate, setExerciseTextCandidate] = useState<ExerciseTextCandidate | null>(null)
@@ -222,6 +229,8 @@ export function CaptureSheet({ children }: { children: ReactNode }) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
+        ref={setSheetElement}
+        data-eden-capture="true"
         {...capturePressFeedback}
         variant="capture"
         closeDisabled={isConfirming || discardConfirmationOpen}
