@@ -1,0 +1,56 @@
+﻿/* Today-local landing. The illustration and Capture state machine are unchanged. */
+.today-landing-introduction { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; min-width: 0; flex: 1; }
+.today-avatar-landing { position: relative; width: 96px; height: 184px; align-self: end; isolation: isolate; }
+.today-avatar-dock { position: absolute; width: 88px; height: 164px; left: 4px; bottom: 8px; }
+.today-avatar-contact { position: absolute; left: 13px; bottom: 8px; width: 70px; height: 6px; pointer-events: none; background: radial-gradient(ellipse, rgba(8, 7, 22, .28), transparent 72%); }
+.today-avatar-landing::before { position: absolute; content: ""; left: -8px; bottom: -3px; width: 112px; height: 38px; background: radial-gradient(ellipse, rgba(188, 166, 229, .11), transparent 72%); pointer-events: none; }
+:root[data-theme="light"] .today-avatar-contact { background: radial-gradient(ellipse, rgba(61, 48, 91, .22), transparent 72%); }
+:root[data-theme="light"] .today-avatar-landing::before { background: radial-gradient(ellipse, rgba(255, 250, 239, .68), transparent 72%); }
+body:has(.eden-avatar[data-sheet]) .today-avatar-contact { visibility: hidden; }
+@media (min-width: 1024px) {
+  .today-landing-introduction { grid-template-columns: minmax(0, 1fr) 112px; gap: 20px; }
+  .today-avatar-landing { width: 112px; height: 214px; }
+  .today-avatar-dock { width: 100px; height: 186.36px; left: 6px; }
+  .today-avatar-contact { left: 16px; width: 80px; }
+}
+
+/* Living Harmony: the greeting, companion and daily context share an optical plane. */
+.today-dashboard .dashboard-hero { padding: 18px 16px 14px; border: 1px solid var(--dashboard-glass-border); border-radius: 1.75rem; background: linear-gradient(112deg, rgba(16, 17, 31, .38), rgba(39, 30, 58, .14)); box-shadow: 0 1px 0 var(--dashboard-glass-highlight) inset; backdrop-filter: blur(14px); }
+:root[data-theme="light"] .today-dashboard .dashboard-hero { background: linear-gradient(112deg, rgba(255, 253, 249, .56), rgba(229, 219, 246, .24)); }
+.today-dashboard .dashboard-actions { display: grid; grid-template-columns: minmax(0, 1fr) 106px; gap: 4px; }
+.today-dashboard .dashboard-search-action { padding-inline: 10px; line-height: 1.4; }
+.today-dashboard [aria-label="Today summary"] { gap: 10px; margin-top: 14px; }
+.today-dashboard .dashboard-summary-widget { padding-block: 12px; background: linear-gradient(150deg, rgba(255, 255, 255, .035), transparent), rgba(18, 20, 33, .7); box-shadow: 0 1px 0 var(--dashboard-glass-highlight) inset; }
+:root[data-theme="light"] .today-dashboard .dashboard-summary-widget { background: linear-gradient(150deg, rgba(255, 255, 255, .42), transparent), rgba(255, 253, 249, .82); }
+.today-dashboard [aria-label="Daily context"] { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--dashboard-glass-mobile); }
+.today-dashboard [aria-label="Daily context"] > [aria-label="Weather"] { border-bottom: 0; border-right: 1px solid var(--border-subtle); padding-inline: 12px; }
+.today-dashboard [aria-label="Daily quote"] { padding-inline: 12px; min-height: 128px; }
+.today-dashboard .today-avatar-landing { width: 100px; height: 192px; }
+.today-dashboard .today-avatar-dock { left: 2px; width: 96px; height: 178.91px; }
+.today-dashboard .today-avatar-contact { left: 12px; width: 76px; }
+.today-dashboard .today-avatar-landing::before { left: -22px; width: 144px; height: 72px; background: radial-gradient(ellipse at 50% 70%, rgba(200, 177, 234, .18), transparent 70%); }
+.today-dashboard .today-lotus-art { top: 36%; left: 62%; opacity: .8; }
+.today-dashboard .today-lotus-aurora { top: 36%; left: 62%; opacity: .82; }
+@media (max-width: 359px) {
+  .today-dashboard [aria-label="Daily context"] { grid-template-columns: minmax(0, 1fr); }
+  .today-dashboard [aria-label="Daily context"] > [aria-label="Weather"] { border-right: 0; border-bottom: 1px solid var(--border-subtle); }
+  .today-dashboard .dashboard-actions { grid-template-columns: minmax(0, 1fr) 92px; }
+}
+@media (min-width: 1024px) {
+  .today-dashboard .dashboard-hero { padding: 24px; }
+  .today-dashboard .dashboard-hero > div { align-items: center; }
+  .today-dashboard .today-landing-introduction { grid-template-columns: minmax(0, 1fr) 124px; gap: 20px; }
+  .today-dashboard .today-avatar-landing { width: 124px; height: 230px; }
+  .today-dashboard .today-avatar-dock { width: 112px; height: 208.73px; left: 6px; }
+  .today-dashboard .today-avatar-contact { left: 17px; width: 90px; }
+  .today-dashboard .today-lotus-art { top: 43%; left: 59%; }
+  .today-dashboard .today-lotus-aurora { top: 43%; left: 59%; }
+  .today-dashboard [aria-label="Daily context"] { grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); }
+  .today-dashboard [aria-label="Daily quote"] { min-height: 104px; padding-inline: 20px; }
+}
+
+/* A quiet page horizon gives the unchanged feet an actual interface edge. */
+.today-landing-introduction { border-bottom: 1px solid rgba(189, 168, 225, .18); }
+:root[data-theme="light"] .today-landing-introduction { border-bottom-color: rgba(108, 85, 147, .16); }
+.today-avatar-landing .today-avatar-dock, .today-avatar-landing .today-avatar-contact { bottom: 0; }
+

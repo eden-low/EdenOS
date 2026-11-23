@@ -10,6 +10,7 @@ import { CosmosSelectionProvider } from '../../cosmos/CosmosSelectionProvider'
 import type { AvatarId } from './avatarRegistry'
 import { avatarTransition } from './avatarMachine'
 import { avatarPlacement, type AvatarPlacement, type AvatarRect } from './avatarLayout'
+import { todayDockPlacement } from './todayDockPlacement'
 import { isIdleAvatarObstacle } from './avatarObstacles'
 import './avatar.css'
 
@@ -66,6 +67,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
     let dirty = true
     let controls: Element[] = []
     let nativeMediaFullscreen = false
+    const todayDock = reserveCapture ? document.querySelector<HTMLElement>('[data-today-avatar-dock]') : null
     const invalidate = () => { dirty = true; if (!frame) frame = requestAnimationFrame(measure) }
     function measure() {
       frame = 0
@@ -92,7 +94,9 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
         const styles = getComputedStyle(control)
         return styles.visibility !== 'hidden' && styles.display !== 'none' && control.getClientRects().length > 0
       }).map(rectOf)
-      const next = avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, reserveCapture, idleObstacles: anchor ? [] : obstacles })
+      const next = !anchor && todayDock?.isConnected
+        ? todayDockPlacement(viewport, rectOf(todayDock), obstacles)
+        : avatarPlacement(viewport, anchor?.sheet.isConnected ? rectOf(anchor.sheet) : null, anchor ? obstacles : [], { corner, reserveCapture, idleObstacles: anchor ? [] : obstacles })
       setPlacement((current) => {
         // Preserve the last safe coordinates while hidden, so a later return never flies from (0, 0).
         if (next.mode === 'hidden') return current.mode === 'hidden' ? current : { ...current, mode: 'hidden' }
@@ -106,6 +110,7 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled }:
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(invalidate)
     resize?.observe(document.documentElement)
     if (anchor) resize?.observe(anchor.sheet)
+    if (todayDock) resize?.observe(todayDock)
     window.addEventListener('resize', invalidate)
     window.addEventListener('scroll', invalidate, true)
     document.addEventListener('focusin', invalidate)

@@ -1,3 +1,5 @@
+import { TodayAvatarDock } from './TodayAvatarDock'
+import './todayCompanion.css'
 import { CalendarDays, Plus, Search } from 'lucide-react'
 import { Button } from '../ui/button'
 import { CaptureSheet } from '../capture/CaptureSheet'
@@ -15,7 +17,8 @@ export function DashboardHeader({
   return (
     <header className="dashboard-hero py-2 sm:py-3">
       <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-        <div>
+        <div className="today-landing-introduction">
+          <div className="min-w-0">
           <p className="section-label">Today</p>
           <div className="mt-2 inline-flex items-center gap-2 text-sm text-[var(--text-muted)]">
             <CalendarDays aria-hidden="true" size={14} strokeWidth={1.8} />
@@ -25,6 +28,8 @@ export function DashboardHeader({
             {greeting}
           </h1>
           <p className="mt-2 text-sm text-[var(--text-secondary)] sm:text-base">Here is what matters today.</p>
+          </div>
+          <TodayAvatarDock />
         </div>
 
         <div className="dashboard-actions flex flex-col gap-1 sm:flex-row lg:min-w-[22rem]">
