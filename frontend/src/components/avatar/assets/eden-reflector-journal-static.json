@@ -1,35 +1,50 @@
 {
   "id": "eden-reflector",
-  "version": "4B-static-v1",
+  "version": "D2-static-v2",
+  "ownerAcceptance": "Pending staging real-device acceptance",
   "source": {
-    "file": "思考中的少年与飞翼书册.png",
-    "width": 817,
-    "height": 1925,
-    "bytes": 1784263,
-    "sha256": "c9aa5e052b165961f1c54eb7352eb98f284cc70c7a01aae21a6559c1ac0dad1a"
+    "file": "eden-reflector-journal-motion-v1.webp",
+    "sha256": "13b69909347234b5c5c4bf3e2b6bf6ceb1a3ca53f4cdfa1bee394a16e00af849",
+    "width": 792,
+    "height": 984,
+    "frame": 1,
+    "role": "Existing six-frame motion atlas; canonical rest design reviewed for D2"
   },
-  "derivation": {
-    "crop": null,
-    "fit": "contain",
-    "position": "centre",
-    "mirror": false,
-    "alphaCleanup": {
-      "maximumClearedAlpha": 3,
-      "clearedPixels": 70905
-    },
-    "webp": {
-      "quality": 92,
-      "alphaQuality": 100,
-      "effort": 6,
-      "smartSubsample": true
-    }
-  },
-  "runtime": {
-    "file": "eden-reflector-journal-static.webp",
+  "previousStatic": {
+    "version": "4B-static-v1",
     "width": 352,
     "height": 656,
     "bytes": 63508,
     "sha256": "c19601cedd49beabf63ea3017eecc050010e5c3e3ed98684eee3e156d83b7ca3",
+    "sourceFile": "思考中的少年与飞翼书册.png",
+    "sourceSha256": "c9aa5e052b165961f1c54eb7352eb98f284cc70c7a01aae21a6559c1ac0dad1a"
+  },
+  "derivation": {
+    "script": "scripts/prepareD2AvatarStatics.mjs",
+    "extract": {
+      "left": 0,
+      "top": 0,
+      "width": 264,
+      "height": 492
+    },
+    "resize": null,
+    "mirror": false,
+    "alphaValuesChanged": false,
+    "transparentRGB": "Zero RGB only where alpha is already zero",
+    "encoding": {
+      "lossless": true,
+      "effort": 6,
+      "alphaQuality": 100
+    },
+    "decodedRgbaSha256": "ec6072d28194f20a8801b87ec17c392796eeb57ab76d908a803fa7f8c9dc2c35",
+    "sharpVersion": "0.35.4"
+  },
+  "runtime": {
+    "file": "eden-reflector-journal-static.webp",
+    "width": 264,
+    "height": 492,
+    "bytes": 87216,
+    "sha256": "dddd16cda31445da237139989eab5898eb74e3574132158bc8ba8f4a235d6879",
     "hasAlpha": true,
     "nativeFacing": "right",
     "cssFrame": {

@@ -70,7 +70,7 @@ export const avatarRegistry: Readonly<Record<AvatarId, AvatarDefinition>> = {
   },
   'eden-reflector': {
     id: 'eden-reflector', label: 'Reflector Eden', status: 'ready', kind: 'static-image', prototype: '4B-static', nativeFacing: 'right', blink: false, capturePerch: false,
-    asset: { src: reflectorArt, width: 352, height: 656, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
+    asset: { src: reflectorArt, width: 264, height: 492, cssFrame: { width: 88, height: 164 }, footAnchor: { x: 0.5, y: 1 } },
     motion: reflectorMotion,
   },
   'eden-watching': {

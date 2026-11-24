@@ -156,6 +156,17 @@
   },
   "fallback": "eden-reflector-journal-static.webp",
   "limitations": [
+    "Frame 04 is a writing pose, not multiple independently drawn pen strokes"
+  ],
+  "canonicalStatic": {
+    "file": "eden-reflector-journal-static.webp",
+    "version": "D2-static-v2",
+    "sha256": "dddd16cda31445da237139989eab5898eb74e3574132158bc8ba8f4a235d6879",
+    "derivedFromRuntimeFrame": 1,
+    "sourceAtlasSha256": "13b69909347234b5c5c4bf3e2b6bf6ceb1a3ca53f4cdfa1bee394a16e00af849",
+    "alignment": "Same visible RGB and all alpha values as runtime rest cell; no resize or redraw"
+  },
+  "historicalLimitations": [
     "Candidate lapel/collar/folds differ from accepted still with owner staging permission",
     "Frame 04 is a writing pose, not multiple independently drawn pen strokes"
   ]

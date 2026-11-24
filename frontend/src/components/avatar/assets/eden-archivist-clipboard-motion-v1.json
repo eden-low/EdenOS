@@ -327,5 +327,13 @@
     "bytes": 251196,
     "sha256": "44ec07f5377cc7487e2fdc0706e35d0be03e569ff62b44821d0b9b5e625efb3f"
   },
-  "fallback": "eden-archivist-clipboard-static.webp"
+  "fallback": "eden-archivist-clipboard-static.webp",
+  "canonicalStatic": {
+    "file": "eden-archivist-clipboard-static.webp",
+    "version": "D2-static-v2",
+    "sha256": "078116da0f3f69aaea0632dc1af9225f7345b1bad97df0e1a2a8c0cd0c9fd475",
+    "derivedFromRuntimeFrame": 1,
+    "sourceAtlasSha256": "44ec07f5377cc7487e2fdc0706e35d0be03e569ff62b44821d0b9b5e625efb3f",
+    "alignment": "Same visible RGB and all alpha values as runtime rest cell; no resize or redraw"
+  }
 }
