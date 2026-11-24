@@ -32,6 +32,8 @@
 .about-section > .about-greeting { color: var(--text-primary) !important; font-size: 1.125rem !important; }
 .about-placeholder { margin-top: 1.5rem; padding: 1rem; border: 1px dashed var(--border-strong); border-radius: 1rem; color: var(--text-secondary); font-size: .8125rem; line-height: 1.8; }
 .about-placeholder-label { color: var(--accent-soft); font-weight: 600; margin-bottom: .4rem; }
+.about-biography { font-size: .9375rem; line-height: 1.9; overflow-wrap: anywhere; }
+.about-biography p + p { margin-top: 1rem; }
 .about-section > .about-story-closing { color: var(--accent-soft) !important; }
 .about-interests { margin-block: 1.5rem; padding-inline: 0; }
 .about-interests-grid { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: 0; margin: 1.5rem 0 0; }

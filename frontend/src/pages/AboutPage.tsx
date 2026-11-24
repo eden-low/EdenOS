@@ -34,7 +34,7 @@ export function AboutPage() {
       <section id={copy.who.id} className="about-glass about-section" aria-labelledby="about-who-heading">
         <p className="about-eyebrow">{copy.who.eyebrow}</p><h2 id="about-who-heading">{copy.who.title}</h2>
         <p className="about-greeting">{copy.who.greeting}</p><p>{copy.who.text}</p>
-        <aside className="about-placeholder"><p className="about-placeholder-label">{copy.who.placeholderLabel}</p><p>{copy.who.placeholder}</p></aside>
+        <aside className="about-placeholder"><p className="about-placeholder-label">{copy.who.placeholderLabel}</p><div className="about-biography">{copy.who.placeholder.split('\n\n').map(paragraph => <p key={paragraph}>{paragraph}</p>)}</div></aside>
       </section>
       <section id={copy.story.id} className="about-glass about-section" aria-labelledby="about-story-heading">
         <p className="about-eyebrow">{copy.story.eyebrow}</p><h2 id="about-story-heading">{copy.story.title}</h2>

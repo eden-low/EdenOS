@@ -821,6 +821,11 @@ button:not(:disabled) {
   color: var(--text-muted);
 }
 
+/* Match the unlayered form-control cascade without changing other forms. */
+.form-control.command-search-input { padding-inline: 2.75rem 3.5rem; }
+.command-search-icon { position: absolute; inset-inline-start: 1rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.command-search-hint { position: absolute; inset-inline-end: .75rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+
 .form-control:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--focus);

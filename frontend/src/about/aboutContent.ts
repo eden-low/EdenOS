@@ -1,4 +1,4 @@
-// Editorial content only. Replace the clearly marked biography when Eden supplies it.
+// Editorial content only. Biography approved by Eden.
 export const aboutContent = {
   eyebrow: 'EdenOS 里的一个小角落',
   title: 'About Eden',
@@ -12,8 +12,8 @@ export const aboutContent = {
     id: 'who-am-i', title: '关于我', eyebrow: '01 / 认识一下',
     greeting: '嗨，我是 Eden。',
     text: '这里放着我关心的事，也留一点空间，慢慢认识 EdenOS 背后的我。',
-    placeholderLabel: '个人介绍 · 待 Eden 补充',
-    placeholder: '这段介绍先留白，等 Eden 亲自写下自己的故事。',
+    placeholderLabel: '个人介绍',
+    placeholder: '我是一名刚毕业的 Business Information Systems 学生。\n\n我对数字工具、生活系统和有温度的设计很有兴趣，也喜欢把看起来零散的事情整理成更清楚、更舒服的样子。\n\nEdenOS 是我留给自己的一个空间，用来记录生活、整理节奏，也慢慢认识现在的自己。',
   },
   story: {
     id: 'edenos-story', title: 'EdenOS 的故事', eyebrow: '02 / 一个小想法',

@@ -8,6 +8,7 @@ export default function AvatarMotionLayer({ definition, paused }: { definition: 
   const frame = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot)
   const [visible, setVisible] = useState(() => document.visibilityState !== 'hidden')
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [paintReady, setPaintReady] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const canLoad = !paused && visible
   useEffect(() => {
@@ -29,7 +30,9 @@ export default function AvatarMotionLayer({ definition, paused }: { definition: 
     return () => window.removeEventListener('online', retry)
   }, [status])
 
-  const canPlay = !paused && status === 'ready'
+  // Decoding the preload is not proof that the SVG image has loaded. Retain the
+  // canonical static and start no motion timer until its own load event.
+  const canPlay = !paused && status === 'ready' && paintReady
   useEffect(() => {
     const restore = () => {
       const next = document.visibilityState !== 'hidden'
@@ -57,9 +60,9 @@ export default function AvatarMotionLayer({ definition, paused }: { definition: 
   const atlas = definition.atlas
   return <div className="eden-avatar-motion-layer" aria-hidden="true" data-motion-active={active}
     data-motion-asset={status} data-motion-action={active ? frame.action : 'idle'} data-motion-frame={active ? frame.frame + 1 : 1}>
-    {active && <svg className="eden-avatar-motion-art" focusable="false" preserveAspectRatio="xMidYMid meet"
+    {status === 'ready' && <svg className="eden-avatar-motion-art" style={{ visibility: active ? 'visible' : 'hidden' }} focusable="false" preserveAspectRatio="xMidYMid meet"
       viewBox={`${frame.frame % atlas.columns * atlas.cellWidth} ${Math.floor(frame.frame / atlas.columns) * atlas.cellHeight} ${atlas.cellWidth} ${atlas.cellHeight}`}>
-      <image href={atlas.src} width={atlas.width} height={atlas.height} onError={() => setStatus('error')} />
+      <image href={atlas.src} width={atlas.width} height={atlas.height} onLoad={() => setPaintReady(true)} onError={() => { setPaintReady(false); setStatus('error') }} />
     </svg>}
   </div>
 }
