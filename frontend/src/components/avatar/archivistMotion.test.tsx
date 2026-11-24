@@ -1,4 +1,4 @@
-import { act, cleanup, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { Profiler, StrictMode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createAvatarMotion } from './avatarMotion'
@@ -42,7 +42,7 @@ it('resumes a paused page turn at idle with fresh deadlines and no catch-up',()=
 it('uses real page cells, no idle commits, Reduced Motion pause and Strict Mode cleanup',async()=>{
  const commits=vi.fn(),tree=(paused=false)=><StrictMode><Profiler id="archivist" onRender={commits}><AvatarMotionLayer definition={archivistMotion} paused={paused}/></Profiler></StrictMode>
  const view=render(tree(true));expect(loaders).toHaveLength(0)
- view.rerender(tree());await act(async()=>{loaders.at(-1)!.onload!()})
+ view.rerender(tree());await act(async()=>{loaders.at(-1)!.onload!()});fireEvent.load(layer().querySelector('image')!)
  const before=commits.mock.calls.length;act(()=>vi.advanceTimersByTime(6000));expect(commits).toHaveBeenCalledTimes(before)
  act(()=>vi.advanceTimersByTime(16580));expect(layer().dataset.motionAction).toBe('pageTurn')
  expect(layer().querySelector('svg')?.getAttribute('viewBox')).toBe('264 492 264 492')
@@ -60,7 +60,8 @@ it('keeps the approved static Archivist if the atlas fails and recovers once onl
  expect(document.querySelector('.eden-avatar-art')).toBeNull()
  const count=loaders.length;act(()=>vi.advanceTimersByTime(60000));expect(loaders).toHaveLength(count)
  act(()=>dispatchEvent(new Event('online')));expect(loaders).toHaveLength(count+1)
- await act(async()=>{loaders.at(-1)!.onload!()});expect(layer().dataset.motionActive).toBe('true')
+ await act(async()=>{loaders.at(-1)!.onload!()});expect(layer().dataset.motionActive).toBe('false')
+ fireEvent.load(layer().querySelector('image')!);expect(layer().dataset.motionActive).toBe('true')
 })
 it('does not start motion when the wardrobe uses its default static appearance path',async()=>{
  render(<AvatarAppearance avatarId="eden-archivist" perched={false} attentive={false} still={false}/>)

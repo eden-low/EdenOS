@@ -20,7 +20,8 @@ beforeEach(()=>{
 afterEach(()=>{cleanup();vi.restoreAllMocks();vi.unstubAllGlobals();vi.useRealTimers()})
 const layer=()=>document.querySelector<HTMLElement>('.eden-avatar-motion-layer')!
 const step=(ms:number)=>act(()=>vi.advanceTimersByTime(ms))
-async function loaded(){await act(async()=>{loaders.at(-1)!.onload!()})}
+async function decoded(){await act(async()=>{loaders.at(-1)!.onload!()})}
+async function loaded(){await decoded();const image=layer().querySelector('image');if(image)fireEvent.load(image)}
 const tree=(paused=false)=><AvatarMotionLayer definition={treasurerMotion} paused={paused}/>
 async function integration(still=false,locked=false){
  const view=render(<PrivacyLockContext.Provider value={{...unlockedPrivacyLock,enabled:true,locked}}><AvatarAppearance avatarId="eden-treasurer" motionEnabled perched={false} attentive={false} still={still}/></PrivacyLockContext.Provider>)
@@ -31,6 +32,25 @@ it('does not load/decode an atlas or schedule timers under Reduced Motion/occlus
  const view=render(tree(true));expect(loaders).toHaveLength(0);expect(vi.getTimerCount()).toBe(0)
  view.rerender(tree(false));expect(loaders).toHaveLength(1)
  view.unmount();expect(loaders[0].onload).toBeNull();expect(loaders[0].onerror).toBeNull()
+})
+it('keeps the canonical static and no timers until the SVG itself loads, then reuses it across pauses',async()=>{
+ const view=render(tree());await decoded()
+ expect(layer().dataset.motionAsset).toBe('ready');expect(layer().dataset.motionActive).toBe('false')
+ expect(layer().querySelector('svg')?.style.visibility).toBe('hidden');expect(vi.getTimerCount()).toBe(0)
+ step(60000);expect(layer().dataset.motionFrame).toBe('1')
+ const image=layer().querySelector('image')!;fireEvent.load(image)
+ expect(layer().dataset.motionActive).toBe('true');expect(vi.getTimerCount()).toBe(1)
+ view.rerender(tree(true));expect(layer().querySelector('image')).toBe(image)
+ expect(layer().querySelector('svg')?.style.visibility).toBe('hidden');expect(vi.getTimerCount()).toBe(0)
+ view.rerender(tree(false));expect(layer().querySelector('image')).toBe(image)
+ expect(layer().dataset.motionFrame).toBe('1');expect(vi.getTimerCount()).toBe(1)
+})
+it('waits for a fresh display load after a failed SVG recovers online',async()=>{
+ render(tree());await loaded();fireEvent.error(layer().querySelector('image')!)
+ expect(layer().dataset.motionActive).toBe('false');expect(vi.getTimerCount()).toBe(0)
+ act(()=>window.dispatchEvent(new Event('online')));await decoded()
+ expect(layer().dataset.motionActive).toBe('false');expect(vi.getTimerCount()).toBe(0)
+ fireEvent.load(layer().querySelector('image')!);expect(layer().dataset.motionActive).toBe('true')
 })
 it('does no idle polling, renders real cells and cancels everything on Strict Mode unmount',async()=>{
  const commits=vi.fn(),view=render(<StrictMode><Profiler id="motion" onRender={commits}>{tree()}</Profiler></StrictMode>)
