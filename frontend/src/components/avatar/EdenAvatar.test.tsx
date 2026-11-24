@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { lazy, StrictMode, Suspense } from 'react'
+import { lazy, StrictMode, Suspense, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EdenAvatarProvider } from './EdenAvatar'
 import { PrivacyLockContext, unlockedPrivacyLock } from '../../privacy/privacyLockContext'
@@ -15,13 +15,52 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 function pageFixture(page: AppPage) {
   return <RecordsContext.Provider value={{ drafts: [] } as unknown as RecordsContextValue}>
-    <EdenAvatarProvider enabled page={page}><CaptureSheet key={page}><button>Page Capture</button></CaptureSheet></EdenAvatarProvider>
+    <EdenAvatarProvider enabled page={page}>{['expenses', 'exercise', 'review', 'cosmos', 'records', 'anime'].includes(page) && <div data-page-avatar-dock={page} ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} />}<CaptureSheet key={page}><button>Page Capture</button></CaptureSheet></EdenAvatarProvider>
   </RecordsContext.Provider>
 }
 function avatar() { return document.querySelector('.eden-avatar')! }
 async function measure() { await act(async () => { window.dispatchEvent(new Event('resize')); await new Promise((resolve) => setTimeout(resolve, 40)) }) }
 
 describe('Global avatar page and overlay scope', () => {
+  it.each<AppPage>(['records', 'anime'])('keeps %s in its content-free home and hides if the home disappears', async (page) => {
+    const view = render(pageFixture(page))
+    await measure()
+    const original = avatar()
+    expect(original.closest(`[data-page-avatar-dock="${page}"]`)).toBeTruthy()
+    expect((original as HTMLElement).style.position).toBe('absolute')
+    const dock = document.querySelector(`[data-page-avatar-dock="${page}"]`)!
+    dock.remove()
+    await measure()
+    expect(avatar()).toBe(original)
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    // Restore the detached home before React cleans up its own tree.
+    view.container.appendChild(dock)
+  })
+  it('waits for a lazy C1 home, restores it, and never falls back over content when it disappears', async () => {
+    let resolve!: (value: { default: () => React.ReactNode }) => void
+    const LazyPage = lazy(() => new Promise<{ default: () => React.ReactNode }>((done) => { resolve = done }))
+    function LateHome() {
+      const [visible, setVisible] = useState(true)
+      return <><button onClick={() => setVisible(false)}>Remove home</button>{visible ? <div data-page-avatar-dock="expenses" ref={(node) => { if (node) node.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164) }} /> : <p>Home removed</p>}</>
+    }
+    const view = render(<StrictMode><EdenAvatarProvider enabled page="expenses"><Suspense fallback={<p>Opening Finance</p>}><LazyPage /></Suspense></EdenAvatarProvider></StrictMode>)
+    await measure()
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    const original = avatar(), sprite = original.querySelector('.eden-avatar-appearance')
+    await act(async () => { resolve({ default: LateHome }) })
+    await measure()
+    expect(avatar()).toBe(original)
+    expect(avatar().querySelector('.eden-avatar-appearance')).toBe(sprite)
+    expect(avatar().getAttribute('data-visible')).toBe('true')
+    expect((avatar() as HTMLElement).style.position).toBe('absolute')
+    fireEvent.click(screen.getByRole('button', { name: 'Remove home' }))
+    await measure()
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    view.unmount()
+    expect(document.querySelector('.eden-avatar')).toBeNull()
+    expect(document.querySelector('.eden-avatar-safe-area')).toBeNull()
+  })
+
   it.each<AppPage>(['exercise', 'records'])('keeps %s Capture hidden and standing, then restores idle', async (page) => {
     render(pageFixture(page))
     await measure()
@@ -37,6 +76,30 @@ describe('Global avatar page and overlay scope', () => {
     await measure()
     expect(avatar().getAttribute('data-visible')).toBe('true')
     expect(avatar().getAttribute('data-state')).toBe('idle')
+  })
+
+  it('moves a stable Today portal between document home and Capture without remounting the sprite', async () => {
+    const view = render(<RecordsContext.Provider value={{ drafts: [] } as unknown as RecordsContextValue}>
+      <EdenAvatarProvider enabled><div data-today-avatar-dock /><CaptureSheet><button>Dock Capture</button></CaptureSheet></EdenAvatarProvider>
+    </RecordsContext.Provider>)
+    const dock = document.querySelector<HTMLElement>('[data-today-avatar-dock]')!
+    dock.getBoundingClientRect = () => new DOMRect(270, 100, 88, 164)
+    await measure()
+    const original = avatar(), sprite = original.querySelector('.eden-avatar-art')
+    expect(original.parentElement?.parentElement).toBe(dock)
+    expect((original as HTMLElement).style.position).toBe('absolute')
+    fireEvent.click(screen.getByRole('button', { name: 'Dock Capture' }))
+    await waitFor(() => expect(avatar().getAttribute('data-state')).toBe('perched'), { timeout: 1500 })
+    expect(avatar()).toBe(original)
+    expect(avatar().querySelector('.eden-avatar-art')).toBe(sprite)
+    expect(original.parentElement?.parentElement).toBe(document.body)
+    expect((original as HTMLElement).style.position).toBe('fixed')
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    await waitFor(() => expect(avatar().getAttribute('data-state')).toBe('idle'))
+    expect(original.parentElement?.parentElement).toBe(dock)
+    expect(avatar().querySelector('.eden-avatar-art')).toBe(sprite)
+    view.unmount()
+    expect(document.querySelector('.eden-avatar')).toBeNull()
   })
 
   it('cancels a Today Capture and its timers when changing page, including a return to Today', async () => {
@@ -128,6 +191,84 @@ describe('Global avatar page and overlay scope', () => {
 })
 
 describe('Today companion portal lifecycle', () => {
+  it('settles Capture measurement, then remeasures viewport, focus, geometry and finite transitions', async () => {
+    let clock = 0, id = 0
+    const pending = new Map<number, FrameRequestCallback>()
+    vi.spyOn(performance, 'now').mockImplementation(() => clock)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { pending.set(++id, callback); return id })
+    vi.stubGlobal('cancelAnimationFrame', (key: number) => pending.delete(key))
+    const visual = new EventTarget()
+    vi.stubGlobal('visualViewport', visual)
+    const advance = async (frames = 20) => {
+      for (let i = 0; i < frames; i++) await act(async () => {
+        clock += 16
+        const callbacks = [...pending.values()]; pending.clear()
+        callbacks.forEach((callback) => callback(clock))
+      })
+    }
+    const view = render(pageFixture('today'))
+    fireEvent.click(screen.getByRole('button', { name: 'Page Capture' }))
+    const sheet = document.querySelector<HTMLElement>('[data-eden-capture]')!
+    const rect = vi.spyOn(sheet, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 350, 1024, 400))
+    await advance()
+    expect(pending.size).toBe(0)
+    rect.mockClear()
+    await advance(100)
+    expect(rect).not.toHaveBeenCalled()
+    for (const [target, event] of [[window, 'resize'], [visual, 'resize'], [visual, 'scroll'], [document, 'focusin'], [window, 'scroll']] as const) {
+      act(() => target.dispatchEvent(new Event(event)))
+      await advance()
+      expect(rect).toHaveBeenCalled()
+      expect(pending.size).toBe(0)
+      rect.mockClear()
+    }
+    act(() => { sheet.style.top = '200px' })
+    await advance()
+    expect(rect).toHaveBeenCalled()
+    rect.mockClear()
+    act(() => { sheet.style.animationDuration = '200ms'; sheet.dispatchEvent(new Event('animationstart', { bubbles: true })) })
+    await advance(4)
+    expect(rect.mock.calls.length).toBeGreaterThan(1)
+    await advance(40)
+    expect(pending.size).toBe(0)
+    rect.mockClear()
+    await advance(100)
+    expect(rect).not.toHaveBeenCalled()
+    view.unmount()
+    expect(pending.size).toBe(0)
+  })
+
+  it('cancels geometry work on hidden/freeze/pagehide, resumes safely and removes listeners', async () => {
+    const frames = vi.fn((callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 16))
+    vi.stubGlobal('requestAnimationFrame', frames)
+    const view = render(pageFixture('today'))
+    fireEvent.click(screen.getByRole('button', { name: 'Page Capture' }))
+    await measure()
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    frames.mockClear()
+    await act(async () => { window.dispatchEvent(new Event('resize')); await new Promise((resolve) => setTimeout(resolve, 60)) })
+    expect(frames).not.toHaveBeenCalled()
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    delete (document as unknown as Record<string, unknown>).visibilityState
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    await measure()
+    expect(frames).toHaveBeenCalled()
+    for (const [target, pause, resume] of [[document, 'freeze', 'resume'], [window, 'pagehide', 'pageshow']] as const) {
+      act(() => target.dispatchEvent(new Event(pause)))
+      frames.mockClear()
+      await measure()
+      expect(frames).not.toHaveBeenCalled()
+      act(() => target.dispatchEvent(new Event(resume)))
+      await measure()
+      expect(frames).toHaveBeenCalled()
+    }
+    view.unmount()
+    frames.mockClear()
+    act(() => { document.dispatchEvent(new Event('resume')); window.dispatchEvent(new Event('pageshow')); window.dispatchEvent(new Event('resize')) })
+    expect(frames).not.toHaveBeenCalled()
+  })
+
   it('keeps the same standing avatar visible across Finance Lock changes while honoring real overlays', async () => {
     const tree = (locked: boolean) => <PrivacyLockContext.Provider value={{ ...unlockedPrivacyLock, enabled: true, locked }}>
       <EdenAvatarProvider enabled><p>Today fixture</p></EdenAvatarProvider>

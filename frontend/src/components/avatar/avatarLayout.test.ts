@@ -12,18 +12,17 @@ describe('Avatar safe placement', () => {
     expect(desktop.left).toBe(112)
     expect(avatarPlacement(iphone, null, [mobile], { corner: 'left' }).mode).not.toBe('bust')
   })
-  it('reserves the mobile + space on Today only, retaining the home indicator inset elsewhere', () => {
-    const today = avatarPlacement(iphone, null)
-    const otherPage = avatarPlacement(iphone, null, [], { reserveCapture: false })
-    expect(otherPage.top - today.top).toBe(76)
-    expect(otherPage.top + otherPage.height).toBe(iphone.height - iphone.safeBottom - 20)
+  it('retains the home indicator without a removed floating Capture exclusion zone', () => {
+    const home = avatarPlacement(iphone, null)
+    expect(home.top + home.height).toBe(iphone.height - iphone.safeBottom - 20)
+    const keyboard = avatarPlacement({ ...iphone, height: 220 }, null)
+    expect(keyboard.mode).toBe('hidden')
   })
-
-  it('rests above mobile + and the home indicator, inside safe horizontal edges', () => {
+  it('rests above the home indicator, inside safe horizontal edges', () => {
     const avatar = avatarPlacement(iphone, null)
     expect(avatar.mode).toBe('full')
     expect(avatar.left + avatar.width).toBeLessThanOrEqual(378)
-    expect(avatar.top + avatar.height).toBeLessThanOrEqual(844 - 34 - 96)
+    expect(avatar.top + avatar.height).toBeLessThanOrEqual(844 - 34 - 20)
   })
   it('follows actual sheet height and desktop centered position', () => {
     const first = avatarPlacement(iphone, sheet)

@@ -1,0 +1,60 @@
+/* Intrinsic, font-relative tracks: larger text gets room instead of a smaller type size. */
+.finance-page .finance-header { grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr)); }
+.finance-page .page-companion-introduction { display: flex; flex-wrap: wrap; align-items: center; }
+.finance-page .page-companion-copy { flex: 1 1 10em; overflow-wrap: anywhere; }
+.finance-page .page-companion-landing { flex: 0 0 88px; margin-inline-start: auto; }
+.finance-page .finance-kpi-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
+.finance-page .finance-visuals { grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); }
+.finance-page .finance-details { grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); }
+.finance-page .finance-story { grid-column: auto; }
+.finance-page .metric-value, .finance-page .finance-money-pair { overflow-wrap: anywhere; }
+.finance-page .finance-transaction-row { display: flex; flex-wrap: wrap; }
+.finance-page .finance-transaction-row > span:first-child { flex-shrink: 0; }
+.finance-page .finance-transaction-row > span:nth-child(2) { flex: 1 1 8rem; }
+.finance-page .finance-transaction-amount { max-width: 100%; margin-inline-start: auto; overflow-wrap: anywhere; }
+.finance-page :is(h2, h3, p) { overflow-wrap: anywhere; }
+.cashflow-plot { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); column-gap: .65rem; }
+.cashflow-y-axis { display: flex; flex-direction: column; justify-content: space-between; padding-block: .25rem; text-align: right; }
+.cashflow-axis-label { font-size: .75rem; line-height: 1.5; color: var(--text-muted); overflow-wrap: anywhere; }
+.cashflow-x-axis { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; grid-column: 2; }
+.cashflow-graph { display: block; width: 100%; height: 12rem; min-width: 0; }
+
+.finance-page .finance-period-control { display: flex; flex-wrap: wrap; }
+.finance-page .finance-period-control input { flex: 1 1 10rem; max-width: 100%; }
+.finance-page .expense-donut-visual { width: min(10rem, 100%); height: auto; aspect-ratio: 1; }
+.cashflow-scroll { max-width: 100%; overflow-x: auto; padding: 2px; scrollbar-width: thin; }
+.cashflow-scroll:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.cashflow-plot { min-width: 15rem; }
+
+.finance-page .finance-header > *, .finance-page .finance-details > *, .finance-page .finance-visuals > * { min-width: 0; }
+.finance-page .finance-header button { max-width: 100%; overflow-wrap: anywhere; }
+.finance-page .finance-story-value { overflow-wrap: anywhere; }
+#finance-planning-management > .grid, .finance-page .finance-rules-layout { grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
+
+.finance-page .finance-header > div:last-child { grid-template-columns: minmax(0, 1fr); }
+.finance-page .finance-header > div:last-child > * { min-width: 0; max-width: 100%; }
+
+.finance-page .finance-pair-value { overflow-wrap: anywhere; }
+.finance-page .finance-plan-actions { max-width: 100%; }
+.finance-page .finance-plan-actions button { max-width: 100%; overflow-wrap: anywhere; }
+
+.finance-page .finance-plan-actions button { padding-inline: .5rem; }
+.finance-page .finance-archived-row > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+
+/* Let actions and icons move to the next line before squeezing headings. */
+.finance-page .finance-card-heading, .finance-page .finance-summary-card > div:first-child { flex-wrap: wrap; }
+.finance-page .finance-card-heading > div { flex: 1 1 10rem; min-width: 0; }
+.finance-page .finance-card-heading > :is(a, button) { max-width: 100%; flex-shrink: 0; }
+.finance-page .finance-budget-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); }
+
+.finance-page .expense-donut-category { flex: 1 1 7rem; }
+.finance-page .expense-donut-category-value { max-width: 100%; margin-inline-start: auto; overflow-wrap: anywhere; }
+.finance-page .expense-donut-visual > div { padding-inline: .25rem; overflow-wrap: anywhere; }
+
+/* Enlarged text moves below the ring when the card cannot fit the original center label. */
+.finance-page .finance-donut { container-type: inline-size; }
+@container (width < 14rem) {
+  .finance-page .expense-donut-visual { aspect-ratio: auto; }
+  .finance-page .expense-donut-visual > svg { height: auto; aspect-ratio: 1; }
+  .finance-page .expense-donut-visual > div { position: static; margin-top: .75rem; }
+}

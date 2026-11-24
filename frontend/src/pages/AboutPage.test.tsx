@@ -10,7 +10,7 @@ describe('About Eden content', () => {
       expect(screen.getByRole('heading', { name: heading })).toBeTruthy()
     }
     expect(screen.getByText('My Little Universe · 我的小宇宙')).toBeTruthy()
-    expect(screen.getByText('个人介绍 · 待 Eden 补充')).toBeTruthy()
+    expect(screen.getByText('个人介绍')).toBeTruthy()
     expect(document.querySelector('.about-page')?.getAttribute('lang')).toBe('zh-CN')
     expect(screen.getByRole('button', { name: '微笑' })).toBeTruthy()
     expect(screen.getByRole('button', { name: '思考' })).toBeTruthy()
@@ -24,6 +24,17 @@ describe('About Eden content', () => {
     expect(screen.getByRole('link', { name: '小 Eden 的衣橱' }).getAttribute('href')).toBe('#eden-wardrobe')
     expect(document.querySelector('.eden-avatar')).toBeNull()
     expect(document.querySelector('a[href^="https://"]')).toBeNull()
+  })
+  it('renders the owner-approved biography as three distinct paragraphs', () => {
+    render(<AboutPage />)
+    const paragraphs = [...document.querySelectorAll('.about-biography > p')].map(p => p.textContent)
+    expect(paragraphs).toEqual([
+      '我是一名刚毕业的 Business Information Systems 学生。',
+      '我对数字工具、生活系统和有温度的设计很有兴趣，也喜欢把看起来零散的事情整理成更清楚、更舒服的样子。',
+      'EdenOS 是我留给自己的一个空间，用来记录生活、整理节奏，也慢慢认识现在的自己。',
+    ])
+    expect(screen.getByText('嗨，我是 Eden。')).toBeTruthy()
+    expect(screen.queryByText(/待 Eden 补充/)).toBeNull()
   })
   it('restores the document title on leaving About', () => {
     document.title = 'EdenOS'

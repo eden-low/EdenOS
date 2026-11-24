@@ -1,3 +1,5 @@
+import '../components/finance/financeReadability.css'
+import { PageCompanionDock } from '../components/avatar/PageCompanionDock'
 import { ArrowDownLeft, ArrowUpRight, CalendarDays, CircleAlert, FileInput } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { CashflowChart } from '../components/finance/CashflowChart'
@@ -63,11 +65,14 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
   }
 
   return <Page>
-    <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-      <div><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Finance</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">A clear monthly view of income, actual spending, available money, goals, and budgets.</p></div>
+    <header className="finance-header grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+      <div className="page-companion-introduction">
+        <div className="page-companion-copy"><p className="section-label text-[var(--accent-soft)]">Eden OS</p><h1 className="page-title mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Finance</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">A clear monthly view of income, actual spending, available money, goals, and budgets.</p></div>
+        <PageCompanionDock page="expenses" />
+      </div>
       <div className="grid gap-3 sm:justify-items-end">
         <div className="flex flex-wrap gap-2"><Button onClick={() => openEntry('expense')}><ArrowUpRight size={17} />Add Expense</Button><Button variant="secondary" onClick={() => openEntry('income')}><ArrowDownLeft size={17} />Add Income</Button><Button variant="ghost" onClick={openBatchImport}><FileInput size={17} />Batch Import</Button></div>
-        <div className="grid min-h-11 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 min-[360px]:flex min-[360px]:py-0">
+        <div className="finance-period-control grid min-h-11 grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] px-3 py-2 min-[360px]:flex min-[360px]:py-0">
           <CalendarDays size={16} className="shrink-0 text-[var(--text-muted)]" />
           <label htmlFor="finance-month" className="text-xs font-semibold text-[var(--text-secondary)]">Reporting month</label>
           <input id="finance-month" type="month" value={summary.monthInput} max={`${referenceDate.getFullYear()}-${String(referenceDate.getMonth() + 1).padStart(2, '0')}`} onChange={(event) => { const next = parseMonth(event.target.value); if (next) setSelectedMonth(next) }} className="col-span-2 min-h-9 w-full min-w-0 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-[var(--focus)] min-[360px]:w-auto" />
@@ -79,12 +84,12 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
 
     <FinanceKpiGrid summary={summary} />
 
-    <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.85fr)]"><CashflowChart data={summary.cashflow} monthLabel={summary.monthLabel} /><ExpenseActivityDonut summary={summary} /></div>
+    <div className="finance-visuals mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(19rem,0.85fr)]"><CashflowChart data={summary.cashflow} monthLabel={summary.monthLabel} /><ExpenseActivityDonut summary={summary} /></div>
 
-    <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)_minmax(0,0.92fr)]">
+    <div className="finance-details mt-4 grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)_minmax(0,0.92fr)]">
       <RecentTransactionsCard transactions={summary.transactions} monthLabel={summary.monthLabel} onSelect={(transaction) => setSelection({ kind: transaction.direction, id: transaction.id })} onViewAll={onOpenRecords} />
       <GoalBudgetSummary summary={summary.budgetPlan} />
-      <div className="md:col-span-2 xl:col-span-1"><MonthStory summary={summary} /></div>
+      <div className="finance-story md:col-span-2 xl:col-span-1"><MonthStory summary={summary} /></div>
     </div>
 
     <section id="finance-planning-management" className="mt-10 border-t border-[var(--border-subtle)] pt-8" aria-labelledby="finance-planning-heading">
@@ -101,4 +106,4 @@ export function ExpensesPage({ onOpenRecords }: { onOpenRecords: () => void }) {
   </Page>
 }
 
-function Page({ children }: { children: ReactNode }) { return <div className="core-page mx-auto w-full max-w-[92rem] px-4 py-5 sm:px-6 lg:px-8">{children}</div> }
+function Page({ children }: { children: ReactNode }) { return <div className="core-page finance-page mx-auto w-full max-w-[92rem] px-4 py-5 sm:px-6 lg:px-8">{children}</div> }

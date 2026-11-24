@@ -1,4 +1,5 @@
 .about-page {
+  container: about-content / inline-size;
   position: relative;
   isolation: isolate;
   margin-inline: auto;
@@ -31,6 +32,8 @@
 .about-section > .about-greeting { color: var(--text-primary) !important; font-size: 1.125rem !important; }
 .about-placeholder { margin-top: 1.5rem; padding: 1rem; border: 1px dashed var(--border-strong); border-radius: 1rem; color: var(--text-secondary); font-size: .8125rem; line-height: 1.8; }
 .about-placeholder-label { color: var(--accent-soft); font-weight: 600; margin-bottom: .4rem; }
+.about-biography { font-size: .9375rem; line-height: 1.9; overflow-wrap: anywhere; }
+.about-biography p + p { margin-top: 1rem; }
 .about-section > .about-story-closing { color: var(--accent-soft) !important; }
 .about-interests { margin-block: 1.5rem; padding-inline: 0; }
 .about-interests-grid { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: 0; margin: 1.5rem 0 0; }
@@ -64,3 +67,35 @@
 @media (prefers-reduced-motion: reduce) { .about-page *, .about-page *::before, .about-page *::after { scroll-behavior: auto; transition: none; animation: none; } }
 @media (prefers-reduced-transparency: reduce) { .about-glass { backdrop-filter: none; background: var(--surface-primary); } }
 @media (forced-colors: active) { .about-stars, .about-orbit, .about-stage-halo { display: none; } .about-glass { border: 1px solid CanvasText; } }
+
+/* C3 keeps the narrative, stars and existing artwork; refine the reading space. */
+.about-glass { backdrop-filter: blur(10px); }
+.about-hero h1 { letter-spacing: -.04em; }
+.about-hero-figure figcaption { max-width: 27ch; font-size: .8125rem; line-height: 1.8; }
+.about-section-nav { gap: .35rem .65rem; margin-block: 1.25rem 2rem; padding: .6rem 0; border-block: 1px solid var(--border-subtle); }
+.about-section-nav a { padding: .45rem .7rem; border-radius: .65rem; font-size: .875rem; text-decoration: none; line-height: 1.6; }
+.about-section-nav a:hover { background: var(--accent-wash); color: var(--text-primary); }
+.about-page a:focus-visible, .about-page button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.about-story-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr)); gap: 1.5rem; }
+.about-section > p:not(.about-eyebrow) { max-width: 66ch; font-size: 1rem; line-height: 1.9; }
+.about-interests { margin-block: 2.25rem; }
+.about-interests-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+.about-interest p { font-size: .875rem; line-height: 1.85; }
+.about-interactive-layout { grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1.75rem; }
+.about-interactive-description { max-width: 48ch; line-height: 1.9; }
+.about-gesture-status { font-size: .875rem; }
+.about-section:target { outline: 1px solid var(--accent-soft); outline-offset: 4px; }
+@container about-content (width < 44rem) { .about-hero { grid-template-columns: minmax(0, 1fr); } }
+@container about-content (width < 30rem) {
+  .about-hero-figure { grid-template-columns: 6rem minmax(0, 1fr); gap: 1rem; align-items: center; padding-top: .5rem; }
+  .about-hero-figure img { width: 6rem; }
+  .about-hero-figure figcaption { margin: 0; text-align: left; }
+  .about-hero-figure .about-orbit { left: -.75rem; width: 7.5rem; }
+  .about-hero-figure .about-orbit-two { left: -.25rem; width: 6.5rem; }
+}
+@container about-content (width < 18rem) {
+  .about-hero-figure { grid-template-columns: minmax(0, 1fr); }
+  .about-hero-figure figcaption { text-align: center; }
+  .about-hero-figure .about-orbit { left: calc(50% - 3.75rem); }
+  .about-hero-figure .about-orbit-two { left: calc(50% - 3.25rem); }
+}

@@ -18,7 +18,7 @@ async function loaded() { await act(async () => { loaders.at(-1)!.onload!() }) }
 beforeEach(() => { loaders = []; vi.stubGlobal('Image', LoaderImage) })
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
-describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 352, 656], ['eden-watching', 352, 656], ['eden-swim', 352, 656], ['eden-boxing', 352, 656], ['eden-tarot', 352, 656], ['eden-iching', 352, 656], ['eden-bazi', 352, 656], ['eden-astrology', 352, 656], ['eden-ziwei', 352, 656], ['eden-ai-explorer', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
+describe.each([['eden-treasurer', 352, 656], ['eden-archivist', 264, 492], ['eden-reflector', 264, 492], ['eden-watching', 352, 656], ['eden-swim', 352, 656], ['eden-boxing', 352, 656], ['eden-tarot', 352, 656], ['eden-iching', 352, 656], ['eden-bazi', 352, 656], ['eden-astrology', 352, 656], ['eden-ziwei', 352, 656], ['eden-ai-explorer', 352, 656]] as const)('wardrobe rendering independent of layout and motion: %s', (avatarId, width, height) => {
   it('preloads/decode-checks the approved image while retaining a safe default', async () => {
     const view = render(<AvatarAppearance avatarId={avatarId} {...idle} />)
     expect(appearance().getAttribute('data-avatar-id')).toBe('eden-default')

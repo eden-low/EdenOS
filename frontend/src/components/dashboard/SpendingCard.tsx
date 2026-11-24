@@ -33,8 +33,8 @@ export function SpendingCard({ spending, finance, goals, goalAllocations, planni
   const allocationsSen = sumGoalAllocations(goalAllocations)
   const availableSen = finance.netCashflowSen - allocationsSen
   return <section aria-label={`${spending.month} finance overview`} className="dashboard-card dashboard-widget dashboard-widget-finance p-5 sm:p-6">
-    <div className="flex items-start justify-between gap-4"><div><p className="section-label">Finance Overview</p><p className="mt-1 text-sm text-[var(--text-secondary)]">{spending.month} cashflow</p></div><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-wash)] text-[var(--accent-soft)]"><Landmark size={20} /></span></div>
-    {loaded ? <div className="mt-5 grid grid-cols-2 gap-3">
+    <div className="today-widget-heading flex flex-wrap items-start justify-between gap-4"><div><p className="section-label">Finance Overview</p><p className="mt-1 text-sm text-[var(--text-secondary)]">{spending.month} cashflow</p></div><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-wash)] text-[var(--accent-soft)]"><Landmark size={20} /></span></div>
+    {loaded ? <div className="today-money-metrics mt-5 grid grid-cols-2 gap-3">
       <MiniMetric icon={<ArrowDownLeft size={15} />} label="Income" amount={finance.incomeSen} positive />
       <MiniMetric icon={<ArrowUpRight size={15} />} label="Expenses" amount={finance.expenseSen} />
       <MiniMetric icon={<Landmark size={15} />} label="Goal allocations" amount={planningStatus === 'loaded' ? allocationsSen : null} positive />

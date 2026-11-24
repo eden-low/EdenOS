@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useLocalReferenceDate } from '../hooks/useLocalReferenceDate'
 import { useAnimeProgress } from '../state/useAnimeProgress'
@@ -40,6 +40,58 @@ describe('Today V2', () => {
     animeRepository.countPublishedSince.mockResolvedValue(3)
   })
 
+  it('uses static Today atmosphere without mounting the large lotus artwork', async () => {
+    const { container } = await act(async () => render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />))
+    expect(container.querySelector('.today-atmosphere')?.getAttribute('aria-hidden')).toBe('true')
+    expect(container.querySelector('.today-lotus-backdrop')).toBeNull()
+  })
+
+  it.each(['empty', 'previous-week'])('shows zero workouts, minutes and metres for a loaded %s week', async (scenario) => {
+    const records = vi.mocked(useRecords).getMockImplementation()!()
+    const previous = { ...records.exerciseRecords[0], occurredAt: new Date(2026, 8, 20, 23, 59).toISOString() }
+    vi.mocked(useRecords).mockReturnValue({ ...records, exerciseRecords: scenario === 'empty' ? [] : [previous] })
+    await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
+    const activity = within(screen.getByText('Weekly activity').closest('article')!)
+    expect(activity.getByText('0 workouts')).toBeTruthy()
+    expect(activity.getByText('0 min')).toBeTruthy()
+    const workout = within(screen.getByRole('region', { name: 'Weekly exercise' }))
+    expect(workout.getByText('0', { selector: 'strong' })).toBeTruthy()
+    expect(workout.getByText('0 min')).toBeTruthy()
+    expect(workout.getByText('0 m')).toBeTruthy()
+    expect(workout.getByText('No exercise this week')).toBeTruthy()
+    expect(workout.queryByText('1 min')).toBeNull()
+  })
+
+  it('keeps actual cumulative workout duration and distance in both Today surfaces', async () => {
+    const records = vi.mocked(useRecords).getMockImplementation()!()
+    vi.mocked(useRecords).mockReturnValue({ ...records, exerciseRecords: [
+      { ...records.exerciseRecords[0], durationSeconds: 1800, distanceMetres: 2500 },
+      { ...records.exerciseRecords[0], id: 'second', durationSeconds: 3600, distanceMetres: 1500 },
+    ] })
+    await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
+    const activity = within(screen.getByText('Weekly activity').closest('article')!)
+    expect(activity.getByText('2 workouts')).toBeTruthy()
+    expect(activity.getByText('1 hr 30 min')).toBeTruthy()
+    const workout = within(screen.getByRole('region', { name: 'Weekly exercise' }))
+    expect(workout.getByText('2', { selector: 'strong' })).toBeTruthy()
+    expect(workout.getByText('1 hr 30 min')).toBeTruthy()
+    expect(workout.getByText('4 km')).toBeTruthy()
+  })
+
+  it.each(['loading', 'error'] as const)('keeps %s workout data distinct from a loaded empty week', async (status) => {
+    const records = vi.mocked(useRecords).getMockImplementation()!()
+    vi.mocked(useRecords).mockReturnValue({ ...records, exerciseRecords: [], exerciseStatus: status, exerciseError: status === 'error' ? 'Synthetic unavailable' : null })
+    await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
+    const activity = within(screen.getByText('Weekly activity').closest('article')!)
+    expect(activity.queryByText('0 workouts')).toBeNull()
+    expect(activity.queryByText('0 min')).toBeNull()
+    const workout = within(screen.getByRole('region', { name: 'Weekly exercise' }))
+    expect(workout.queryByText('0 min')).toBeNull()
+    expect(workout.queryByText('0 m')).toBeNull()
+    expect(workout.getByText(status === 'loading' ? /Loading exercise/ : 'Exercise unavailable')).toBeTruthy()
+    if (status === 'error') expect(workout.getByRole('button', { name: 'Retry' })).toBeTruthy()
+  })
+
   it('changes layout only in explicit edit mode and can reset the UID-local preference', async () => {
     await act(async () => { render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />) })
     expect(screen.getByRole('button', { name: 'Open Finance' })).toBeTruthy()
@@ -77,15 +129,17 @@ describe('Today V2', () => {
     await act(async () => { ({ container, unmount } = render(<TodayPage onNavigate={vi.fn()} onOpenCommand={vi.fn()} />)) })
     expect(container.querySelector('.today-dashboard')).toBeTruthy()
     expect(container.querySelector('.today-dashboard-content')).toBeTruthy()
-    expect(container.querySelector('.today-lotus-backdrop')).toBeTruthy()
+    expect(container.querySelector('.today-atmosphere')).toBeTruthy()
     expect(container.querySelector('.dashboard-widget-grid')).toBeTruthy()
     expect(container.querySelectorAll('.dashboard-summary-widget')).toHaveLength(4)
     expect(container.querySelector('.dashboard-widget-finance')).toBeTruthy()
     expect(container.querySelector('.dashboard-widget-fitness')).toBeTruthy()
     expect(container.querySelector('.dashboard-widget-cosmos')).toBeTruthy()
-    expect(container.querySelector('.dashboard-quick-capture')).toBeTruthy()
+    expect(container.querySelectorAll('.dashboard-quick-capture')).toHaveLength(1)
+    expect(container.querySelector('.dashboard-quick-capture .lucide-plus')).toBeTruthy()
+    expect(container.querySelector('[data-global-capture]')).toBeNull()
     unmount()
-    expect(document.querySelector('.today-lotus-backdrop')).toBeNull()
+    expect(document.querySelector('.today-atmosphere')).toBeNull()
   })
 
   it('never exposes dashboard finance amounts while Expense Privacy Lock is active', async () => {

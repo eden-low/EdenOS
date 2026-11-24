@@ -7,19 +7,19 @@ vi.mock('../capture/CaptureSheet', () => ({ CaptureSheet: ({ children }: { child
 vi.mock('../account/AccountDialog', () => ({ AccountDialog: ({ children }: { children: ReactNode }) => <>{children}</> }))
 
 describe('Mobile Navigation V2', () => {
-  it.each<AppPage>(['today', 'expenses', 'exercise', 'records', 'review', 'anime', 'cosmos', 'about'])('renders the global Capture and its wrapper only on Today: %s', (page) => {
+  it.each<AppPage>(['today', 'expenses', 'exercise', 'records', 'review', 'anime', 'cosmos', 'about'])('does not render a floating Capture after navigation: %s', (page) => {
     const { container, rerender } = render(<MobileNavigation activePage="today" onNavigate={vi.fn()} />)
     rerender(<MobileNavigation activePage={page} onNavigate={vi.fn()} />)
-    expect(screen.queryByRole('button', { name: 'Capture something' }) !== null).toBe(page === 'today')
-    expect(container.querySelector('[data-global-capture]') !== null).toBe(page === 'today')
+    expect(screen.queryByRole('button', { name: 'Capture something' })).toBeNull()
+    expect(container.querySelector('[data-global-capture]')).toBeNull()
     rerender(<MobileNavigation activePage="today" onNavigate={vi.fn()} />)
-    expect(screen.getAllByRole('button', { name: 'Capture something' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Capture something' })).toBeNull()
   })
 
-  it('keeps only Capture at the bottom and exposes the approved app drawer', async () => {
+  it('exposes the approved app drawer without a duplicate Capture entry', async () => {
     const navigate = vi.fn()
     render(<MobileNavigation activePage="today" onNavigate={navigate} />)
-    expect(screen.getAllByRole('button', { name: 'Capture something' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Capture something' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Open apps' }))
     const drawer = await screen.findByRole('dialog', { name: 'Apps' })
     for (const label of ['Today', 'Expenses', 'Exercise', 'Records', 'Review', 'Anime', 'Cosmos', 'About Eden', 'Account']) expect(drawer.textContent).toContain(label)

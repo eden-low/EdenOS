@@ -18,5 +18,5 @@ export function MonthStory({ summary }: { summary: FinanceSummary }) {
 }
 
 function Story({ label, value, detail, attention = false }: { label: string; value: React.ReactNode; detail: React.ReactNode; attention?: boolean }) {
-  return <div className={`flex items-start justify-between gap-4 py-3 first:pt-0 ${attention ? 'text-[var(--warning)]' : ''}`}><div className="min-w-0"><p className="text-xs font-semibold text-[var(--text-secondary)]">{label}</p><div className="mt-0.5 text-[0.7rem] leading-4 text-[var(--text-muted)]">{detail}</div></div><div className="shrink-0 text-sm font-semibold">{value}</div></div>
+  return <div className={`finance-story-row flex flex-wrap items-start justify-between gap-4 py-3 first:pt-0 ${attention ? 'text-[var(--warning)]' : ''}`}><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-[var(--text-secondary)]">{label}</p><div className="mt-0.5 text-sm leading-relaxed text-[var(--text-muted)]">{detail}</div></div><div className="finance-story-value max-w-full text-sm font-semibold">{value}</div></div>
 }

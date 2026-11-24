@@ -6,7 +6,7 @@ import { expect, it } from 'vitest'
 import metadata from './assets/eden-reflector-journal-motion-v1.json'
 
 const hash=(bytes:Buffer)=>createHash('sha256').update(bytes).digest('hex')
-it('validates six authorized candidate cells, alpha, common crop, feet, native facing and untouched still',async()=>{
+it('validates six unchanged authorized cells, alpha, common crop, feet, native facing and the D2 canonical still',async()=>{
  const bytes=await readFile(new URL('./assets/eden-reflector-journal-motion-v1.webp',import.meta.url))
  expect(hash(bytes)).toBe(metadata.runtime.sha256);expect(bytes.length).toBe(metadata.runtime.bytes)
  expect(await sharp(bytes).metadata()).toMatchObject({width:792,height:984,hasAlpha:true})
@@ -29,5 +29,5 @@ it('validates six authorized candidate cells, alpha, common crop, feet, native f
  expect(Math.max(...feet)-Math.min(...feet)).toBeLessThanOrEqual(1)
  expect(Math.max(...heads.slice(0,3))-Math.min(...heads.slice(0,3))).toBeLessThanOrEqual(1)
  const still=await readFile(new URL('./assets/eden-reflector-journal-static.webp',import.meta.url))
- expect(hash(still)).toBe('c19601cedd49beabf63ea3017eecc050010e5c3e3ed98684eee3e156d83b7ca3')
+ expect(hash(still)).toBe('dddd16cda31445da237139989eab5898eb74e3574132158bc8ba8f4a235d6879')
 })

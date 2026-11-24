@@ -1,36 +1,52 @@
 {
   "id": "eden-archivist",
-  "version": "4B-static-v1",
+  "version": "D2-static-v2",
+  "ownerAcceptance": "Pending staging real-device acceptance",
   "source": {
-    "file": "Part4B_Archivist_Eden_visual_draft.png",
-    "width": 380,
-    "height": 630,
-    "bytes": 372144,
-    "sha256": "ac632b474484cbdc7e2180530d5d7c681f109e7611fda83e122ceb999ccda47d"
+    "file": "eden-archivist-clipboard-motion-v1.webp",
+    "sha256": "44ec07f5377cc7487e2fdc0706e35d0be03e569ff62b44821d0b9b5e625efb3f",
+    "width": 792,
+    "height": 984,
+    "frame": 1,
+    "role": "Existing six-frame motion atlas; canonical rest design reviewed for D2"
+  },
+  "previousStatic": {
+    "version": "4B-static-v1",
+    "width": 264,
+    "height": 492,
+    "bytes": 48890,
+    "sha256": "75bef2ce7bfcd3e0175e7f7c5f367541084e45df391ac90ca0baefc9f88ebf83",
+    "sourceFile": "Part4B_Archivist_Eden_visual_draft.png",
+    "sourceSha256": "ac632b474484cbdc7e2180530d5d7c681f109e7611fda83e122ceb999ccda47d"
   },
   "derivation": {
-    "crop": {
-      "left": 74,
-      "top": 7,
-      "width": 266,
-      "height": 623
+    "script": "scripts/prepareD2AvatarStatics.mjs",
+    "extract": {
+      "left": 0,
+      "top": 0,
+      "width": 264,
+      "height": 492
     },
-    "fit": "contain",
-    "position": "centre",
-    "webp": {
-      "quality": 92,
-      "alphaQuality": 100,
+    "resize": null,
+    "mirror": false,
+    "alphaValuesChanged": false,
+    "transparentRGB": "Zero RGB only where alpha is already zero",
+    "encoding": {
+      "lossless": true,
       "effort": 6,
-      "smartSubsample": true
-    }
+      "alphaQuality": 100
+    },
+    "decodedRgbaSha256": "b78d01dadd2611b0b9e007cbcc1ba2f098c2683650b415b8dc9171bf5e2e10bf",
+    "sharpVersion": "0.35.4"
   },
   "runtime": {
     "file": "eden-archivist-clipboard-static.webp",
     "width": 264,
     "height": 492,
-    "bytes": 48890,
-    "sha256": "75bef2ce7bfcd3e0175e7f7c5f367541084e45df391ac90ca0baefc9f88ebf83",
+    "bytes": 100814,
+    "sha256": "078116da0f3f69aaea0632dc1af9225f7345b1bad97df0e1a2a8c0cd0c9fd475",
     "hasAlpha": true,
+    "nativeFacing": "left",
     "cssFrame": {
       "width": 88,
       "height": 164

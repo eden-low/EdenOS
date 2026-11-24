@@ -29,5 +29,5 @@ it('verifies all true drawing cells, source order, transparency, registered shoe
  expect(Math.max(...heads.slice(0,3))-Math.min(...heads.slice(0,3))).toBeLessThanOrEqual(2)
  expect(heads[3]-heads[0]).toBeGreaterThan(3) // Drawn look-down is intentional, not an idle jump.
  const still=await readFile(new URL('./assets/eden-archivist-clipboard-static.webp',import.meta.url))
- expect(digest(still)).toBe('75bef2ce7bfcd3e0175e7f7c5f367541084e45df391ac90ca0baefc9f88ebf83')
+ expect(digest(still)).toBe('078116da0f3f69aaea0632dc1af9225f7345b1bad97df0e1a2a8c0cd0c9fd475')
 })

@@ -1,4 +1,4 @@
-import { act, cleanup, render } from '@testing-library/react'
+import { act, cleanup, fireEvent, render } from '@testing-library/react'
 import { Profiler, StrictMode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createAvatarMotion } from './avatarMotion'
@@ -43,7 +43,7 @@ it('resumes a paused page turn at idle with fresh deadlines and no catch-up',()=
 it('uses real page cells, no idle commits, Reduced Motion pause and Strict Mode cleanup',async()=>{
  const commits=vi.fn(),tree=(paused=false)=><StrictMode><Profiler id="reflector" onRender={commits}><AvatarMotionLayer definition={reflectorMotion} paused={paused}/></Profiler></StrictMode>
  const view=render(tree(true));expect(loaders).toHaveLength(0)
- view.rerender(tree());await act(async()=>{loaders.at(-1)!.onload!()})
+ view.rerender(tree());await act(async()=>{loaders.at(-1)!.onload!()});fireEvent.load(layer().querySelector('image')!)
  const before=commits.mock.calls.length;act(()=>vi.advanceTimersByTime(6000));expect(commits).toHaveBeenCalledTimes(before)
  act(()=>vi.advanceTimersByTime(20700));expect(layer().dataset.motionAction).toBe('pageTurn')
  expect(layer().querySelector('svg')?.getAttribute('viewBox')).toBe('264 492 264 492')
@@ -64,7 +64,8 @@ it('keeps the approved static Reflector if the atlas fails and recovers once onl
  expect(document.querySelector('.eden-avatar-facing')?.hasAttribute('data-mirrored')).toBe(false)
  const count=loaders.length;act(()=>vi.advanceTimersByTime(60000));expect(loaders).toHaveLength(count)
  act(()=>dispatchEvent(new Event('online')));expect(loaders).toHaveLength(count+1)
- await act(async()=>{loaders.at(-1)!.onload!()});expect(layer().dataset.motionActive).toBe('true')
+ await act(async()=>{loaders.at(-1)!.onload!()});expect(layer().dataset.motionActive).toBe('false')
+ fireEvent.load(layer().querySelector('image')!);expect(layer().dataset.motionActive).toBe('true')
 })
 it('ignores an old decode after unmount and removes its lifecycle/online listeners',async()=>{
  let finish!:()=>void
@@ -76,7 +77,7 @@ it('ignores an old decode after unmount and removes its lifecycle/online listene
 })
 it('does not interrupt a Reflector action on a Finance Lock context change',async()=>{
  const tree=(locked:boolean)=><PrivacyLockContext.Provider value={{...unlockedPrivacyLock,locked}}><AvatarMotionLayer definition={reflectorMotion} paused={false}/></PrivacyLockContext.Provider>
- const view=render(tree(true));await act(async()=>{loaders[0].onload!()})
+ const view=render(tree(true));await act(async()=>{loaders[0].onload!()});fireEvent.load(layer().querySelector('image')!)
  act(()=>vi.advanceTimersByTime(6850));expect(layer().dataset.motionFrame).toBe('2')
  view.rerender(tree(false));act(()=>vi.advanceTimersByTime(80))
  expect(layer().dataset.motionFrame).toBe('3');expect(vi.getTimerCount()).toBe(1)

@@ -1,0 +1,17 @@
+/* C1 opt-in introductions only. Existing typography, cards and themes stay intact. */
+.page-companion-introduction { display: grid; grid-template-columns: minmax(0, 1fr) 88px; align-items: end; gap: 16px; min-width: 0; flex: 1; }
+.page-companion-copy { min-width: 0; align-self: center; }
+.page-companion-landing { position: relative; width: 88px; height: 176px; isolation: isolate; pointer-events: none; }
+.page-companion-dock { position: absolute; left: 0; bottom: 2px; width: 88px; height: 164px; }
+.page-companion-contact { position: absolute; bottom: 0; left: 10px; width: 68px; height: 5px; background: radial-gradient(ellipse, rgba(9, 8, 22, .22), transparent 72%); }
+.page-companion-landing::before { position: absolute; content: ""; left: 0; bottom: -2px; width: 88px; height: 30px; background: radial-gradient(ellipse, rgba(146, 122, 190, .09), transparent 73%); }
+.page-companion-exercise::before { background: radial-gradient(ellipse, rgba(101, 184, 178, .1), transparent 73%); }
+.page-companion-introduction-review { grid-template-columns: 88px minmax(0, 1fr); }
+.page-companion-introduction-review .page-companion-landing { grid-row: 1; grid-column: 1; }
+.page-companion-introduction-review .page-companion-copy { grid-row: 1; grid-column: 2; }
+:root[data-theme="light"] .page-companion-contact { background: radial-gradient(ellipse, rgba(57, 44, 78, .16), transparent 72%); }
+.cosmos-page .page-companion-contact { background: radial-gradient(ellipse, rgba(0, 0, 0, .25), transparent 72%); }
+.cosmos-page .page-companion-landing::before { background: radial-gradient(ellipse, rgba(194, 151, 80, .14), transparent 73%); }
+/* Once a home is outside the safe viewport or an overlay wins, no detached shadow remains. */
+.page-companion-landing:not(:has(.eden-avatar[data-visible="true"])) .page-companion-contact { visibility: hidden; }
+@media (min-width: 640px) { .page-companion-introduction { gap: 24px; } }

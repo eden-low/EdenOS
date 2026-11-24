@@ -40,7 +40,7 @@ export function formatDistance(distanceMetres: number): string {
 }
 
 export function formatDuration(durationSeconds: number): string {
-  const totalMinutes = Math.max(1, Math.round(durationSeconds / 60))
+  const totalMinutes = durationSeconds === 0 ? 0 : Math.max(1, Math.round(durationSeconds / 60))
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
 

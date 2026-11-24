@@ -1,3 +1,4 @@
+import { PageCompanionDock } from '../components/avatar/PageCompanionDock'
 import { Activity, CircleAlert, Flame, Footprints, Plus, Timer, Trophy } from 'lucide-react'
 import { createElement, useMemo, type ReactNode } from 'react'
 import { CaptureSheet } from '../components/capture/CaptureSheet'
@@ -22,7 +23,10 @@ export function ExercisePage({ onOpenRecords }: { onOpenRecords: () => void }) {
 
   return <Page>
     <header className="flex flex-col justify-between gap-5 py-2 sm:py-3 lg:flex-row lg:items-end">
-      <div><p className="section-label text-[var(--accent-teal)]">Movement</p><h1 className="mt-2 text-[clamp(2rem,5vw,3.35rem)] font-semibold leading-[1.02] tracking-[-0.055em]">Exercise</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">Your weekly movement, consistency, and supported personal bests.</p></div>
+      <div className="page-companion-introduction">
+        <div className="page-companion-copy"><p className="section-label text-[var(--accent-teal)]">Movement</p><h1 className="page-title mt-2 text-[clamp(2rem,5vw,3.35rem)] font-semibold leading-[1.02] tracking-[-0.055em]">Exercise</h1><p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">Your weekly movement, consistency, and supported personal bests.</p></div>
+        <PageCompanionDock page="exercise" />
+      </div>
       <div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={onOpenRecords}>View records</Button><CaptureSheet><Button type="button"><Plus size={17} />Capture workout</Button></CaptureSheet></div>
     </header>
 

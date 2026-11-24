@@ -21,7 +21,7 @@ export function DailyQuote({ referenceDate }: { referenceDate: Date }) {
 
   const credit = quote && attribution(quote)
   return (
-    <section aria-label="Daily quote" className="flex min-h-28 min-w-0 flex-col justify-center px-4 py-3 sm:min-h-20 sm:px-5">
+    <section aria-label="Daily quote" className="daily-quote flex min-h-28 min-w-0 flex-col justify-center px-4 py-3 sm:min-h-20 sm:px-5">
       <p className="section-label">Daily quote</p>
       {quote ? (
         <div className="mt-1 min-w-0 sm:flex sm:items-baseline sm:justify-between sm:gap-5">

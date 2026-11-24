@@ -46,7 +46,7 @@ function App() {
     <div className="min-h-[100dvh] text-[var(--text-primary)]">
       <DesktopNavigation key={`desktop:${activePage}`} activePage={activePage} onNavigate={navigate} />
 
-      <main className="min-w-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-[calc(3.25rem+env(safe-area-inset-top))] lg:ml-28 lg:pb-8 lg:pt-0">
+      <main className={`min-w-0 ${activePage === 'today' ? 'pb-[calc(1.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(6.5rem+env(safe-area-inset-bottom))]'} pt-[calc(3.25rem+env(safe-area-inset-top))] lg:ml-28 lg:pb-8 lg:pt-0`}>
         <Suspense key={activePage} fallback={<div className="mx-auto max-w-[92rem] px-4 py-8 text-sm text-[var(--text-muted)]">Opening…</div>}>
           {activePage === 'today' ? (
             <TodayPage onNavigate={navigate} onOpenCommand={() => setCommandOpen(true)} />

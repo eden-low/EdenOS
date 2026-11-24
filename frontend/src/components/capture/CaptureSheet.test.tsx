@@ -5,7 +5,7 @@ import { RecordsContext, type RecordsContextValue } from '../../state/recordsCon
 import type { ExpenseData, ExpenseDraft, ExerciseData, ExerciseDraft, RecordDraft } from '../../types/records'
 import type { ReceiptCandidate } from '../../types/receipt'
 import type { FitnessScreenshotCandidate } from '../../types/fitnessScreenshot'
-import { CaptureSheet } from './CaptureSheet'
+import { DashboardHeader } from '../dashboard/DashboardHeader'
 import { AvatarCaptureContext } from '../avatar/AvatarCaptureContext'
 
 const { readReceiptImage } = vi.hoisted(() => ({
@@ -79,7 +79,7 @@ function Harness() {
   } as RecordsContextValue
 
   return <RecordsContext.Provider value={value}>
-    <CaptureSheet><button type="button">Capture</button></CaptureSheet>
+    <DashboardHeader greeting="Good morning" displayDate="Synthetic date" />
     <output data-testid="draft-count">{drafts.length}</output>
     <output data-testid="draft-data">{
       drafts[0]?.kind === 'expense'

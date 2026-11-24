@@ -10,7 +10,7 @@ export function AnimeCard({ anime, onOpen }: { anime: AnimeSummary; onOpen: (ani
     <button
       type="button"
       onClick={() => onOpen(anime)}
-      className="group min-w-0 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-left outline-none transition-transform hover:-translate-y-1 focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
+      className="anime-poster-card group min-w-0 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-primary)] text-left outline-none transition-colors focus-visible:ring-3 focus-visible:ring-[var(--focus)]"
       aria-label={`Open ${anime.title}`}
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-[var(--surface-secondary)]">
@@ -23,7 +23,7 @@ export function AnimeCard({ anime, onOpen }: { anime: AnimeSummary; onOpen: (ani
           <Play aria-hidden="true" size={16} fill="currentColor" />
         </span>
       </div>
-      <div className="p-3">
+      <div className="anime-poster-copy p-3">
         <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-[var(--text-primary)]">{anime.title}</h3>
         <p className="mt-2 flex flex-wrap gap-x-2 text-xs text-[var(--text-muted)]">
           {anime.year && <span>{anime.year}</span>}

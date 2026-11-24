@@ -22,7 +22,7 @@
   --accent-soft: #a99eff;
   --accent-wash: rgba(123, 111, 248, 0.14);
   --accent-wash-strong: rgba(123, 111, 248, 0.2);
-  --accent-blue: #5274ba;
+  --accent-blue: #89a9e5;
   --accent-blue-wash: rgba(71, 103, 171, 0.17);
   --accent-teal: #58aab0;
   --accent-teal-wash: rgba(79, 157, 166, 0.13);
@@ -39,7 +39,9 @@
 
   --text-primary: #f5f7fb;
   --text-secondary: #a9b3c3;
-  --text-muted: #7d889c;
+  --text-muted: #9aa6ba;
+  --text-on-accent: #17132f;
+  --focus-ring: #c3baff;
   --text-on-accent-soft: #141126;
   --border-subtle: rgba(255, 255, 255, 0.075);
   --border-strong: rgba(255, 255, 255, 0.12);
@@ -84,11 +86,11 @@
   --accent-wash-strong: rgba(98, 86, 216, 0.16);
   --accent-blue: #486ca7;
   --accent-blue-wash: rgba(72, 108, 167, 0.1);
-  --accent-teal: #347e82;
+  --accent-teal: #276d72;
   --accent-teal-wash: rgba(52, 126, 130, 0.1);
-  --accent-amber: #9b7133;
+  --accent-amber: #805a28;
   --accent-amber-wash: rgba(155, 113, 51, 0.1);
-  --positive: #327966;
+  --positive: #246650;
   --positive-wash: rgba(50, 121, 102, 0.1);
   --warning: #8a642d;
   --warning-wash: rgba(138, 100, 45, 0.1);
@@ -97,8 +99,10 @@
   --danger-wash-strong: rgba(179, 79, 94, 0.14);
   --danger-border: rgba(179, 79, 94, 0.22);
   --text-primary: #252736;
-  --text-secondary: #5e6272;
-  --text-muted: #777b8b;
+  --text-secondary: #4f5363;
+  --text-muted: #5d6273;
+  --text-on-accent: #fffdf9;
+  --focus-ring: #473ca8;
   --text-on-accent-soft: #ffffff;
   --border-subtle: rgba(45, 39, 71, 0.1);
   --border-strong: rgba(45, 39, 71, 0.17);
@@ -817,6 +821,11 @@ button:not(:disabled) {
   color: var(--text-muted);
 }
 
+/* Match the unlayered form-control cascade without changing other forms. */
+.form-control.command-search-input { padding-inline: 2.75rem 3.5rem; }
+.command-search-icon { position: absolute; inset-inline-start: 1rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.command-search-hint { position: absolute; inset-inline-end: .75rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+
 .form-control:focus {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--focus);
@@ -1283,3 +1292,17 @@ button:not(:disabled) {
   .press-feedback:not(:disabled):active,
   .capture-dialog button:not(:disabled):active { transform: none; }
 }
+
+/* C2: a visible keyboard boundary survives the Search action's transparent glass reset. */
+.today-dashboard .dashboard-search-action:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--surface-primary);
+}
+/* Shared heading role; Today and About retain their accepted/narrative title scales. */
+.page-title { font-size: clamp(2rem, 4vw, 3.35rem); line-height: 1.12; letter-spacing: -.04em; }
+.core-page > header p:not(.section-label) { line-height: 1.65; }
+@media (forced-colors: active) {
+  .today-dashboard .dashboard-search-action:focus-visible { outline-color: Highlight; }
+}
+.review-context-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); }

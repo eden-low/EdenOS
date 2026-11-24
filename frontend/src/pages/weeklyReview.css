@@ -1,0 +1,12 @@
+/* Review only: content-sized tracks preserve the chosen text size. */
+.weekly-review-page { overflow-wrap: anywhere; }
+.weekly-review-page .page-companion-introduction-review { display: flex; flex-wrap: wrap; align-items: center; }
+.weekly-review-page .page-companion-copy { flex: 1 1 11rem; }
+.weekly-review-page .page-companion-landing { order: -1; flex: none; }
+.weekly-review-page .review-week-selector { flex-direction: row; flex-wrap: wrap; }
+.weekly-review-page .review-week-dates { flex: 1 1 18rem; }
+.weekly-review-page .review-week-actions { display: flex; flex-wrap: wrap; min-width: 0; max-width: 100%; }
+.weekly-review-page .review-week-actions button { flex: 1 1 7rem; white-space: normal; height: auto; }
+.weekly-review-page .review-context-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+.weekly-review-page .review-context-grid > section { min-width: 0; }
+.weekly-review-page form button { max-width: 100%; white-space: normal; height: auto; }
