@@ -100,13 +100,48 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled, p
     let frame = 0
     let disposed = false
     let dirty = true
+    let followingUntil = 0
+    let suspended = document.visibilityState === 'hidden'
     let controls: Element[] = []
     let nativeMediaFullscreen = false
     const todayDock = reserveCapture ? document.querySelector<HTMLElement>('[data-today-avatar-dock]') : null
-    const invalidate = () => { dirty = true; if (!frame) frame = requestAnimationFrame(measure) }
+    const invalidate = () => {
+      dirty = true
+      if (!disposed && !suspended && !frame) frame = requestAnimationFrame(measure)
+    }
+    // Only follow geometry animations on the Sheet. A settled Sheet has no frame loop.
+    const followSheet = (source: Element | null = anchor?.sheet ?? null) => {
+      if (anchor && source && !suspended) {
+        const style = getComputedStyle(source)
+        const milliseconds = (value: string) => value.split(',').map((part) => parseFloat(part) * (part.trim().endsWith('ms') ? 1 : 1000)).filter(Number.isFinite)
+        const duration = Math.max(0, ...milliseconds(style.animationDuration), ...milliseconds(style.transitionDuration))
+        const delay = Math.max(0, ...milliseconds(style.animationDelay), ...milliseconds(style.transitionDelay))
+        // Capture uses 200ms entry / 220ms height transitions. Bound unusual CSS too.
+        followingUntil = Math.max(followingUntil, performance.now() + Math.min(1000, duration + delay) + 32)
+      }
+      invalidate()
+    }
+    const geometryTransition = (event: Event) => {
+      if (!(event.target instanceof Element) || !anchor?.sheet.contains(event.target)) return
+      if (event.type === 'animationstart' && event.target === anchor.sheet) followSheet(event.target)
+      else if (event.type === 'transitionrun' && /^(transform|translate|scale|height|width|top|left|bottom|right|max-height)$/.test((event as TransitionEvent).propertyName)) followSheet(event.target)
+      else if (event.type !== 'animationstart' && event.type !== 'transitionrun') invalidate()
+    }
+    const pause = () => {
+      suspended = true
+      followingUntil = 0
+      cancelAnimationFrame(frame)
+      frame = 0
+      setOccluded(true)
+    }
+    const resume = () => {
+      suspended = document.visibilityState === 'hidden'
+      if (!suspended) followSheet()
+    }
+    const visibility = () => { if (document.visibilityState === 'hidden') pause(); else resume() }
     function measure() {
       frame = 0
-      if (disposed || !probe.current) return
+      if (disposed || suspended || !probe.current) return
       const visual = window.visualViewport
       const style = getComputedStyle(probe.current)
       const viewport = {
@@ -140,10 +175,13 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled, p
         return current.mode === next.mode && Math.abs(current.left - next.left) < 0.25 && Math.abs(current.top - next.top) < 0.25 && current.width === next.width ? current : next
       })
       // Rects, unlike ResizeObserver alone, also include animated transforms and height transitions.
-      if (anchor) frame = requestAnimationFrame(measure)
+      if (performance.now() < followingUntil) frame = requestAnimationFrame(measure)
     }
-    const observer = new MutationObserver(invalidate)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'hidden'] })
+    const observer = new MutationObserver((records) => {
+      // Position writes and sprite frames must not re-arm their own measurement.
+      if (records.some((record) => !host.contains(record.target))) invalidate()
+    })
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'hidden', 'style', 'class'] })
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(invalidate)
     resize?.observe(document.documentElement)
     if (anchor) resize?.observe(anchor.sheet)
@@ -157,9 +195,15 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled, p
     document.addEventListener('fullscreenchange', invalidate)
     document.addEventListener('webkitbeginfullscreen', enterMedia, true)
     document.addEventListener('webkitendfullscreen', exitMedia, true)
+    document.addEventListener('visibilitychange', visibility)
+    document.addEventListener('freeze', pause)
+    document.addEventListener('resume', resume)
+    window.addEventListener('pagehide', pause)
+    window.addEventListener('pageshow', resume)
+    for (const event of ['animationstart', 'animationend', 'animationcancel', 'transitionrun', 'transitionend', 'transitioncancel']) anchor?.sheet.addEventListener(event, geometryTransition)
     window.visualViewport?.addEventListener('resize', invalidate)
     window.visualViewport?.addEventListener('scroll', invalidate)
-    invalidate()
+    followSheet()
     return () => {
       disposed = true
       cancelAnimationFrame(frame)
@@ -171,10 +215,16 @@ function EdenAvatar({ avatarId, anchor, corner, reserveCapture, motionEnabled, p
       document.removeEventListener('fullscreenchange', invalidate)
       document.removeEventListener('webkitbeginfullscreen', enterMedia, true)
       document.removeEventListener('webkitendfullscreen', exitMedia, true)
+      document.removeEventListener('visibilitychange', visibility)
+      document.removeEventListener('freeze', pause)
+      document.removeEventListener('resume', resume)
+      window.removeEventListener('pagehide', pause)
+      window.removeEventListener('pageshow', resume)
+      for (const event of ['animationstart', 'animationend', 'animationcancel', 'transitionrun', 'transitionend', 'transitioncancel']) anchor?.sheet.removeEventListener(event, geometryTransition)
       window.visualViewport?.removeEventListener('resize', invalidate)
       window.visualViewport?.removeEventListener('scroll', invalidate)
     }
-  }, [anchor, corner, reserveCapture, pageDockSelector])
+  }, [anchor, corner, reserveCapture, pageDockSelector, host])
 
   const visible = !occluded && !anchor?.suspended && placement.mode !== 'hidden'
   // Layout/collisions can hide the standing avatar; only an open Capture may select its perch.

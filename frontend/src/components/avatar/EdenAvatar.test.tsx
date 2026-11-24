@@ -191,6 +191,84 @@ describe('Global avatar page and overlay scope', () => {
 })
 
 describe('Today companion portal lifecycle', () => {
+  it('settles Capture measurement, then remeasures viewport, focus, geometry and finite transitions', async () => {
+    let clock = 0, id = 0
+    const pending = new Map<number, FrameRequestCallback>()
+    vi.spyOn(performance, 'now').mockImplementation(() => clock)
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { pending.set(++id, callback); return id })
+    vi.stubGlobal('cancelAnimationFrame', (key: number) => pending.delete(key))
+    const visual = new EventTarget()
+    vi.stubGlobal('visualViewport', visual)
+    const advance = async (frames = 20) => {
+      for (let i = 0; i < frames; i++) await act(async () => {
+        clock += 16
+        const callbacks = [...pending.values()]; pending.clear()
+        callbacks.forEach((callback) => callback(clock))
+      })
+    }
+    const view = render(pageFixture('today'))
+    fireEvent.click(screen.getByRole('button', { name: 'Page Capture' }))
+    const sheet = document.querySelector<HTMLElement>('[data-eden-capture]')!
+    const rect = vi.spyOn(sheet, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 350, 1024, 400))
+    await advance()
+    expect(pending.size).toBe(0)
+    rect.mockClear()
+    await advance(100)
+    expect(rect).not.toHaveBeenCalled()
+    for (const [target, event] of [[window, 'resize'], [visual, 'resize'], [visual, 'scroll'], [document, 'focusin'], [window, 'scroll']] as const) {
+      act(() => target.dispatchEvent(new Event(event)))
+      await advance()
+      expect(rect).toHaveBeenCalled()
+      expect(pending.size).toBe(0)
+      rect.mockClear()
+    }
+    act(() => { sheet.style.top = '200px' })
+    await advance()
+    expect(rect).toHaveBeenCalled()
+    rect.mockClear()
+    act(() => { sheet.style.animationDuration = '200ms'; sheet.dispatchEvent(new Event('animationstart', { bubbles: true })) })
+    await advance(4)
+    expect(rect.mock.calls.length).toBeGreaterThan(1)
+    await advance(40)
+    expect(pending.size).toBe(0)
+    rect.mockClear()
+    await advance(100)
+    expect(rect).not.toHaveBeenCalled()
+    view.unmount()
+    expect(pending.size).toBe(0)
+  })
+
+  it('cancels geometry work on hidden/freeze/pagehide, resumes safely and removes listeners', async () => {
+    const frames = vi.fn((callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 16))
+    vi.stubGlobal('requestAnimationFrame', frames)
+    const view = render(pageFixture('today'))
+    fireEvent.click(screen.getByRole('button', { name: 'Page Capture' }))
+    await measure()
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    frames.mockClear()
+    await act(async () => { window.dispatchEvent(new Event('resize')); await new Promise((resolve) => setTimeout(resolve, 60)) })
+    expect(frames).not.toHaveBeenCalled()
+    expect(avatar().getAttribute('data-visible')).toBe('false')
+    delete (document as unknown as Record<string, unknown>).visibilityState
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+    await measure()
+    expect(frames).toHaveBeenCalled()
+    for (const [target, pause, resume] of [[document, 'freeze', 'resume'], [window, 'pagehide', 'pageshow']] as const) {
+      act(() => target.dispatchEvent(new Event(pause)))
+      frames.mockClear()
+      await measure()
+      expect(frames).not.toHaveBeenCalled()
+      act(() => target.dispatchEvent(new Event(resume)))
+      await measure()
+      expect(frames).toHaveBeenCalled()
+    }
+    view.unmount()
+    frames.mockClear()
+    act(() => { document.dispatchEvent(new Event('resume')); window.dispatchEvent(new Event('pageshow')); window.dispatchEvent(new Event('resize')) })
+    expect(frames).not.toHaveBeenCalled()
+  })
+
   it('keeps the same standing avatar visible across Finance Lock changes while honoring real overlays', async () => {
     const tree = (locked: boolean) => <PrivacyLockContext.Provider value={{ ...unlockedPrivacyLock, enabled: true, locked }}>
       <EdenAvatarProvider enabled><p>Today fixture</p></EdenAvatarProvider>
