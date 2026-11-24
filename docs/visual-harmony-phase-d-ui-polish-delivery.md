@@ -55,7 +55,7 @@
 - Firestore Emulator Rules: **not run this phase**; no Rules/data-access changes.
 - 34 avatar/About assets and 247 protected source files byte-identical to baseline before documentation was added. No new runtime dependencies or fixture code in product paths.
 
-Tools: Playwright 1.58.2 / Chrome 157.0.8103.79, Node 24.18.0, Vitest 5.0.1, TypeScript 6.0.2, Oxlint 1.79.0, Vite 8.2.2. These are Chromium simulations, not real Safari or native iPhone IME acceptance.
+Measured installed tools: Playwright 1.58.2 / Chrome 157.0.8103.79, Node 24.18.0, Vitest 5.0.1, TypeScript 6.0.3, Oxlint 1.82.0, Vite 8.2.2. These are Chromium simulations, not real Safari or native iPhone IME acceptance.
 
 ## Known risks and incomplete acceptance
 
