@@ -23,7 +23,7 @@ export function ExerciseCard({ exercise, status, error, onRetry, onOpen }: Exerc
       <div>
         <p className="section-label">This Week</p>
         {status === 'loaded' ? (
-          <div className="mt-4 grid grid-cols-3 gap-2"><OverviewMetric value={String(exercise.completedSessions)} label={exercise.completedSessions === 1 ? 'workout' : 'workouts'} /><OverviewMetric value={formatDuration(exercise.durationSeconds)} label="duration" /><OverviewMetric value={exercise.distanceMetres ? formatDistance(exercise.distanceMetres) : '0 m'} label="distance" /></div>
+          <div className="today-exercise-metrics mt-4 grid grid-cols-3 gap-2"><OverviewMetric value={String(exercise.completedSessions)} label={exercise.completedSessions === 1 ? 'workout' : 'workouts'} /><OverviewMetric value={formatDuration(exercise.durationSeconds)} label="duration" /><OverviewMetric value={exercise.distanceMetres ? formatDistance(exercise.distanceMetres) : '0 m'} label="distance" /></div>
         ) : (
           <p className="mt-4 text-xl font-semibold text-[var(--text-primary)]">
             {status === 'loading' ? 'Loading exercise…' : 'Exercise unavailable'}
@@ -31,7 +31,7 @@ export function ExerciseCard({ exercise, status, error, onRetry, onOpen }: Exerc
         )}
       </div>
 
-      <div className="dashboard-widget-inset mt-7 flex items-center gap-4 rounded-2xl p-4 sm:p-5">
+      <div className="today-exercise-latest dashboard-widget-inset mt-7 flex items-center gap-4 rounded-2xl p-4 sm:p-5">
         <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--accent-teal-wash)] text-[var(--accent-teal)]">
           {createElement(ExerciseIcon, { 'aria-hidden': true, size: 20, strokeWidth: 1.8 })}
         </span>

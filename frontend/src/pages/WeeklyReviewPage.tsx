@@ -1,4 +1,5 @@
 import { PageCompanionDock } from '../components/avatar/PageCompanionDock'
+import './weeklyReview.css'
 import { ChevronLeft, ChevronRight, Dumbbell, PlayCircle, ReceiptText } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { FinancialAmount } from '../components/privacy/FinancialAmount'
@@ -34,7 +35,7 @@ export function WeeklyReviewPage() {
   const summary = useMemo(() => selectWeeklyReview(expenseStatus === 'loaded' ? expenses : [], exerciseStatus === 'loaded' ? exerciseRecords : [], selectedWeekStart, incomeStatus === 'loaded' ? incomes : [], animeProgress.items), [animeProgress.items, expenses, expenseStatus, exerciseRecords, exerciseStatus, incomeStatus, incomes, selectedWeekStart])
   const financeUnavailable: { label: string; status: Exclude<RecordDomainStatus, 'loaded'>; error: string | null; retry: () => void } | null = expenseStatus !== 'loaded' ? { label: 'Expense', status: expenseStatus, error: expenseError, retry: retryExpenseSubscription } : incomeStatus !== 'loaded' ? { label: 'Income', status: incomeStatus, error: incomeError, retry: retryIncomeSubscription } : null
 
-  return <div className="core-page mx-auto w-full max-w-[72rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+  return <div className="weekly-review-page core-page mx-auto w-full max-w-[72rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
     <header className="py-1 sm:py-2">
       <div className="page-companion-introduction page-companion-introduction-review">
         <div className="page-companion-copy">
@@ -46,14 +47,14 @@ export function WeeklyReviewPage() {
       </div>
     </header>
 
-    <section aria-label="Select week" className="mt-7 flex flex-col gap-5 border-y border-[var(--border-subtle)] py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
-      <div className="min-w-0"><div className="flex items-center gap-2"><p className="section-label text-[var(--accent-soft)]">{weekOffset === 0 ? 'This week' : 'Selected week'}</p><span className="rounded-full bg-[var(--positive-wash)] px-2 py-1 text-[10px] font-semibold text-[var(--positive)]">{weekOffset === 0 ? 'Ready to reflect' : 'Past review'}</span></div><p className="mt-2 text-[clamp(1.05rem,4vw,1.35rem)] font-semibold leading-snug tracking-[-0.025em] text-[var(--text-primary)]">{weekDateFormatter.format(selectedWeekStart)} – {weekDateFormatter.format(weekEnd)}</p><p className="mt-1 text-sm text-[var(--text-muted)]">Monday to Sunday</p></div>
-      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"><Button {...triggerPressFeedback} type="button" variant="secondary" aria-label="Previous week" className="press-feedback min-w-0 px-3 sm:px-5" onClick={() => setWeekOffset((offset) => offset - 1)}><ChevronLeft aria-hidden="true" size={17} /> Previous<span className="hidden sm:inline"> week</span></Button>{weekOffset < 0 && <Button {...triggerPressFeedback} type="button" variant="ghost" className="press-feedback col-span-2 order-3 sm:order-none" onClick={() => setWeekOffset(0)}>This week</Button>}<Button {...triggerPressFeedback} type="button" variant="secondary" aria-label="Next week" className="press-feedback min-w-0 px-3 sm:px-5" disabled={weekOffset === 0} onClick={() => setWeekOffset((offset) => offset + 1)}>Next<span className="hidden sm:inline"> week</span> <ChevronRight aria-hidden="true" size={17} /></Button></div>
+    <section aria-label="Select week" className="review-week-selector mt-7 flex flex-col gap-5 border-y border-[var(--border-subtle)] py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+      <div className="review-week-dates min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="section-label text-[var(--accent-soft)]">{weekOffset === 0 ? 'This week' : 'Selected week'}</p><span className="rounded-full bg-[var(--positive-wash)] px-2 py-1 text-[10px] font-semibold text-[var(--positive)]">{weekOffset === 0 ? 'Ready to reflect' : 'Past review'}</span></div><p className="mt-2 text-[clamp(1.05rem,4vw,1.35rem)] font-semibold leading-snug tracking-[-0.025em] text-[var(--text-primary)]">{weekDateFormatter.format(selectedWeekStart)} – {weekDateFormatter.format(weekEnd)}</p><p className="mt-1 text-sm text-[var(--text-muted)]">Monday to Sunday</p></div>
+      <div className="review-week-actions grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"><Button {...triggerPressFeedback} type="button" variant="secondary" aria-label="Previous week" className="press-feedback min-w-0 px-3 sm:px-5" onClick={() => setWeekOffset((offset) => offset - 1)}><ChevronLeft aria-hidden="true" size={17} /> Previous<span className="hidden sm:inline"> week</span></Button>{weekOffset < 0 && <Button {...triggerPressFeedback} type="button" variant="ghost" className="press-feedback col-span-2 order-3 sm:order-none" onClick={() => setWeekOffset(0)}>This week</Button>}<Button {...triggerPressFeedback} type="button" variant="secondary" aria-label="Next week" className="press-feedback min-w-0 px-3 sm:px-5" disabled={weekOffset === 0} onClick={() => setWeekOffset((offset) => offset + 1)}>Next<span className="hidden sm:inline"> week</span> <ChevronRight aria-hidden="true" size={17} /></Button></div>
     </section>
 
     <section aria-labelledby="week-glance-heading" className="mt-7">
       <div><p className="section-label">This week at a glance</p><h2 id="week-glance-heading" className="mt-1 text-xl font-semibold tracking-[-0.03em]">Context for your reflection</h2></div>
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="review-context-grid mt-4 grid gap-4 lg:grid-cols-3">
         <section aria-label="Weekly expenses" className="dashboard-card p-5 sm:p-6">
           <ReviewCardHeader icon={<ReceiptText size={18} />} tone="blue" label="Finance" title="Money in motion" />
           {financeUnavailable ? <DomainUnavailable label={financeUnavailable.label} status={financeUnavailable.status} error={financeUnavailable.error} onRetry={financeUnavailable.retry} /> : <><div className="review-context-metrics mt-5 grid grid-cols-3 gap-2"><MoneyStat label="Income" amountSen={summary.finance.incomeSen} /><MoneyStat label="Spent" amountSen={summary.finance.spentSen} /><MoneyStat label="Net" amountSen={summary.finance.netSen} /></div>{summary.expenses.count === 0 ? <p className="mt-5 text-sm text-[var(--text-secondary)]">No expenses recorded this week.</p> : <p className="mt-5 text-sm text-[var(--text-secondary)]">{summary.expenses.count} {summary.expenses.count === 1 ? 'expense' : 'expenses'} recorded{summary.expenses.categories[0] ? ` · ${expenseCategoryLabels[summary.expenses.categories[0].category]} was the largest category` : ''}.</p>}{summary.finance.spendingChangePercent !== null && <p className="mt-2 text-xs text-[var(--text-muted)]">Spending {summary.finance.spendingChangePercent >= 0 ? '+' : ''}{summary.finance.spendingChangePercent}% vs last week</p>}</>}
@@ -83,4 +84,4 @@ function ReviewCardHeader({ icon, tone, label, title }: { icon: ReactNode; tone:
 }
 
 function MoneyStat({ label, amountSen }: { label: string; amountSen: number }) { return <div className="min-w-0 rounded-xl bg-[var(--surface-secondary)] p-2.5"><p className="text-xs text-[var(--text-muted)]">{label}</p><FinancialAmount amountSen={amountSen} className="mt-1 block break-words text-sm font-semibold" /></div> }
-function TextStat({ label, value }: { label: string; value: string }) { return <div className="min-w-0 rounded-xl bg-[var(--surface-secondary)] p-2.5"><p className="text-xs text-[var(--text-muted)]">{label}</p><p className="mt-1 truncate text-sm font-semibold">{value}</p></div> }
+function TextStat({ label, value }: { label: string; value: string }) { return <div className="min-w-0 rounded-xl bg-[var(--surface-secondary)] p-2.5"><p className="text-xs text-[var(--text-muted)]">{label}</p><p className="mt-1 break-words text-sm font-semibold">{value}</p></div> }
