@@ -92,6 +92,7 @@ describe('Weekly Review page', () => {
     const exerciseRegion = screen.getByRole('region', { name: 'Weekly exercise sessions' })
     expect(within(exerciseRegion).getByRole('alert').textContent).toContain('Exercise records unavailable')
     expect(within(exerciseRegion).queryByText('0 sessions')).toBeNull()
+    expect(within(exerciseRegion).queryByText('0 min')).toBeNull()
     fireEvent.click(within(exerciseRegion).getByRole('button', { name: 'Retry' }))
     expect(retryExerciseSubscription).toHaveBeenCalledOnce()
     expect(retryExpenseSubscription).not.toHaveBeenCalled()
@@ -103,5 +104,43 @@ describe('Weekly Review page', () => {
     expect(screen.getByText('No expenses recorded this week.')).toBeTruthy()
     expect(screen.getByText('No exercise recorded this week.')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
+    const exercise = within(screen.getByRole('region', { name: 'Weekly exercise sessions' }))
+    expect(exercise.getByText('0 min')).toBeTruthy()
+    expect(exercise.getByText('0 m')).toBeTruthy()
+    expect(exercise.getByText('0')).toBeTruthy()
+  })
+
+  it('does not carry last week into this week and restores the selected historical week', () => {
+    provideRecords({ exerciseRecords: [{ ...currentExercise, durationSeconds: 2700, distanceMetres: 1600, occurredAt: at(10) }] })
+    render(<WeeklyReviewPage />)
+    const exercise = within(screen.getByRole('region', { name: 'Weekly exercise sessions' }))
+    expect(exercise.getByText('0 min')).toBeTruthy()
+    expect(exercise.getByText('0 m')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Previous week' }))
+    expect(exercise.getByText('45 min')).toBeTruthy()
+    expect(exercise.getByText('1.6 km')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'This week' }))
+    expect(exercise.getByText('0 min')).toBeTruthy()
+  })
+
+  it('keeps valid cumulative workout minutes and distance', () => {
+    provideRecords({ exerciseRecords: [
+      { ...currentExercise, durationSeconds: 1800, distanceMetres: 1000 },
+      { ...currentExercise, id: 'second', durationSeconds: 3600, distanceMetres: 1500 },
+    ] })
+    render(<WeeklyReviewPage />)
+    const exercise = within(screen.getByRole('region', { name: 'Weekly exercise sessions' }))
+    expect(exercise.getByText('1 hr 30 min')).toBeTruthy()
+    expect(exercise.getByText('2.5 km')).toBeTruthy()
+    expect(exercise.getByText('2')).toBeTruthy()
+  })
+
+  it('keeps loading workout context distinct from zero activity', () => {
+    provideRecords({ exerciseRecords: [], exerciseStatus: 'loading' })
+    render(<WeeklyReviewPage />)
+    const exercise = within(screen.getByRole('region', { name: 'Weekly exercise sessions' }))
+    expect(exercise.getByRole('status').textContent).toContain('Loading exercise records')
+    expect(exercise.queryByText('0 min')).toBeNull()
+    expect(exercise.queryByText('0 m')).toBeNull()
   })
 })

@@ -29,10 +29,19 @@ describe('exercise metrics', () => {
   })
 
   it.each([
+    [0, '0 min'],
+    [1, '1 min'],
+    [29, '1 min'],
+    [60, '1 min'],
+    [89, '1 min'],
+    [90, '2 min'],
+    [1800, '30 min'],
     [2700, '45 min'],
     [3600, '1 hr'],
     [5400, '1 hr 30 min'],
     [8100, '2 hr 15 min'],
+    [3599, '1 hr'],
+    [3630, '1 hr 1 min'],
   ])('shows %i seconds as %s', (seconds, display) => {
     expect(formatDuration(seconds)).toBe(display)
   })
